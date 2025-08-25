@@ -4,11 +4,7 @@
     <img src='assets/description.svg'>
 </p>
 
-<span align="center">
-
-# arboris
-
-</span>
+---
 
 <p align="center">
     <img src="https://img.shields.io/github/stars/theintrance/arboris?style=social" alt="GitHub stars"/>
