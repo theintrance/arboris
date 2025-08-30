@@ -1,0 +1,14 @@
+# 벤치마크 실행에 필요한 의존성
+lxml>=5.2
+psutil>=5.9
+numpy>=2.0
+statistics  # Python 3.4+ 기본 라이브러리
+
+# 향후 확장을 위한 추가 파서들
+selectolax>=0.3
+beautifulsoup4>=4.12
+html5lib>=1.1
+
+# 결과 시각화 (선택사항)
+matplotlib>=3.7
+pandas>=2.0
