@@ -39,3 +39,46 @@
 
 # debug information files
 *.dwo
+
+# virtual environment
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Benchmark specific
+benchmark/__pycache__/
+benchmark/*/__pycache__/
+benchmark/*/*/__pycache__/
+benchmark/results/
+benchmark/*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
