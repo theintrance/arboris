@@ -12,12 +12,12 @@ from .config import BenchmarkConfig
 from .utils import load_bytes, lxml_parse_and_query, selectolax_parse_and_query
 
 __all__ = [
-    'BenchmarkRunner',
-    'BaseParser',
-    'LxmlParser', 
-    'SelectolaxParser',
-    'BenchmarkConfig',
-    'load_bytes',
-    'lxml_parse_and_query',
-    'selectolax_parse_and_query'
+    "BenchmarkRunner",
+    "BaseParser",
+    "LxmlParser",
+    "SelectolaxParser",
+    "BenchmarkConfig",
+    "load_bytes",
+    "lxml_parse_and_query",
+    "selectolax_parse_and_query",
 ]
