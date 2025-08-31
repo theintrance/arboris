@@ -18,8 +18,8 @@ line-length = 100
 target-version = "py310"
 fix = true
 unsafe-fixes = false
-select = ["E","F","W","I","PL"]
-ignore = ["E501"]
+lint.select = ["E","F","W","I","PL"]
+lint.ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["arboris"]
