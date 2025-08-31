@@ -45,6 +45,7 @@ disallow_untyped_defs = false
 
 [dependency-groups]
 dev = [
+    "cpplint>=2.0.2",
     "mypy>=1.17.1",
     "ruff>=0.12.11",
 ]
