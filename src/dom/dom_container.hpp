@@ -40,9 +40,9 @@ class DOMContainer {
   std::stack<std::shared_ptr<Node>> node_stack_;
 
   // TODO(team): consider using std::list instead of std::vector for indexes
-  std::unordered_map<std::string, std::vector<std::shared_ptr<Node>>> class_index_;
-  std::unordered_map<std::string, std::vector<std::shared_ptr<Node>>> id_index_;
+  std::unordered_map<std::string, std::shared_ptr<Node>> id_index_;
   std::unordered_map<Tag, std::vector<std::shared_ptr<Node>>> tag_index_;
+  std::unordered_map<std::string, std::vector<std::shared_ptr<Node>>> class_index_;
 };
 
 }  // namespace arboris
