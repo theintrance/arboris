@@ -12,16 +12,27 @@ bool DOMContainer::validate() const {
   return node_stack_.empty();
 }
 
-void DOMContainer::feed_open_token(HtmlToken&& token) {
+bool DOMContainer::feed_open_token(HtmlToken&& token) {
   // TODO(jayden): implement
+  return true;
 }
 
-void DOMContainer::feed_text_token(HtmlTextToken&& token) {
+bool DOMContainer::feed_text_token(HtmlTextToken&& token) {
+  if (node_stack_.empty()) {
+    return false;
+  }
+
   // TODO(jayden): implement
+  return true;
 }
 
-void DOMContainer::feed_close_token(HtmlCloseToken&& token) {
+bool DOMContainer::feed_close_token(HtmlCloseToken&& token) {
+  if (node_stack_.empty()) {
+    return false;
+  }
+
   // TODO(jayden): implement
+  return true;
 }
 
 }  // namespace arboris

@@ -31,9 +31,9 @@ class DOMContainer {
   virtual ~DOMContainer() = default;
 
   bool validate() const;
-  void feed_open_token(HtmlToken&& token);
-  void feed_text_token(HtmlTextToken&& token);
-  void feed_close_token(HtmlCloseToken&& token);
+  bool feed_open_token(HtmlToken&& token);
+  bool feed_text_token(HtmlTextToken&& token);
+  bool feed_close_token(HtmlCloseToken&& token);
 
  private:
   std::shared_ptr<Node> root_;
