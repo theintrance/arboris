@@ -11,7 +11,7 @@
 
 namespace arboris {
 
-enum class Tags {
+enum class Tag {
   kUnknown,
   kA,
   kAbbr,
@@ -126,7 +126,7 @@ enum class Tags {
   kWbr,
 };
 
-Tags from_string(std::string_view tag_name);
+Tag from_string(std::string_view tag_name);
 
 }  // namespace arboris
 
