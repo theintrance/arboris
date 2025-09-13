@@ -1,0 +1,206 @@
+/*
+ *   Copyright 2025 Team Arboris
+ *   Licensed under the Apache License, Version 2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ */
+
+#include "parser/html_parser.hpp"
+
+#include <algorithm>
+#include <cctype>
+#include <cstdint>
+#include <memory>
+#include <stack>
+#include <string_view>
+#include <vector>
+
+#include "dom/dom_container.hpp"
+#include "dom/node.hpp"
+#include "utils/html_tokens.hpp"
+#include "utils/tag.hpp"
+
+namespace arboris {
+
+HTMLParser::HTMLParser(std::string_view html_content)
+    : dom_container_(std::make_shared<DOMContainer>()),
+      html_content_(html_content) {}
+
+std::shared_ptr<DOMContainer> HTMLParser::parse() {
+  InitializeParsing();
+
+  while (has_next_token()) {
+    SkipWhitespace();
+    
+    if (current_pos_ >= html_content_.length())
+      break;
+    
+    if (current_char() == '<')
+      ParseAndProcessTag();
+    else
+      ParseAndProcessText();
+  }
+
+  return dom_container_;
+}
+
+void HTMLParser::InitializeParsing() {
+  current_pos_ = 0;
+  timer_ = 0;
+  node_id_counter_ = 0;
+  
+  while (!node_stack_.empty())
+    node_stack_.pop();
+}
+
+void HTMLParser::ParseAndProcessTag() {
+  std::uint32_t begin_pos = current_pos_;
+  Advance();
+  
+  // check if it is a close tag
+  bool is_close_tag = false;
+  if (current_char() == '/') {
+    is_close_tag = true;
+    Advance();
+  }
+  
+  // parse tag name
+  std::uint32_t tag_start = current_pos_;
+  while (current_pos_ < html_content_.length() && 
+         !std::isspace(current_char()) && 
+         current_char() != '>' && 
+         current_char() != '/')
+    Advance();
+  
+  std::string_view tag_name = html_content_.substr(tag_start, current_pos_ - tag_start);
+  Tag tag = ParseTagName(tag_name);
+  
+  // TODO(team): parse attributes
+  while (current_pos_ < html_content_.length() && current_char() != '>')
+    Advance();
+
+  // skip '>'
+  if (current_pos_ < html_content_.length())
+    Advance();
+  
+  std::uint32_t end_pos = current_pos_;
+  
+  if (is_close_tag)
+    ProcessCloseToken(begin_pos, end_pos, tag);
+  else
+    ProcessOpenToken(begin_pos, end_pos, tag);
+}
+
+void HTMLParser::ParseAndProcessText() {
+  std::uint32_t begin_pos = current_pos_;
+  
+  // parse text content
+  while (current_pos_ < html_content_.length() && current_char() != '<')
+    Advance();
+  
+  std::uint32_t end_pos = current_pos_;
+  std::string_view text_content = html_content_.substr(begin_pos, end_pos - begin_pos);
+  
+  // remove whitespace
+  std::uint32_t start = 0;
+  std::uint32_t end = text_content.length();
+  while (start < end && std::isspace(text_content[start]))
+    start++;
+  while (start < end && std::isspace(text_content[end - 1]))
+    end--;
+  text_content = text_content.substr(start, end - start);
+  
+  if (start < end)
+    ProcessTextToken(begin_pos, end_pos, text_content);
+}
+
+void HTMLParser::ProcessOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag) {
+  // TODO(team) : set parent node
+  auto node = std::make_shared<Node>(
+      ++node_id_counter_,
+      HtmlToken{begin_pos, end_pos, tag, is_void_tag(tag)}
+  );
+  
+  // set in time for euler path
+  node->set_in(++timer_);
+
+  // feed open token to DOM container
+  HtmlToken feed_token;
+  feed_token.begin_pos = begin_pos;
+  feed_token.end_pos = end_pos;
+  feed_token.tag = tag;
+  feed_token.is_void_tag = is_void_tag(tag);
+  dom_container_->feed_open_token(std::move(feed_token));
+
+  // push node to stack
+  node_stack_.push(node);
+  
+  // if it is a void tag, process it as a close tag
+  if (is_void_tag(tag)) {
+    node->set_out(timer_); // subtree completed
+    node_stack_.pop();
+  }
+}
+
+void HTMLParser::ProcessCloseToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag) {
+  if (node_stack_.empty())
+    return;
+    
+  auto node = node_stack_.top();
+  node_stack_.pop();
+  
+  node->set_out(timer_);
+  
+  HtmlCloseToken close_token;
+  close_token.begin_pos = begin_pos;
+  close_token.end_pos = end_pos;
+  close_token.tag = tag;
+  dom_container_->feed_close_token(std::move(close_token));
+}
+
+void HTMLParser::ProcessTextToken(std::uint32_t begin_pos, std::uint32_t end_pos, std::string_view text_content) {
+  if (node_stack_.empty())
+    return;
+    
+  HtmlTextToken text_token;
+  text_token.begin_pos = begin_pos;
+  text_token.end_pos = end_pos;
+  text_token.text_content = text_content;
+  dom_container_->feed_text_token(std::move(text_token));
+}
+
+bool HTMLParser::has_next_token() const {
+  std::uint32_t pos = current_pos_;
+  while (pos < html_content_.length() && std::isspace(html_content_[pos]))
+    pos++;
+  
+  return pos < html_content_.length();
+}
+
+
+Tag HTMLParser::ParseTagName(std::string_view tag_content) {
+  // TODO(team): convert tag name to lowercase
+  return from_string(tag_content);
+}
+
+
+void HTMLParser::SkipWhitespace() {
+  while (current_pos_ < html_content_.length() && std::isspace(current_char()))
+    Advance();
+}
+
+bool HTMLParser::is_current_char(char c) const {
+  return current_pos_ < html_content_.length() && html_content_[current_pos_] == c;
+}
+
+char HTMLParser::current_char() const {
+  if (current_pos_ >= html_content_.length())
+    return '\0';
+  return html_content_[current_pos_];
+}
+
+void HTMLParser::Advance() {
+  if (current_pos_ < html_content_.length())
+    current_pos_++;
+}
+
+}  // namespace arboris
