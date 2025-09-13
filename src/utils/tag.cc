@@ -6,7 +6,7 @@
 
 #include <unordered_map>
 
-#include "utils/tag.h"
+#include "utils/tag.hpp"
 
 namespace arboris {
 

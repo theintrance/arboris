@@ -4,8 +4,8 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#ifndef SRC_UTILS_TAG_H_
-#define SRC_UTILS_TAG_H_
+#ifndef SRC_UTILS_TAG_HPP_
+#define SRC_UTILS_TAG_HPP_
 
 #include <string_view>
 
@@ -130,4 +130,4 @@ Tag from_string(std::string_view tag_name);
 
 }  // namespace arboris
 
-#endif  // SRC_UTILS_TAG_H_
+#endif  // SRC_UTILS_TAG_HPP_

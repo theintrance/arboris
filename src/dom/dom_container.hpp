@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "utils/tag.h"
+#include "utils/tag.hpp"
 #include "utils/html_tokens.hpp"
 
 namespace arboris {

@@ -8,7 +8,7 @@
 #define SRC_UTILS_HTML_TOKENS_HPP_
 
 #include <string_view>
-#include "utils/tag.h"
+#include "utils/tag.hpp"
 
 namespace arboris {
 
