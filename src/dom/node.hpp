@@ -8,16 +8,21 @@
 #define SRC_DOM_NODE_HPP_
 
 #include <cstdint>
-#include <string>
-#include <unordered_map>
-#include <vector>
+#include <memory>
+#include <string_view>
+#include <utility>
+
+#include "utils/html_tokens.hpp"
 
 namespace arboris {
 
 class Node {
  public:
-  explicit Node(const std::string& tag, std::uint32_t id, const Node* parent = nullptr)
-      : tag_(tag), id_(id), parent_(parent) {}
+  explicit Node(
+    std::uint32_t id,
+    HtmlToken&& html_token,
+    const std::shared_ptr<Node> parent = nullptr)
+      : id_(id), parent_(parent), html_token_(std::move(html_token)) {}
 
   Node(const Node&) = delete;
   Node& operator=(const Node&) = delete;
@@ -38,6 +43,10 @@ class Node {
     return out_;
   }
 
+  inline std::string_view text_content() const noexcept {
+    return text_content_;
+  }
+
   inline void set_out(std::uint32_t out) {
     // TODO(Jayden): Call assertion here
     out_ = out;
@@ -48,14 +57,17 @@ class Node {
     in_ = in;
   }
 
- private:
-  const std::string tag_;
-  const std::uint32_t id_;
-  const Node* parent_;
+  inline void set_text_content(std::string_view text_content) {
+    // TODO(Jayden): Call assertion here
+    text_content_ = text_content;
+  }
 
-  // TODO(Team): Optimize the attribute storage (std::string -> std::string_view)
-  std::unordered_map<std::string, std::vector<std::string>> attrs_;
-  std::vector<const Node*> children_;
+ private:
+  const std::uint32_t id_;
+  const std::shared_ptr<Node> parent_;
+
+  const HtmlToken html_token_;
+  std::string_view text_content_;
 
   std::uint32_t in_{0};
   std::uint32_t out_{0};
