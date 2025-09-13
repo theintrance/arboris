@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+if ! which uv > /dev/null; then
+    echo "uv is not installed"
+    exit 1
+fi
+
+uv run ruff check .
