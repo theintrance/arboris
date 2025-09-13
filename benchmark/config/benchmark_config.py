@@ -1,8 +1,9 @@
-from pathlib import Path
-from typing import Dict, Any, List
 import json
+from pathlib import Path
+from typing import Any, final
 
 
+@final
 class BenchmarkConfig:
     def __init__(self):
         self.fixtures_dir = Path(__file__).parent.parent / "tests" / "conformance" / "fixtures"
@@ -24,9 +25,9 @@ class BenchmarkConfig:
             "cpu_tracking": True,
         }
 
-    def get_fixture_files(self, doc_type: str = "html") -> List[Path]:
+    def get_fixture_files(self, doc_type: str = "html") -> list[Path]:
         pattern = f"*.{doc_type}"
-        files = []
+        files: list[Path] = []
 
         for fixture_dir in self.fixtures_dir.iterdir():
             if fixture_dir.is_dir():
@@ -37,12 +38,12 @@ class BenchmarkConfig:
     def get_result_path(self, parser: str, doc_type: str) -> Path:
         return self.results_dir / f"benchmark_{parser}_{doc_type}.json"
 
-    def save_results(self, results: Dict[str, Any], parser: str, doc_type: str):
+    def save_results(self, results: dict[str, Any], parser: str, doc_type: str):
         result_path = self.get_result_path(parser, doc_type)
         with open(result_path, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
 
-    def load_results(self, parser: str, doc_type: str) -> Dict[str, Any]:
+    def load_results(self, parser: str, doc_type: str) -> dict[str, object]:
         result_path = self.get_result_path(parser, doc_type)
         if result_path.exists():
             with open(result_path, "r", encoding="utf-8") as f:

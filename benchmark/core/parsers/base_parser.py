@@ -1,10 +1,10 @@
-from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
-from pathlib import Path
-import time
-import psutil
 import os
+import time
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
+
+import psutil
 
 
 @dataclass
@@ -18,7 +18,7 @@ class ParseResult:
     parse_time_ms: float = 0.0
     memory_usage_mb: float = 0.0
     success: bool = True
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class BaseParser(ABC):

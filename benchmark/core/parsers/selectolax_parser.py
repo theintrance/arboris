@@ -1,4 +1,5 @@
 from selectolax.parser import HTMLParser as SelHTML
+
 from .base_parser import BaseParser, ParseResult
 
 

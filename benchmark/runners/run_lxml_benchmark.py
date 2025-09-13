@@ -1,17 +1,10 @@
-#!/usr/bin/env python3
-"""
-lxml HTML 파싱 벤치마크 실행 스크립트
-"""
-
-import sys
 import argparse
+import json
+import sys
+import traceback
 from pathlib import Path
 
-# 프로젝트 루트를 Python 경로에 추가
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from core import BenchmarkRunner, LxmlParser
+from benchmark.core import BenchmarkRunner, LxmlParser
 
 
 def main():
@@ -49,8 +42,6 @@ def main():
             output_path = Path(args.output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            import json
-
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(runner._result_to_dict(result), f, ensure_ascii=False, indent=2)
 
@@ -61,8 +52,6 @@ def main():
     except Exception as e:
         print(f"벤치마크 실행 중 오류 발생: {str(e)}")
         if args.verbose:
-            import traceback
-
             traceback.print_exc()
         sys.exit(1)
 

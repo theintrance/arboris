@@ -1,5 +1,5 @@
-from typing import List
 from lxml import html as lxml_html
+
 from .base_parser import BaseParser, ParseResult
 
 

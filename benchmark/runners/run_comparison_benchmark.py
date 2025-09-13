@@ -1,36 +1,29 @@
-#!/usr/bin/env python3
-"""
-여러 HTML 파서 비교 벤치마크 실행 스크립트
-"""
-
-import sys
 import argparse
+import json
+import sys
+import traceback
 from pathlib import Path
 
-# 프로젝트 루트를 Python 경로에 추가
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from core import BenchmarkRunner, LxmlParser, SelectolaxParser
+from benchmark.core import BenchmarkRunner, LxmlParser, SelectolaxParser
 
 
 def main():
     parser = argparse.ArgumentParser(description="여러 HTML 파서 비교 벤치마크 실행")
-    parser.add_argument(
+    _ = parser.add_argument(
         "--document-type",
         choices=["html", "xml"],
         default="html",
         help="파싱할 문서 타입 (기본값: html)",
     )
-    parser.add_argument("--output", type=str, help="결과를 저장할 JSON 파일 경로")
-    parser.add_argument(
+    _ = parser.add_argument("--output", type=str, help="결과를 저장할 JSON 파일 경로")
+    _ = parser.add_argument(
         "--parsers",
         nargs="+",
         choices=["lxml", "selectolax"],
         default=["lxml", "selectolax"],
         help="비교할 파서들 (기본값: lxml selectolax)",
     )
-    parser.add_argument("--verbose", action="store_true", help="상세한 출력 활성화")
+    _ = parser.add_argument("--verbose", action="store_true", help="상세한 출력 활성화")
 
     args = parser.parse_args()
 
@@ -67,8 +60,6 @@ def main():
         if args.output:
             output_path = Path(args.output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
-
-            import json
 
             all_results = [runner._result_to_dict(result) for result in results]
             with open(output_path, "w", encoding="utf-8") as f:
@@ -109,8 +100,6 @@ def main():
     except Exception as e:
         print(f"벤치마크 실행 중 오류 발생: {str(e)}")
         if args.verbose:
-            import traceback
-
             traceback.print_exc()
         sys.exit(1)
 

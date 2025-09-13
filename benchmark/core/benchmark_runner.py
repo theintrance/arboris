@@ -1,12 +1,10 @@
-import time
 import statistics
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-import json
+from typing import Any, final
 
-from config.benchmark_config import config
-from .parsers import BaseParser, ParseResult
+from benchmark.config.benchmark_config import config
+
+from .parsers import BaseParser
 
 
 @dataclass
@@ -28,12 +26,15 @@ class BenchmarkResult:
     max_memory_mb: float
     throughput_docs_per_sec: float
     throughput_mb_per_sec: float
-    errors: List[str]
+    errors: list[str]
 
 
+@final
 class BenchmarkRunner:
+    ERROR_DISPLAY_LIMIT = 3
+
     def __init__(self):
-        self.results: List[BenchmarkResult] = []
+        self.results: list[BenchmarkResult] = []
 
     def run_benchmark(self, parser: BaseParser, document_type: str = "html") -> BenchmarkResult:
         print(f"벤치마크 실행 중: {parser.name} ({document_type})")
@@ -67,6 +68,8 @@ class BenchmarkRunner:
                 else:
                     failed_parses += 1
                     errors.append(f"{file_path.name}: {result.error_message}")
+                    if len(errors) > self.ERROR_DISPLAY_LIMIT:
+                        errors.append(f"{file_path.name}: {result.error_message}")
 
             except Exception as e:
                 failed_parses += 1
@@ -129,8 +132,8 @@ class BenchmarkRunner:
         return benchmark_result
 
     def run_all_benchmarks(
-        self, parsers: List[BaseParser], document_types: Optional[List[str]] = None
-    ) -> List[BenchmarkResult]:
+        self, parsers: list[BaseParser], document_types: list[str] | None = None
+    ) -> list[BenchmarkResult]:
         if document_types is None:
             document_types = config.document_types
 
@@ -150,7 +153,7 @@ class BenchmarkRunner:
 
         return all_results
 
-    def _result_to_dict(self, result: BenchmarkResult) -> Dict[str, Any]:
+    def _result_to_dict(self, result: BenchmarkResult) -> dict[str, Any]:
         return {
             "parser_name": result.parser_name,
             "document_type": result.document_type,
@@ -172,9 +175,11 @@ class BenchmarkRunner:
             "errors": result.errors,
         }
 
-    def print_results(self, results: Optional[List[BenchmarkResult]] = None):
+    def print_results(self, results: list[BenchmarkResult] | None = None):
         if results is None:
             results = self.results
+
+        assert results is not None
 
         print("\n" + "=" * 80)
         print("벤치마크 결과 요약")
@@ -197,7 +202,7 @@ class BenchmarkRunner:
 
             if result.errors:
                 print(f"  오류 수: {len(result.errors)}")
-                for error in result.errors[:3]:  # 처음 3개만 표시
+                for error in result.errors[: self.ERROR_DISPLAY_LIMIT]:  # 처음 3개만 표시
                     print(f"    - {error}")
-                if len(result.errors) > 3:
-                    print(f"    ... 및 {len(result.errors) - 3}개 더")
+                if len(result.errors) > self.ERROR_DISPLAY_LIMIT:
+                    print(f"    ... 및 {len(result.errors) - self.ERROR_DISPLAY_LIMIT}개 더")
