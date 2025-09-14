@@ -11,11 +11,9 @@
 #include <memory>
 #include <stack>
 #include <string_view>
-#include <vector>
 
 #include "dom/dom_container.hpp"
 #include "dom/node.hpp"
-#include "utils/html_tokens.hpp"
 #include "utils/tag.hpp"
 
 namespace arboris {
@@ -48,7 +46,6 @@ class HTMLParser {
   void skipWhitespace();
   void advance();
   
-  bool isCurrentChar(char c) const;
   char currentChar() const;
   bool hasNextToken() const;
 

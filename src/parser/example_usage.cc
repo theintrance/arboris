@@ -28,7 +28,7 @@ int main() {
 
   // Create HTMLParser and parse
   arboris::HTMLParser parser(html);
-  auto dom_container = parser.parse();
+  auto dom_container = parser.Parse();
 
   // Validate parsing result
   if (dom_container->validate()) {

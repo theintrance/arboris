@@ -6,16 +6,15 @@
 
 #include "parser/html_parser.hpp"
 
-#include <algorithm>
 #include <cctype>
 #include <cstdint>
 #include <memory>
 #include <stack>
 #include <string_view>
-#include <vector>
 
 #include "dom/dom_container.hpp"
 #include "dom/node.hpp"
+#include "string/string.hpp"
 #include "utils/html_tokens.hpp"
 #include "utils/tag.hpp"
 
@@ -101,15 +100,9 @@ void HTMLParser::parseAndProcessText() {
   std::string_view text_content = html_content_.substr(begin_pos, end_pos - begin_pos);
   
   // remove whitespace
-  std::uint32_t start = 0;
-  std::uint32_t end = text_content.length();
-  while (start < end && std::isspace(text_content[start]))
-    start++;
-  while (start < end && std::isspace(text_content[end - 1]))
-    end--;
-  text_content = text_content.substr(start, end - start);
+  text_content = trim_whitespace(text_content);
   
-  if (start < end)
+  if (!text_content.empty())
     processTextToken(begin_pos, end_pos, text_content);
 }
 
@@ -178,18 +171,13 @@ bool HTMLParser::hasNextToken() const {
 
 
 Tag HTMLParser::parseTagName(std::string_view tag_content) {
-  // TODO(team): convert tag name to lowercase
-  return from_string(tag_content);
+  // convert tag name to lowercase
+  std::string lowercase_tag = to_lowercase(tag_content);
+  return from_string(lowercase_tag);
 }
-
 
 void HTMLParser::skipWhitespace() {
-  while (current_pos_ < html_content_.length() && std::isspace(currentChar()))
-    advance();
-}
-
-bool HTMLParser::isCurrentChar(char c) const {
-  return current_pos_ < html_content_.length() && html_content_[current_pos_] == c;
+  skip_whitespace(html_content_, current_pos_);
 }
 
 char HTMLParser::currentChar() const {
