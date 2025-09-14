@@ -10,10 +10,9 @@
 #include <memory>
 #include <stack>
 #include <string>
-#include <unordered_map>
-#include <vector>
+#include <functional>
+#include <utility>
 
-#include "utils/tag.hpp"
 #include "utils/html_tokens.hpp"
 
 namespace arboris {
@@ -22,6 +21,8 @@ namespace arboris {
 class Node;
 
 class DOMBuilder {
+  using NodeCreationCallback = std::function<void(std::shared_ptr<Node>)>;
+
  public:
   DOMBuilder() = default;
   DOMBuilder(const DOMBuilder&) = delete;
@@ -35,9 +36,15 @@ class DOMBuilder {
   bool FeedTextToken(HtmlTextToken&& token);
   bool FeedCloseToken(HtmlCloseToken&& token);
 
+  void SetNodeCreationCallback(NodeCreationCallback&& callback) {
+    node_creation_callback_ = std::move(callback);
+  }
+
  private:
   std::shared_ptr<Node> root_;
   std::stack<std::shared_ptr<Node>> node_stack_;
+
+  NodeCreationCallback node_creation_callback_;
 };
 
 }  // namespace arboris
