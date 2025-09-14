@@ -99,7 +99,7 @@ void HTMLParser::parseAndProcessText() {
   std::string_view text_content = html_content_.substr(begin_pos, end_pos - begin_pos);
 
   // remove whitespace
-  text_content = trim_whitespace(text_content);
+  text_content = TrimWhitespace(text_content);
 
   if (!text_content.empty())
     processTextToken(begin_pos, end_pos, text_content);
@@ -167,12 +167,12 @@ bool HTMLParser::hasNextToken() const {
 
 Tag HTMLParser::parseTagName(std::string_view tag_content) {
   // convert tag name to lowercase
-  std::string lowercase_tag = to_lowercase(tag_content);
+  std::string lowercase_tag = ToLowercase(tag_content);
   return from_string(lowercase_tag);
 }
 
 void HTMLParser::skipWhitespace() {
-  skip_whitespace(html_content_, current_pos_);
+  SkipWhitespace(html_content_, current_pos_);
 }
 
 char HTMLParser::currentChar() const {
