@@ -4,9 +4,9 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#ifndef ARBORIS_ARBORIS_HPP_
-#define ARBORIS_ARBORIS_HPP_
+#ifndef INCLUDE_ARBORIS_ARBORIS_HPP_
+#define INCLUDE_ARBORIS_ARBORIS_HPP_
 
 // TODO(team): Add public APIs
 
-#endif  // ARBORIS_ARBORIS_HPP_
+#endif  // INCLUDE_ARBORIS_ARBORIS_HPP_
