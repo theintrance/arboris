@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from utils.utils_compare import load_bytes, lxml_parse_and_query, selectolax_parse_and_query
 
 # fixture 디렉토리 경로

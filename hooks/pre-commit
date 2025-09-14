@@ -7,6 +7,7 @@ if ! which uv > /dev/null; then
     exit 1
 fi
 
+ROOT=$(git rev-parse --show-toplevel)
 
-uv run cpplint --quiet --recursive .
-uv run ruff check .
+uv run cpplint --quiet --recursive "${ROOT}"
+uv run ruff check "$ROOT"
