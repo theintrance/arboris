@@ -2,6 +2,7 @@
 set(ARBORIS_SOURCES
   dom/dom_container.cc
   parser/html_parser.cc
+  string/string_scalar.cc
   utils/tag.cc
 )
 
