@@ -8,6 +8,7 @@ dependencies = [
     "beautifulsoup4>=4.13.5",
     "html5lib>=1.1",
     "lxml>=6.0.1",
+    "lxml-stubs>=0.5.1",
     "numpy>=2.0.2",
     "psutil>=7.0.0",
     "selectolax>=0.3.34",
@@ -16,10 +17,9 @@ dependencies = [
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-fix = true
 unsafe-fixes = false
-select = ["E","F","W","I","PL"]
-ignore = ["E501"]
+lint.select = ["E","F","W","I","PL"]
+lint.ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["arboris"]
