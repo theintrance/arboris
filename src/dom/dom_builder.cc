@@ -4,20 +4,21 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#include "dom/dom_container.hpp"
+#include "dom/dom_builder.hpp"
 
 namespace arboris {
 
-bool DOMContainer::validate() const {
+bool DOMBuilder::Validate() const {
   return node_stack_.empty();
 }
 
-bool DOMContainer::feed_open_token(HtmlToken&& token) {
+bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
   // TODO(jayden): implement
+  // TODO(jayden): call node_creation_callback_
   return true;
 }
 
-bool DOMContainer::feed_text_token(HtmlTextToken&& token) {
+bool DOMBuilder::FeedTextToken(HtmlTextToken&& token) {
   if (node_stack_.empty()) {
     return false;
   }
@@ -26,7 +27,7 @@ bool DOMContainer::feed_text_token(HtmlTextToken&& token) {
   return true;
 }
 
-bool DOMContainer::feed_close_token(HtmlCloseToken&& token) {
+bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token) {
   if (node_stack_.empty()) {
     return false;
   }

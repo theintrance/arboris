@@ -43,6 +43,10 @@ class Node {
     return out_;
   }
 
+  inline const HtmlToken& html_token() const noexcept {
+    return html_token_;
+  }
+
   inline std::string_view text_content() const noexcept {
     return text_content_;
   }
