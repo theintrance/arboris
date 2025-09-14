@@ -4,10 +4,10 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#include "parser/html_parser.hpp"
-
 #include <iostream>
 #include <string>
+
+#include "parser/html_parser.hpp"
 
 int main() {
   // Simple HTML example

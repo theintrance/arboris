@@ -10,7 +10,9 @@
 #include <cstdint>
 #include <memory>
 #include <stack>
+#include <string>
 #include <string_view>
+#include <utility>
 
 #include "dom/dom_container.hpp"
 #include "dom/node.hpp"
@@ -21,18 +23,17 @@
 namespace arboris {
 
 HTMLParser::HTMLParser(std::string_view html_content)
-    : dom_container_(std::make_shared<DOMContainer>()),
-      html_content_(html_content) {}
+    : dom_container_(std::make_shared<DOMContainer>()), html_content_(html_content) {}
 
 std::shared_ptr<DOMContainer> HTMLParser::Parse() {
   initializeParsing();
 
   while (hasNextToken()) {
     skipWhitespace();
-    
+
     if (current_pos_ >= html_content_.length())
       break;
-    
+
     if (currentChar() == '<')
       parseAndProcessTag();
     else
@@ -46,7 +47,7 @@ void HTMLParser::initializeParsing() {
   current_pos_ = 0;
   timer_ = 0;
   node_id_counter_ = 0;
-  
+
   while (!node_stack_.empty())
     node_stack_.pop();
 }
@@ -54,25 +55,23 @@ void HTMLParser::initializeParsing() {
 void HTMLParser::parseAndProcessTag() {
   std::uint32_t begin_pos = current_pos_;
   advance();
-  
+
   // check if it is a close tag
   bool is_close_tag = false;
   if (currentChar() == '/') {
     is_close_tag = true;
     advance();
   }
-  
+
   // parse tag name
   std::uint32_t tag_start = current_pos_;
-  while (current_pos_ < html_content_.length() && 
-         !std::isspace(currentChar()) && 
-         currentChar() != '>' && 
+  while (current_pos_ < html_content_.length() && !std::isspace(currentChar()) && currentChar() != '>' &&
          currentChar() != '/')
     advance();
-  
+
   std::string_view tag_name = html_content_.substr(tag_start, current_pos_ - tag_start);
   Tag tag = parseTagName(tag_name);
-  
+
   // TODO(team): parse attributes
   while (current_pos_ < html_content_.length() && currentChar() != '>')
     advance();
@@ -80,9 +79,9 @@ void HTMLParser::parseAndProcessTag() {
   // skip '>'
   if (current_pos_ < html_content_.length())
     advance();
-  
+
   std::uint32_t end_pos = current_pos_;
-  
+
   if (is_close_tag)
     processCloseToken(begin_pos, end_pos, tag);
   else
@@ -91,28 +90,25 @@ void HTMLParser::parseAndProcessTag() {
 
 void HTMLParser::parseAndProcessText() {
   std::uint32_t begin_pos = current_pos_;
-  
+
   // parse text content
   while (current_pos_ < html_content_.length() && currentChar() != '<')
     advance();
-  
+
   std::uint32_t end_pos = current_pos_;
   std::string_view text_content = html_content_.substr(begin_pos, end_pos - begin_pos);
-  
+
   // remove whitespace
   text_content = trim_whitespace(text_content);
-  
+
   if (!text_content.empty())
     processTextToken(begin_pos, end_pos, text_content);
 }
 
 void HTMLParser::processOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag) {
-  // TODO(team) : set parent node
-  auto node = std::make_shared<Node>(
-      ++node_id_counter_,
-      HtmlToken{begin_pos, end_pos, tag, is_void_tag(tag)}
-  );
-  
+  // TODO(team):  set parent node
+  auto node = std::make_shared<Node>(++node_id_counter_, HtmlToken{begin_pos, end_pos, tag, is_void_tag(tag)});
+
   // set in time for euler path
   node->set_in(++timer_);
 
@@ -126,10 +122,10 @@ void HTMLParser::processOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos
 
   // push node to stack
   node_stack_.push(node);
-  
+
   // if it is a void tag, process it as a close tag
   if (is_void_tag(tag)) {
-    node->set_out(timer_); // subtree completed
+    node->set_out(timer_);  // subtree completed
     node_stack_.pop();
   }
 }
@@ -137,12 +133,12 @@ void HTMLParser::processOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos
 void HTMLParser::processCloseToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag) {
   if (node_stack_.empty())
     return;
-    
+
   auto node = node_stack_.top();
   node_stack_.pop();
-  
+
   node->set_out(timer_);
-  
+
   HtmlCloseToken close_token;
   close_token.begin_pos = begin_pos;
   close_token.end_pos = end_pos;
@@ -153,7 +149,7 @@ void HTMLParser::processCloseToken(std::uint32_t begin_pos, std::uint32_t end_po
 void HTMLParser::processTextToken(std::uint32_t begin_pos, std::uint32_t end_pos, std::string_view text_content) {
   if (node_stack_.empty())
     return;
-    
+
   HtmlTextToken text_token;
   text_token.begin_pos = begin_pos;
   text_token.end_pos = end_pos;
@@ -165,10 +161,9 @@ bool HTMLParser::hasNextToken() const {
   std::uint32_t pos = current_pos_;
   while (pos < html_content_.length() && std::isspace(html_content_[pos]))
     pos++;
-  
+
   return pos < html_content_.length();
 }
-
 
 Tag HTMLParser::parseTagName(std::string_view tag_content) {
   // convert tag name to lowercase

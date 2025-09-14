@@ -32,12 +32,12 @@ inline void skip_whitespace(std::string_view content, std::uint32_t& pos) {
 inline std::string_view trim_whitespace(std::string_view content) {
   std::uint32_t start = 0;
   std::uint32_t end = content.length();
-  
+
   while (start < end && std::isspace(content[start]))
     start++;
   while (start < end && std::isspace(content[end - 1]))
     end--;
-    
+
   return content.substr(start, end - start);
 }
 
@@ -49,10 +49,10 @@ inline std::string_view trim_whitespace(std::string_view content) {
 inline std::string to_lowercase(std::string_view content) {
   std::string result;
   result.reserve(content.length());
-  
+
   for (const char c : content)
     result += std::tolower(c);
-  
+
   return result;
 }
 
