@@ -31,26 +31,26 @@ class HTMLParser {
   
   virtual ~HTMLParser() = default;
 
-  std::shared_ptr<DOMContainer> parse();
+  std::shared_ptr<DOMContainer> Parse();
 
  private:
-  void InitializeParsing();
+  void initializeParsing();
   
-  void ParseAndProcessTag();
-  void ProcessOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag);
-  void ProcessCloseToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag);
+  void parseAndProcessTag();
+  void processOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag);
+  void processCloseToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag);
 
-  void ParseAndProcessText();
-  void ProcessTextToken(std::uint32_t begin_pos, std::uint32_t end_pos, std::string_view text_content);
+  void parseAndProcessText();
+  void processTextToken(std::uint32_t begin_pos, std::uint32_t end_pos, std::string_view text_content);
 
-  Tag ParseTagName(std::string_view tag_content);
+  Tag parseTagName(std::string_view tag_content);
   
-  void SkipWhitespace();
-  void Advance();
+  void skipWhitespace();
+  void advance();
   
-  bool is_current_char(char c) const;
-  char current_char() const;
-  bool has_next_token() const;
+  bool isCurrentChar(char c) const;
+  char currentChar() const;
+  bool hasNextToken() const;
 
   std::shared_ptr<DOMContainer> dom_container_;
   std::string_view html_content_;

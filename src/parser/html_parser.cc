@@ -25,25 +25,25 @@ HTMLParser::HTMLParser(std::string_view html_content)
     : dom_container_(std::make_shared<DOMContainer>()),
       html_content_(html_content) {}
 
-std::shared_ptr<DOMContainer> HTMLParser::parse() {
-  InitializeParsing();
+std::shared_ptr<DOMContainer> HTMLParser::Parse() {
+  initializeParsing();
 
-  while (has_next_token()) {
-    SkipWhitespace();
+  while (hasNextToken()) {
+    skipWhitespace();
     
     if (current_pos_ >= html_content_.length())
       break;
     
-    if (current_char() == '<')
-      ParseAndProcessTag();
+    if (currentChar() == '<')
+      parseAndProcessTag();
     else
-      ParseAndProcessText();
+      parseAndProcessText();
   }
 
   return dom_container_;
 }
 
-void HTMLParser::InitializeParsing() {
+void HTMLParser::initializeParsing() {
   current_pos_ = 0;
   timer_ = 0;
   node_id_counter_ = 0;
@@ -52,50 +52,50 @@ void HTMLParser::InitializeParsing() {
     node_stack_.pop();
 }
 
-void HTMLParser::ParseAndProcessTag() {
+void HTMLParser::parseAndProcessTag() {
   std::uint32_t begin_pos = current_pos_;
-  Advance();
+  advance();
   
   // check if it is a close tag
   bool is_close_tag = false;
-  if (current_char() == '/') {
+  if (currentChar() == '/') {
     is_close_tag = true;
-    Advance();
+    advance();
   }
   
   // parse tag name
   std::uint32_t tag_start = current_pos_;
   while (current_pos_ < html_content_.length() && 
-         !std::isspace(current_char()) && 
-         current_char() != '>' && 
-         current_char() != '/')
-    Advance();
+         !std::isspace(currentChar()) && 
+         currentChar() != '>' && 
+         currentChar() != '/')
+    advance();
   
   std::string_view tag_name = html_content_.substr(tag_start, current_pos_ - tag_start);
-  Tag tag = ParseTagName(tag_name);
+  Tag tag = parseTagName(tag_name);
   
   // TODO(team): parse attributes
-  while (current_pos_ < html_content_.length() && current_char() != '>')
-    Advance();
+  while (current_pos_ < html_content_.length() && currentChar() != '>')
+    advance();
 
   // skip '>'
   if (current_pos_ < html_content_.length())
-    Advance();
+    advance();
   
   std::uint32_t end_pos = current_pos_;
   
   if (is_close_tag)
-    ProcessCloseToken(begin_pos, end_pos, tag);
+    processCloseToken(begin_pos, end_pos, tag);
   else
-    ProcessOpenToken(begin_pos, end_pos, tag);
+    processOpenToken(begin_pos, end_pos, tag);
 }
 
-void HTMLParser::ParseAndProcessText() {
+void HTMLParser::parseAndProcessText() {
   std::uint32_t begin_pos = current_pos_;
   
   // parse text content
-  while (current_pos_ < html_content_.length() && current_char() != '<')
-    Advance();
+  while (current_pos_ < html_content_.length() && currentChar() != '<')
+    advance();
   
   std::uint32_t end_pos = current_pos_;
   std::string_view text_content = html_content_.substr(begin_pos, end_pos - begin_pos);
@@ -110,10 +110,10 @@ void HTMLParser::ParseAndProcessText() {
   text_content = text_content.substr(start, end - start);
   
   if (start < end)
-    ProcessTextToken(begin_pos, end_pos, text_content);
+    processTextToken(begin_pos, end_pos, text_content);
 }
 
-void HTMLParser::ProcessOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag) {
+void HTMLParser::processOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag) {
   // TODO(team) : set parent node
   auto node = std::make_shared<Node>(
       ++node_id_counter_,
@@ -141,7 +141,7 @@ void HTMLParser::ProcessOpenToken(std::uint32_t begin_pos, std::uint32_t end_pos
   }
 }
 
-void HTMLParser::ProcessCloseToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag) {
+void HTMLParser::processCloseToken(std::uint32_t begin_pos, std::uint32_t end_pos, Tag tag) {
   if (node_stack_.empty())
     return;
     
@@ -157,7 +157,7 @@ void HTMLParser::ProcessCloseToken(std::uint32_t begin_pos, std::uint32_t end_po
   dom_container_->feed_close_token(std::move(close_token));
 }
 
-void HTMLParser::ProcessTextToken(std::uint32_t begin_pos, std::uint32_t end_pos, std::string_view text_content) {
+void HTMLParser::processTextToken(std::uint32_t begin_pos, std::uint32_t end_pos, std::string_view text_content) {
   if (node_stack_.empty())
     return;
     
@@ -168,7 +168,7 @@ void HTMLParser::ProcessTextToken(std::uint32_t begin_pos, std::uint32_t end_pos
   dom_container_->feed_text_token(std::move(text_token));
 }
 
-bool HTMLParser::has_next_token() const {
+bool HTMLParser::hasNextToken() const {
   std::uint32_t pos = current_pos_;
   while (pos < html_content_.length() && std::isspace(html_content_[pos]))
     pos++;
@@ -177,28 +177,28 @@ bool HTMLParser::has_next_token() const {
 }
 
 
-Tag HTMLParser::ParseTagName(std::string_view tag_content) {
+Tag HTMLParser::parseTagName(std::string_view tag_content) {
   // TODO(team): convert tag name to lowercase
   return from_string(tag_content);
 }
 
 
-void HTMLParser::SkipWhitespace() {
-  while (current_pos_ < html_content_.length() && std::isspace(current_char()))
-    Advance();
+void HTMLParser::skipWhitespace() {
+  while (current_pos_ < html_content_.length() && std::isspace(currentChar()))
+    advance();
 }
 
-bool HTMLParser::is_current_char(char c) const {
+bool HTMLParser::isCurrentChar(char c) const {
   return current_pos_ < html_content_.length() && html_content_[current_pos_] == c;
 }
 
-char HTMLParser::current_char() const {
+char HTMLParser::currentChar() const {
   if (current_pos_ >= html_content_.length())
     return '\0';
   return html_content_[current_pos_];
 }
 
-void HTMLParser::Advance() {
+void HTMLParser::advance() {
   if (current_pos_ < html_content_.length())
     current_pos_++;
 }
