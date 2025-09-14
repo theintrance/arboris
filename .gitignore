@@ -83,3 +83,7 @@ coverage.xml
 *.cover
 .hypothesis/
 Testing/
+
+# IDE settings
+.vscode/
+.idea/

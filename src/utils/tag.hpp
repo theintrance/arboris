@@ -128,6 +128,8 @@ enum class Tag {
 
 Tag from_string(std::string_view tag_name);
 
+bool is_void_tag(Tag tag);
+
 }  // namespace arboris
 
 #endif  // SRC_UTILS_TAG_HPP_

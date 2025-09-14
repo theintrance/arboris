@@ -132,4 +132,25 @@ Tag from_string(std::string_view tag_name) {
   return it->second;
 }
 
+bool is_void_tag(Tag tag) {
+  switch (tag) {
+    case Tag::kArea:
+    case Tag::kBase:
+    case Tag::kBr:
+    case Tag::kCol:
+    case Tag::kEmbed:
+    case Tag::kHr:
+    case Tag::kImg:
+    case Tag::kInput:
+    case Tag::kLink:
+    case Tag::kMeta:
+    case Tag::kSource:
+    case Tag::kTrack:
+    case Tag::kWbr:
+      return true;
+    default:
+      return false;
+  }
+}
+
 }  // namespace arboris

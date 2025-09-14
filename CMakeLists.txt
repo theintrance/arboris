@@ -28,6 +28,8 @@ set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googlebenchmark)
 
 # Add subdirectories
+add_subdirectory(src)
+
 if (NOT NO_TESTS)
   add_subdirectory(tests)
 endif()
