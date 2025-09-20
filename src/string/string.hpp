@@ -44,6 +44,57 @@ std::string ToLowercase(std::string_view content);
  */
 bool IsCharAt(std::string_view content, std::uint32_t pos, char expected_char);
 
+/**
+ * @brief Skip whitespace characters using size_t position (for compatibility)
+ * @param content The string content to process
+ * @param pos Reference to current position, will be updated to skip whitespace
+ */
+void SkipWhitespace(std::string_view content, std::size_t& pos);
+
+/**
+ * @brief Extract substring from content using start and end positions
+ * @param content The string content to extract from
+ * @param start Starting position (inclusive)
+ * @param end Ending position (exclusive)
+ * @return Extracted string_view
+ */
+std::string_view ExtractSubstring(std::string_view content, std::size_t start, std::size_t end);
+
+/**
+ * @brief Find next occurrence of character starting from given position
+ * @param content The string content to search in
+ * @param pos Starting position for search
+ * @param target_char Character to find
+ * @return Position of found character, or content.length() if not found
+ */
+std::size_t FindNextChar(std::string_view content, std::size_t pos, char target_char);
+
+/**
+ * @brief Find next occurrence of any character in a set, starting from given position
+ * @param content The string content to search in
+ * @param pos Starting position for search
+ * @param target_chars Set of characters to find (null-terminated string)
+ * @return Position of found character, or content.length() if not found
+ */
+std::size_t FindNextAnyChar(std::string_view content, std::size_t pos, const char* target_chars);
+
+/**
+ * @brief Skip characters until a specific character is found
+ * @param content The string content to process
+ * @param pos Reference to current position, will be updated
+ * @param target_char Character to stop at
+ * @return True if target character was found, false if end of string reached
+ */
+bool SkipUntilChar(std::string_view content, std::size_t& pos, char target_char);
+
+/**
+ * @brief Check if position is at the end of content
+ * @param content The string content to check
+ * @param pos Position to check
+ * @return True if position is at or beyond end of content
+ */
+bool IsAtEnd(std::string_view content, std::size_t pos);
+
 }  // namespace arboris
 
 #endif  // SRC_STRING_STRING_HPP_

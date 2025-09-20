@@ -1,19 +1,21 @@
 # Source files
 set(ARBORIS_SOURCES
-  dom/dom_container.cc
-  parser/html_parser.cc
+  dom/dom_builder.cc
+  dom/html_tag_provider.cc
   string/string_scalar.cc
   utils/tag.cc
 )
 
 # Header files
 set(ARBORIS_HEADERS
-  dom/dom_container.hpp
+  dom/dom_builder.hpp
+  dom/html_tag_provider.hpp
   dom/node.hpp
-  parser/html_parser.hpp
+  dom/tag_provider.hpp
   string/string.hpp
   utils/html_tokens.hpp
   utils/tag.hpp
+  utils/tokens.hpp
 )
 
 # Create arboris library
