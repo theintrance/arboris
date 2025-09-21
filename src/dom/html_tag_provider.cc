@@ -17,7 +17,7 @@
 
 namespace arboris {
 
-bool HtmlTagProvider::Parse() {
+bool HtmlTagProvider::Parse() const {
   std::size_t pos = 0;
 
   while (pos < content_.length() && pos != std::string::npos) {
@@ -37,84 +37,84 @@ bool HtmlTagProvider::Parse() {
   return pos != std::string::npos;
 }
 
-std::size_t HtmlTagProvider::parseOpenTag(std::size_t begin) {
-  std::size_t start_pos = begin;
+std::size_t HtmlTagProvider::parseOpenTag(const std::size_t begin) const {
+  std::size_t current_pos = begin;
 
-  ++begin;  // Skip '<'
+  ++current_pos;  // Skip '<'
 
   // Extract tag name
-  std::string_view tag_name = extractTagName(&begin, kOpenTagDelimiters);
+  std::string_view tag_name = extractTagName(&current_pos, kOpenTagDelimiters);
   if (tag_name.empty())
     return std::string::npos;
 
   Tag tag = from_string(tag_name);
 
   // Find and skip '>'
-  if (!skipToTagEnd(&begin))
+  if (!skipToTagEnd(&current_pos))
     return std::string::npos;
 
   // Create HtmlToken and call callback
-  HtmlToken token{{static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(begin)}, tag, is_void_tag(tag)};
+  HtmlToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag, is_void_tag(tag)};
 
   if (feed_open_token_callback_) {
     if (!feed_open_token_callback_(std::move(token)))
       return std::string::npos;
   }
 
-  return begin;
+  return current_pos;
 }
 
-std::size_t HtmlTagProvider::parseCloseTag(std::size_t begin) {
-  std::size_t start_pos = begin;
+std::size_t HtmlTagProvider::parseCloseTag(const std::size_t begin) const {
+  std::size_t current_pos = begin;
 
-  begin += 2;  // Skip '</'
+  current_pos += 2;  // Skip '</'
 
   // Extract tag name
-  std::string_view tag_name = extractTagName(&begin, kCloseTagDelimiters);
+  std::string_view tag_name = extractTagName(&current_pos, kCloseTagDelimiters);
   if (tag_name.empty())
     return std::string::npos;
 
   Tag tag = from_string(tag_name);
 
   // Find and skip '>'
-  if (!skipToTagEnd(&begin))
+  if (!skipToTagEnd(&current_pos))
     return std::string::npos;
 
   // Create HtmlCloseToken and call callback
-  HtmlCloseToken token{{static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(begin)}, tag};
+  HtmlCloseToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag};
 
   if (feed_close_token_callback_) {
     if (!feed_close_token_callback_(std::move(token)))
       return std::string::npos;
   }
 
-  return begin;
+  return current_pos;
 }
 
-std::size_t HtmlTagProvider::parseTextContent(std::size_t begin) {
-  std::size_t start_pos = begin;
+std::size_t HtmlTagProvider::parseTextContent(const std::size_t begin) const {
+  std::size_t current_pos = begin;
 
   // Read text until '<' or end of string
-  begin = FindNextChar(content_, begin, '<');
+  current_pos = FindNextChar(content_, current_pos, '<');
 
-  if (begin == start_pos)
-    return begin;  // Empty text, return current position
+  if (current_pos == begin)
+    return current_pos;  // Empty text, return current position
 
   // Extract text content
-  std::string_view text_content = ExtractSubstring(content_, start_pos, begin);
+  std::string_view text_content = ExtractSubstring(content_, begin, current_pos);
 
   // Create HtmlTextToken and call callback
-  HtmlTextToken token{{static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(begin)}, text_content};
+  HtmlTextToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, text_content};
 
   if (feed_text_token_callback_) {
     if (!feed_text_token_callback_(std::move(token)))
       return std::string::npos;
   }
 
-  return begin;
+  return current_pos;
 }
 
-std::string_view HtmlTagProvider::extractTagName(std::size_t* begin, std::string_view delimiters) {
+std::string_view HtmlTagProvider::extractTagName(std::size_t* begin, std::string_view delimiters) const {
   // Find start of tag name
   *begin = SkipWhitespace(content_, *begin);
   std::size_t tag_name_start = *begin;
@@ -129,7 +129,7 @@ std::string_view HtmlTagProvider::extractTagName(std::size_t* begin, std::string
   return result;
 }
 
-bool HtmlTagProvider::skipToTagEnd(std::size_t* begin) {
+bool HtmlTagProvider::skipToTagEnd(std::size_t* begin) const {
   // Find '>'
   std::size_t found_pos = SkipUntilChar(content_, *begin, '>');
   if (found_pos == std::string::npos)

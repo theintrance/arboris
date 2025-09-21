@@ -31,7 +31,7 @@ class HtmlTagProvider : public TagProvider {
 
   ~HtmlTagProvider() override = default;
 
-  bool Parse() override;
+  bool Parse() const override;
 
   inline void set_feed_open_token_callback(FeedOpenTokenCallback&& callback) {
     feed_open_token_callback_ = std::move(callback);
@@ -48,12 +48,12 @@ class HtmlTagProvider : public TagProvider {
   static constexpr std::string_view kOpenTagDelimiters = " />\t\n\r>";
   static constexpr std::string_view kCloseTagDelimiters = "> \t\n\r";
 
-  std::size_t parseOpenTag(std::size_t begin);
-  std::size_t parseCloseTag(std::size_t begin);
-  std::size_t parseTextContent(std::size_t begin);
+  std::size_t parseOpenTag(const std::size_t begin) const;
+  std::size_t parseCloseTag(const std::size_t begin) const;
+  std::size_t parseTextContent(const std::size_t begin) const;
 
-  std::string_view extractTagName(std::size_t* begin, std::string_view delimiters);
-  bool skipToTagEnd(std::size_t* begin);
+  std::string_view extractTagName(std::size_t* begin, std::string_view delimiters) const;
+  bool skipToTagEnd(std::size_t* begin) const;
 
   FeedOpenTokenCallback feed_open_token_callback_;
   FeedTextTokenCallback feed_text_token_callback_;
