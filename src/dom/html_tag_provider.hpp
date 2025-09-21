@@ -48,12 +48,12 @@ class HtmlTagProvider : public TagProvider {
   static constexpr std::string_view kOpenTagDelimiters = " />\t\n\r>";
   static constexpr std::string_view kCloseTagDelimiters = "> \t\n\r";
 
-  bool parseOpenTag(std::size_t* pos);
-  bool parseCloseTag(std::size_t* pos);
-  bool parseTextContent(std::size_t* pos);
+  std::size_t parseOpenTag(std::size_t begin);
+  std::size_t parseCloseTag(std::size_t begin);
+  std::size_t parseTextContent(std::size_t begin);
 
-  std::string_view extractTagName(std::size_t* pos, std::string_view delimiters);
-  bool skipToTagEnd(std::size_t* pos);
+  std::string_view extractTagName(std::size_t* begin, std::string_view delimiters);
+  bool skipToTagEnd(std::size_t* begin);
 
   FeedOpenTokenCallback feed_open_token_callback_;
   FeedTextTokenCallback feed_text_token_callback_;

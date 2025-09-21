@@ -11,12 +11,8 @@
 
 namespace arboris {
 
-// Token types for different markup languages and formats
-enum class TokenType : std::uint8_t { kHtml, kMarkdown, kCss, kJavaScript, kJson, kUnknown };
-
 // Base token structure for all token types
 struct BaseToken {
-  TokenType type;
   std::uint32_t begin_pos;
   std::uint32_t end_pos;
 };

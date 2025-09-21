@@ -19,124 +19,122 @@ namespace arboris {
 bool HtmlTagProvider::Parse() {
   std::size_t pos = 0;
 
-  while (pos < content_.length()) {
+  while (pos < content_.length() && pos != std::string::npos) {
     if (content_[pos] != '<') {
-      if (!parseTextContent(&pos))
-        return false;
+      pos = parseTextContent(pos);
       continue;
     }
 
     if (pos + 1 < content_.length() && content_[pos + 1] == '/') {
-      if (!parseCloseTag(&pos))
-        return false;
+      pos = parseCloseTag(pos);
       continue;
     }
 
-    if (!parseOpenTag(&pos))
-      return false;
+    pos = parseOpenTag(pos);
   }
 
-  return true;
+  return pos != std::string::npos;
 }
 
-bool HtmlTagProvider::parseOpenTag(std::size_t* pos) {
-  std::size_t start_pos = *pos;
+std::size_t HtmlTagProvider::parseOpenTag(std::size_t begin) {
+  std::size_t start_pos = begin;
 
-  ++(*pos);  // Skip '<'
+  ++begin;  // Skip '<'
 
   // Extract tag name
-  std::string_view tag_name = extractTagName(pos, kOpenTagDelimiters);
+  std::string_view tag_name = extractTagName(&begin, kOpenTagDelimiters);
   if (tag_name.empty())
-    return false;
+    return std::string::npos;
 
   Tag tag = from_string(tag_name);
 
   // Find and skip '>'
-  if (!skipToTagEnd(pos))
-    return false;
+  if (!skipToTagEnd(&begin))
+    return std::string::npos;
 
   // Create HtmlToken and call callback
-  HtmlToken token{{TokenType::kHtml, static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(*pos)},
-                  tag,
-                  is_void_tag(tag)};
+  HtmlToken token{{static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(begin)}, tag, is_void_tag(tag)};
 
-  if (feed_open_token_callback_)
-    return feed_open_token_callback_(std::move(token));
+  if (feed_open_token_callback_) {
+    if (!feed_open_token_callback_(std::move(token)))
+      return std::string::npos;
+  }
 
-  return true;
+  return begin;
 }
 
-bool HtmlTagProvider::parseCloseTag(std::size_t* pos) {
-  std::size_t start_pos = *pos;
+std::size_t HtmlTagProvider::parseCloseTag(std::size_t begin) {
+  std::size_t start_pos = begin;
 
-  *pos += 2;  // Skip '</'
+  begin += 2;  // Skip '</'
 
   // Extract tag name
-  std::string_view tag_name = extractTagName(pos, kCloseTagDelimiters);
+  std::string_view tag_name = extractTagName(&begin, kCloseTagDelimiters);
   if (tag_name.empty())
-    return false;
+    return std::string::npos;
 
   Tag tag = from_string(tag_name);
 
   // Find and skip '>'
-  if (!skipToTagEnd(pos))
-    return false;
+  if (!skipToTagEnd(&begin))
+    return std::string::npos;
 
   // Create HtmlCloseToken and call callback
-  HtmlCloseToken token{{TokenType::kHtml, static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(*pos)},
-                       tag};
+  HtmlCloseToken token{{static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(begin)}, tag};
 
-  if (feed_close_token_callback_)
-    return feed_close_token_callback_(std::move(token));
-
-  return true;
-}
-
-bool HtmlTagProvider::parseTextContent(std::size_t* pos) {
-  std::size_t start_pos = *pos;
-
-  // Read text until '<' or end of string
-  *pos = FindNextChar(content_, *pos, '<');
-
-  if (*pos == start_pos)
-    return true;  // Empty text
-
-  // Extract text content
-  std::string_view text_content = ExtractSubstring(content_, start_pos, *pos);
-
-  // Create HtmlTextToken and call callback
-  HtmlTextToken token{{TokenType::kHtml, static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(*pos)},
-                      text_content};
-
-  if (feed_text_token_callback_)
-    return feed_text_token_callback_(std::move(token));
-
-  return true;
-}
-
-std::string_view HtmlTagProvider::extractTagName(std::size_t* pos, std::string_view delimiters) {
-  // Find start of tag name
-  SkipWhitespace(content_, *pos);
-  std::size_t tag_name_start = *pos;
-
-  // Find end of tag name (until specified delimiters)
-  *pos = FindNextAnyChar(content_, *pos, delimiters.data());
-
-  if (*pos == tag_name_start) {
-    // Empty tag name
-    return std::string_view();
+  if (feed_close_token_callback_) {
+    if (!feed_close_token_callback_(std::move(token)))
+      return std::string::npos;
   }
 
-  std::string_view result = ExtractSubstring(content_, tag_name_start, *pos);
+  return begin;
+}
+
+std::size_t HtmlTagProvider::parseTextContent(std::size_t begin) {
+  std::size_t start_pos = begin;
+
+  // Read text until '<' or end of string
+  begin = FindNextChar(content_, begin, '<');
+
+  if (begin == start_pos)
+    return begin;  // Empty text, return current position
+
+  // Extract text content
+  std::string_view text_content = ExtractSubstring(content_, start_pos, begin);
+
+  // Create HtmlTextToken and call callback
+  HtmlTextToken token{{static_cast<std::uint32_t>(start_pos), static_cast<std::uint32_t>(begin)}, text_content};
+
+  if (feed_text_token_callback_) {
+    if (!feed_text_token_callback_(std::move(token)))
+      return std::string::npos;
+  }
+
+  return begin;
+}
+
+std::string_view HtmlTagProvider::extractTagName(std::size_t* begin, std::string_view delimiters) {
+  // Find start of tag name
+  *begin = SkipWhitespace(content_, *begin);
+  std::size_t tag_name_start = *begin;
+
+  // Find end of tag name (until specified delimiters)
+  *begin = FindNextAnyChar(content_, *begin, delimiters.data());
+
+  if (*begin == tag_name_start)
+    return std::string_view();
+
+  std::string_view result = ExtractSubstring(content_, tag_name_start, *begin);
   return result;
 }
 
-bool HtmlTagProvider::skipToTagEnd(std::size_t* pos) {
+bool HtmlTagProvider::skipToTagEnd(std::size_t* begin) {
   // Find '>'
-  if (!SkipUntilChar(content_, *pos, '>'))
+  std::size_t found_pos = SkipUntilChar(content_, *begin, '>');
+  if (found_pos == std::string::npos)
     return false;
 
-  ++(*pos);  // Skip '>'
+  *begin = found_pos + 1;  // Skip '>'
   return true;
 }
 
