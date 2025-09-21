@@ -12,6 +12,7 @@
 #include <string_view>
 #include <utility>
 
+#include "utils/assertion.hpp"
 #include "utils/html_tokens.hpp"
 
 namespace arboris {
@@ -52,17 +53,17 @@ class Node {
   }
 
   inline void set_out(std::uint32_t out) {
-    // TODO(Jayden): Call assertion here
+    ARBORIS_ASSERT(out > 0, "out must be greater than 0. got " << out);
     out_ = out;
   }
 
   inline void set_in(std::uint32_t in) {
-    // TODO(Jayden): Call assertion here
+    ARBORIS_ASSERT(in > 0, "in must be greater than 0. got " << in);
     in_ = in;
   }
 
   inline void set_text_content(std::string_view text_content) {
-    // TODO(Jayden): Call assertion here
+    ARBORIS_ASSERT(!text_content.empty(), "text_content must not be empty.");
     text_content_ = text_content;
   }
 
