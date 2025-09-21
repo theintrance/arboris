@@ -9,6 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 include(CTest)
 
+# Set up compile commands JSON for clang-tidy
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Download dependencies
 FetchContent_Declare(
   googletest
