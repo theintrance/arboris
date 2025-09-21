@@ -8,7 +8,6 @@
 
 #include <cctype>
 #include <cstdint>
-#include <functional>
 #include <string>
 #include <string_view>
 #include <utility>
