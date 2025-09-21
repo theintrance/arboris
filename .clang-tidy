@@ -1,0 +1,33 @@
+Checks: >
+  -*,
+  readability-identifier-naming,
+  google-*,
+  bugprone-*,
+  modernize-*,
+  performance-*,
+  -modernize-use-trailing-return-type
+
+CheckOptions:
+  # types
+  - { key: readability-identifier-naming.ClassCase,        value: CamelCase }
+  - { key: readability-identifier-naming.StructCase,       value: CamelCase }
+  - { key: readability-identifier-naming.EnumCase,         value: CamelCase }
+
+  # functions
+  - { key: readability-identifier-naming.FunctionCase,     value: CamelCase }
+  - { key: readability-identifier-naming.PublicMethodCase, value: CamelCase }
+  - { key: readability-identifier-naming.PrivateMethodCase,value: camelBack }
+
+  # variables
+  - { key: readability-identifier-naming.VariableCase,     value: lower_case }
+  - { key: readability-identifier-naming.ParameterCase,    value: lower_case }
+  
+  - { key: readability-identifier-naming.MemberCase,       value: lower_case }
+  - { key: readability-identifier-naming.MemberSuffix,     value: '_' }
+
+  # namespaces
+  - { key: readability-identifier-naming.NamespaceCase,    value: lower_case }
+
+  # constants
+  - { key: readability-identifier-naming.ConstantCase,     value: CamelCase }
+  - { key: readability-identifier-naming.ConstantPrefix,   value: k }
