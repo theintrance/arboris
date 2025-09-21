@@ -4,44 +4,61 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#include "string/string.hpp"
-
+#include <algorithm>
 #include <cctype>
-#include <cstdint>
 #include <string>
 #include <string_view>
+#include "string/string.hpp"
 
 namespace arboris {
+namespace {
 
-void SkipWhitespace(std::string_view content, std::uint32_t& pos) {
-  while (pos < content.length() && std::isspace(content[pos]))
-    pos++;
+inline bool IsValidPosition(std::string_view content, std::size_t pos) {
+  return pos < content.length();
 }
 
-std::string_view TrimWhitespace(std::string_view content) {
-  std::uint32_t start = 0;
-  std::uint32_t end = content.length();
+}  // anonymous namespace
 
-  while (start < end && std::isspace(content[start]))
-    start++;
-  while (start < end && std::isspace(content[end - 1]))
-    end--;
-
-  return content.substr(start, end - start);
+std::size_t SkipWhitespace(std::string_view content, std::size_t begin) {
+  while (IsValidPosition(content, begin) && std::isspace(content[begin]))
+    ++begin;
+  return begin;
 }
 
-std::string ToLowercase(std::string_view content) {
-  std::string result;
-  result.reserve(content.length());
+std::string_view ExtractSubstring(std::string_view content, std::size_t start, std::size_t end) {
+  if (start >= content.length() || start >= end)
+    return std::string_view();
 
-  for (const char c : content)
-    result += std::tolower(c);
-
-  return result;
+  std::size_t actual_end = std::min(end, content.length());
+  return content.substr(start, actual_end - start);
 }
 
-bool IsCharAt(std::string_view content, std::uint32_t pos, char expected_char) {
-  return pos < content.length() && content[pos] == expected_char;
+std::size_t FindNextChar(std::string_view content, std::size_t begin, char target_char) {
+  while (IsValidPosition(content, begin)) {
+    if (content[begin] == target_char)
+      return begin;
+    ++begin;
+  }
+  return std::string::npos;
+}
+
+std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, const char* target_chars) {
+  while (IsValidPosition(content, begin)) {
+    for (const char* target = target_chars; *target != '\0'; ++target) {
+      if (content[begin] == *target)
+        return begin;
+    }
+    ++begin;
+  }
+  return std::string::npos;
+}
+
+std::size_t SkipUntilChar(std::string_view content, std::size_t begin, char target_char) {
+  std::size_t found_pos = FindNextChar(content, begin, target_char);
+  if (found_pos != std::string::npos) {
+    return found_pos;
+  }
+  return std::string::npos;
 }
 
 }  // namespace arboris

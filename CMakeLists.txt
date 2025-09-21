@@ -37,3 +37,8 @@ endif()
 if (NOT NO_BENCHMARK)
   add_subdirectory(benchmark)
 endif()
+
+# TODO(team): move to test
+add_executable(example_usage example_usage.cc)
+target_link_libraries(example_usage arboris)
+target_include_directories(example_usage PRIVATE src)

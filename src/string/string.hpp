@@ -8,8 +8,6 @@
 #define SRC_STRING_STRING_HPP_
 
 #include <cctype>
-#include <cstdint>
-#include <string>
 #include <string_view>
 
 namespace arboris {
@@ -17,32 +15,46 @@ namespace arboris {
 /**
  * @brief Skip whitespace characters in a string_view starting from a given position
  * @param content The string content to process
- * @param pos Reference to current position, will be updated to skip whitespace
+ * @param begin Starting position for skipping whitespace
+ * @return Position after skipping whitespace
  */
-void SkipWhitespace(std::string_view content, std::uint32_t& pos);
+std::size_t SkipWhitespace(std::string_view content, std::size_t begin);
 
 /**
- * @brief Trim whitespace from both ends of a string_view
- * @param content The string content to trim
- * @return Trimmed string_view
+ * @brief Extract substring from content using start and end positions
+ * @param content The string content to extract from
+ * @param start Starting position (inclusive)
+ * @param end Ending position (exclusive)
+ * @return Extracted string_view
  */
-std::string_view TrimWhitespace(std::string_view content);
+std::string_view ExtractSubstring(std::string_view content, std::size_t start, std::size_t end);
 
 /**
- * @brief Convert string to lowercase (in-place modification would require std::string)
- * @param content The string content to convert
- * @return Lowercase version of the string
+ * @brief Find next occurrence of character starting from given position
+ * @param content The string content to search in
+ * @param begin Starting position for search
+ * @param target_char Character to find
+ * @return Position of found character, or std::string::npos if not found
  */
-std::string ToLowercase(std::string_view content);
+std::size_t FindNextChar(std::string_view content, std::size_t begin, char target_char);
 
 /**
- * @brief Check if character at given position matches expected character
- * @param content The string content to check
- * @param pos Position to check
- * @param expected_char The character to compare against
- * @return True if position is valid and character matches
+ * @brief Find next occurrence of any character in a set, starting from given position
+ * @param content The string content to search in
+ * @param begin Starting position for search
+ * @param target_chars Set of characters to find (null-terminated string)
+ * @return Position of found character, or std::string::npos if not found
  */
-bool IsCharAt(std::string_view content, std::uint32_t pos, char expected_char);
+std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, const char* target_chars);
+
+/**
+ * @brief Skip characters until a specific character is found
+ * @param content The string content to process
+ * @param begin Starting position for search
+ * @param target_char Character to stop at
+ * @return Position of found character, or std::string::npos if not found
+ */
+std::size_t SkipUntilChar(std::string_view content, std::size_t begin, char target_char);
 
 }  // namespace arboris
 

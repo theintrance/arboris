@@ -8,27 +8,26 @@
 #define SRC_UTILS_HTML_TOKENS_HPP_
 
 #include <string_view>
+
 #include "utils/tag.hpp"
+#include "utils/tokens.hpp"
 
 namespace arboris {
 
-struct BaseHtmlToken {
-    std::uint32_t begin_pos;
-    std::uint32_t end_pos;
-};
+struct BaseHtmlToken : public BaseToken {};
 
 struct HtmlToken : public BaseHtmlToken {
-    Tag tag = Tag::kUnknown;
-    bool is_void_tag = false;
-    // TODO(team): how to store the attributes such as href, src, etc.?
+  Tag tag = Tag::kUnknown;
+  bool is_void_tag = false;
+  // TODO(team): how to store the attributes such as href, src, etc.?
 };
 
 struct HtmlTextToken : public BaseHtmlToken {
-    std::string_view text_content;
+  std::string_view text_content;
 };
 
 struct HtmlCloseToken : public BaseHtmlToken {
-    Tag tag = Tag::kUnknown;
+  Tag tag = Tag::kUnknown;
 };
 
 }  // namespace arboris
