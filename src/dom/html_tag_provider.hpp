@@ -21,7 +21,7 @@ class HtmlTagProvider : public TagProvider {
   using FeedTextTokenCallback = std::function<bool(HtmlTextToken&&)>;
   using FeedCloseTokenCallback = std::function<bool(HtmlCloseToken&&)>;
 
-  explicit HtmlTagProvider(std::string_view content);
+  explicit HtmlTagProvider(std::string_view content) : TagProvider(content) {};
 
   HtmlTagProvider(const HtmlTagProvider&) = delete;
   HtmlTagProvider& operator=(const HtmlTagProvider&) = delete;
@@ -32,20 +32,27 @@ class HtmlTagProvider : public TagProvider {
 
   bool Parse() override;
 
-  void set_feed_open_token_callback(FeedOpenTokenCallback&& callback);
-  void set_feed_text_token_callback(FeedTextTokenCallback&& callback);
-  void set_feed_close_token_callback(FeedCloseTokenCallback&& callback);
+  inline void set_feed_open_token_callback(FeedOpenTokenCallback&& callback) {
+    feed_open_token_callback_ = std::move(callback);
+  }
+  inline void set_feed_text_token_callback(FeedTextTokenCallback&& callback) {
+    feed_text_token_callback_ = std::move(callback);
+  }
+  inline void set_feed_close_token_callback(FeedCloseTokenCallback&& callback) {
+    feed_close_token_callback_ = std::move(callback);
+  }
 
  private:
-  bool parseOpenTag(std::size_t& pos);
-  bool parseCloseTag(std::size_t& pos);
-  bool parseTextContent(std::size_t& pos);
+  // Delimiter constants for tag parsing
+  static constexpr std::string_view kOpenTagDelimiters = " />\t\n\r>";
+  static constexpr std::string_view kCloseTagDelimiters = "> \t\n\r";
 
-  Tag getTagFromName(std::string_view tag_name) const;
-  bool isVoidTag(Tag tag) const;
+  bool parseOpenTag(std::size_t* pos);
+  bool parseCloseTag(std::size_t* pos);
+  bool parseTextContent(std::size_t* pos);
 
-  std::string_view extractTagName(std::size_t& pos, const char* delimiters);
-  bool skipToTagEnd(std::size_t& pos);
+  std::string_view extractTagName(std::size_t* pos, std::string_view delimiters);
+  bool skipToTagEnd(std::size_t* pos);
 
   FeedOpenTokenCallback feed_open_token_callback_;
   FeedTextTokenCallback feed_text_token_callback_;

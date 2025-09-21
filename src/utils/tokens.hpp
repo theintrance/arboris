@@ -19,11 +19,6 @@ struct BaseToken {
   TokenType type;
   std::uint32_t begin_pos;
   std::uint32_t end_pos;
-
-  BaseToken(TokenType token_type, std::uint32_t begin, std::uint32_t end)
-      : type(token_type), begin_pos(begin), end_pos(end) {}
-
-  virtual ~BaseToken() = default;
 };
 
 }  // namespace arboris

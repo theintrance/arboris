@@ -13,10 +13,36 @@
 #include <string_view>
 
 namespace arboris {
+namespace {
+
+inline bool IsValidPosition(std::string_view content, std::size_t pos) {
+  return pos < content.length();
+}
+
+template <typename PosType>
+inline void SkipWhitespaceImpl(std::string_view content, PosType& pos) {
+  while (IsValidPosition(content, pos) && std::isspace(content[pos]))
+    ++pos;
+}
+
+template <typename Predicate>
+std::size_t FindNextCharImpl(std::string_view content, std::size_t pos, Predicate pred) {
+  while (IsValidPosition(content, pos)) {
+    if (pred(content[pos]))
+      return pos;
+    ++pos;
+  }
+  return std::string::npos;
+}
+
+}  // anonymous namespace
 
 void SkipWhitespace(std::string_view content, std::uint32_t& pos) {
-  while (pos < content.length() && std::isspace(content[pos]))
-    pos++;
+  SkipWhitespaceImpl(content, pos);
+}
+
+void SkipWhitespace(std::string_view content, std::size_t& pos) {
+  SkipWhitespaceImpl(content, pos);
 }
 
 std::string_view TrimWhitespace(std::string_view content) {
@@ -42,59 +68,43 @@ std::string ToLowercase(std::string_view content) {
 }
 
 bool IsCharAt(std::string_view content, std::uint32_t pos, char expected_char) {
-  return pos < content.length() && content[pos] == expected_char;
-}
-
-void SkipWhitespace(std::string_view content, std::size_t& pos) {
-  while (pos < content.length() && std::isspace(content[pos])) {
-    ++pos;
-  }
+  return IsValidPosition(content, pos) && content[pos] == expected_char;
 }
 
 std::string_view ExtractSubstring(std::string_view content, std::size_t start, std::size_t end) {
-  if (start >= content.length() || start >= end) {
+  if (start >= content.length() || start >= end)
     return std::string_view();
-  }
 
   std::size_t actual_end = std::min(end, content.length());
   return content.substr(start, actual_end - start);
 }
 
 std::size_t FindNextChar(std::string_view content, std::size_t pos, char target_char) {
-  while (pos < content.length()) {
-    if (content[pos] == target_char) {
-      return pos;
-    }
-    ++pos;
-  }
-  return content.length();
+  return FindNextCharImpl(content, pos, [target_char](char c) { return c == target_char; });
 }
 
 std::size_t FindNextAnyChar(std::string_view content, std::size_t pos, const char* target_chars) {
-  while (pos < content.length()) {
-    const char current_char = content[pos];
+  return FindNextCharImpl(content, pos, [target_chars](char current_char) {
     for (const char* target = target_chars; *target != '\0'; ++target) {
-      if (current_char == *target) {
-        return pos;
-      }
+      if (current_char == *target)
+        return true;
     }
-    ++pos;
-  }
-  return content.length();
+    return false;
+  });
 }
 
 bool SkipUntilChar(std::string_view content, std::size_t& pos, char target_char) {
-  while (pos < content.length()) {
-    if (content[pos] == target_char) {
-      return true;
-    }
-    ++pos;
+  std::size_t found_pos = FindNextChar(content, pos, target_char);
+  if (found_pos != std::string::npos) {
+    pos = found_pos;
+    return true;
   }
+  pos = content.length();
   return false;
 }
 
 bool IsAtEnd(std::string_view content, std::size_t pos) {
-  return pos >= content.length();
+  return !IsValidPosition(content, pos);
 }
 
 }  // namespace arboris
