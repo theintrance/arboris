@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <string_view>
+#include <utility>
 
 #include "dom/tag_provider.hpp"
 #include "utils/html_tokens.hpp"
@@ -21,7 +22,7 @@ class HtmlTagProvider : public TagProvider {
   using FeedTextTokenCallback = std::function<bool(HtmlTextToken&&)>;
   using FeedCloseTokenCallback = std::function<bool(HtmlCloseToken&&)>;
 
-  explicit HtmlTagProvider(std::string_view content) : TagProvider(content) {};
+  explicit HtmlTagProvider(std::string_view content) : TagProvider(content) {}
 
   HtmlTagProvider(const HtmlTagProvider&) = delete;
   HtmlTagProvider& operator=(const HtmlTagProvider&) = delete;
