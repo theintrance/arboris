@@ -27,7 +27,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
   node->set_in(++euler_tour_timer_);
   node_stack_.push(node);
   if (parent) {
-    parent->add_child(node);
+    parent->AddChild(node);
   }
 
   if (!root_) {

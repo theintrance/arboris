@@ -47,7 +47,10 @@ class DOMBuilder {
  private:
   std::uint32_t next_node_id_{0};
   std::uint32_t euler_tour_timer_{0};
+
+  // TODO(team): Make sure that root is necessary.
   std::shared_ptr<Node> root_;
+
   std::stack<std::shared_ptr<Node>> node_stack_;
 
   NodeCreationCallback node_creation_callback_;
