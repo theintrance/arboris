@@ -15,15 +15,21 @@ CheckOptions:
 
   # functions
   - { key: readability-identifier-naming.FunctionCase,     value: CamelCase }
+  
+    # Setters and getters are ignored
   - { key: readability-identifier-naming.PublicMethodCase, value: CamelCase }
+  - { key: readability-identifier-naming.PublicMethodIgnoredRegexp, value: '^(set_[a-z0-9_]+|[a-z0-9_]+)$' }
+
   - { key: readability-identifier-naming.PrivateMethodCase,value: camelBack }
 
   # variables
   - { key: readability-identifier-naming.VariableCase,     value: lower_case }
   - { key: readability-identifier-naming.ParameterCase,    value: lower_case }
-  
-  - { key: readability-identifier-naming.MemberCase,       value: lower_case }
-  - { key: readability-identifier-naming.MemberSuffix,     value: '_' }
+  - { key: readability-identifier-naming.MemberCase,   value: lower_case }
+  - { key: readability-identifier-naming.MemberSuffix, value: '_' }
+  - { key: readability-identifier-naming.StructMemberCase, value: lower_case }
+  - { key: readability-identifier-naming.StructMemberSuffix, value: "" }
+
 
   # namespaces
   - { key: readability-identifier-naming.NamespaceCase,    value: lower_case }
