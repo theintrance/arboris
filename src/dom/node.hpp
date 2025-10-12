@@ -11,6 +11,7 @@
 #include <memory>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "utils/assertion.hpp"
 #include "utils/html_tokens.hpp"
@@ -67,9 +68,14 @@ class Node {
     text_content_ = text_content;
   }
 
+  inline void add_child(std::shared_ptr<Node> child) {
+    children_.emplace_back(std::move(child));
+  }
+
  private:
   const std::uint32_t id_;
   const std::shared_ptr<Node> parent_;
+  std::vector<std::shared_ptr<Node>> children_;
 
   const HtmlToken html_token_;
   std::string_view text_content_;

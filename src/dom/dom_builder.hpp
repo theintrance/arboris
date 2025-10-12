@@ -12,6 +12,7 @@
 #include <string>
 #include <functional>
 #include <utility>
+#include <cstdint>
 
 #include "utils/html_tokens.hpp"
 
@@ -41,6 +42,11 @@ class DOMBuilder {
   }
 
  private:
+  bool closeTopNode();
+
+ private:
+  std::uint32_t next_node_id_{0};
+  std::uint32_t euler_tour_timer_{0};
   std::shared_ptr<Node> root_;
   std::stack<std::shared_ptr<Node>> node_stack_;
 
