@@ -25,6 +25,7 @@ constexpr std::string_view kVoidTag = "<br>";
 constexpr std::string_view kMultipleVoidTags = "<br><img><input>";
 constexpr std::string_view kTagWithAttributes = "<div class='test' id='main'>content</div>";
 constexpr std::string_view kComplexHtml = "<html><head><title>Test</title></head><body><div>Hello</div></body></html>";
+constexpr std::string_view kNestedTagsWithText = "<p>Hello<b>content</b>World</p>";
 
 // test data for edge cases and error conditions
 constexpr std::string_view kTextOnly = "Hello World";
@@ -470,6 +471,68 @@ TEST_F(HtmlTagProviderTest, ParseWhitespaceHandling) {
 
   // Text content should preserve whitespace
   EXPECT_EQ(tokens.text_tokens[0].text_content, "  content  ");
+}
+
+// Test nested tags with mixed text content
+TEST_F(HtmlTagProviderTest, ParseNestedTagsWithMixedText) {
+  HtmlTagProvider provider(kNestedTagsWithText);
+  TokenCollectors tokens;
+
+  SetupTokenCollectors(provider, tokens);
+
+  EXPECT_TRUE(provider.Parse());
+
+  // Expected structure: <p>Hello<b>content</b>World</p>
+  // Open tags: p, b
+  EXPECT_EQ(tokens.open_tokens.size(), 2);
+  // Text tokens: "Hello", "content", "World"
+  EXPECT_EQ(tokens.text_tokens.size(), 3);
+  // Close tags: b, p
+  EXPECT_EQ(tokens.close_tokens.size(), 2);
+
+  // Validate open tags order
+  EXPECT_EQ(tokens.open_tokens[0].tag, Tag::kP);
+  EXPECT_FALSE(tokens.open_tokens[0].is_void_tag);
+  EXPECT_EQ(tokens.open_tokens[1].tag, Tag::kB);
+  EXPECT_FALSE(tokens.open_tokens[1].is_void_tag);
+
+  // Validate text tokens content and order
+  EXPECT_EQ(tokens.text_tokens[0].text_content, "Hello");
+  EXPECT_EQ(tokens.text_tokens[1].text_content, "content");
+  EXPECT_EQ(tokens.text_tokens[2].text_content, "World");
+
+  // Validate close tags order (should be reverse of open tags)
+  EXPECT_EQ(tokens.close_tokens[0].tag, Tag::kB);
+  EXPECT_EQ(tokens.close_tokens[1].tag, Tag::kP);
+
+  // Validate position information for key elements
+  // <p> tag positions
+  EXPECT_EQ(tokens.open_tokens[0].begin_pos, 0);
+  EXPECT_EQ(tokens.open_tokens[0].end_pos, 3);
+
+  // First text "Hello" positions
+  EXPECT_EQ(tokens.text_tokens[0].begin_pos, 3);
+  EXPECT_EQ(tokens.text_tokens[0].end_pos, 8);
+
+  // <b> tag positions
+  EXPECT_EQ(tokens.open_tokens[1].begin_pos, 8);
+  EXPECT_EQ(tokens.open_tokens[1].end_pos, 11);
+
+  // Second text "content" positions
+  EXPECT_EQ(tokens.text_tokens[1].begin_pos, 11);
+  EXPECT_EQ(tokens.text_tokens[1].end_pos, 18);
+
+  // </b> close tag positions
+  EXPECT_EQ(tokens.close_tokens[0].begin_pos, 18);
+  EXPECT_EQ(tokens.close_tokens[0].end_pos, 22);
+
+  // Third text "World" positions
+  EXPECT_EQ(tokens.text_tokens[2].begin_pos, 22);
+  EXPECT_EQ(tokens.text_tokens[2].end_pos, 27);
+
+  // </p> close tag positions
+  EXPECT_EQ(tokens.close_tokens[1].begin_pos, 27);
+  EXPECT_EQ(tokens.close_tokens[1].end_pos, 31);
 }
 
 }  // namespace arboris
