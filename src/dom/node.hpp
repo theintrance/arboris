@@ -68,7 +68,7 @@ class Node {
     text_content_ = text_content;
   }
 
-  inline void add_child(std::shared_ptr<Node> child) {
+  inline void AddChild(std::shared_ptr<Node> child) {
     children_.emplace_back(std::move(child));
   }
 
