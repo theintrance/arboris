@@ -74,7 +74,7 @@ class Node {
 
  private:
   const std::uint32_t id_;
-  const std::shared_ptr<Node> parent_;
+  const std::weak_ptr<Node> parent_;
   std::vector<std::shared_ptr<Node>> children_;
 
   const HtmlToken html_token_;
