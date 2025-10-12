@@ -1,13 +1,42 @@
 #!/bin/bash
 
-set -e
+# TODO(team): Enable clang-tidy after fixing the static analysis issues
+
+CPPLINT_PASSED=true
+RUFF_PASSED=true
+# CLANG_TIDY_PASSED=true
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+function colorize() {
+    if [ "$1" = true ]; then
+        printf "${GREEN}%s${NC}" "SUCCESS"
+    else
+        printf "${RED}%s${NC}" "FAILED"
+    fi
+}
 
 if ! which uv > /dev/null; then
     echo "uv is not installed"
     exit 1
 fi
 
-ROOT=$(git rev-parse --show-toplevel)
+./scripts/run-cpplint.sh || CPPLINT_PASSED=false
+# ./scripts/run-clang-tidy.sh || CLANG_TIDY_PASSED=false
+./scripts/run-ruff.sh || RUFF_PASSED=false
 
-uv run cpplint --quiet --recursive "${ROOT}"
-uv run ruff check "$ROOT"
+echo
+echo "Summary:"
+printf "  * cpplint    : %s\n" "$(colorize "$CPPLINT_PASSED")"
+# printf "  * clang-tidy : %s\n" "$(colorize "$CLANG_TIDY_PASSED")"
+printf "  * ruff       : %s\n" "$(colorize "$RUFF_PASSED")"
+echo
+
+if [ "$CPPLINT_PASSED" = false ] ||
+   # [ "$CLANG_TIDY_PASSED" = false ] ||
+   [ "$RUFF_PASSED" = false ]; then
+    echo "Some checks failed. Aborting commit."
+    exit 1
+fi
