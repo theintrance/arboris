@@ -46,8 +46,8 @@ std::size_t FindNextChar(std::string_view content, std::size_t begin, char targe
 
 std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, std::string_view target_chars) {
   for (std::size_t i = begin; i < content.length(); i++) {
-    for (const char target : target_chars) {
-      if (content[i] == target) {
+    for (const char kTarget : target_chars) {
+      if (content[i] == kTarget) {
         return i;
       }
     }
