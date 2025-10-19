@@ -53,22 +53,22 @@ class Node {
     return text_content_;
   }
 
-  inline void set_out(std::uint32_t out) {
+  void set_out(std::uint32_t out) {
     ARBORIS_ASSERT(out > 0, "out must be greater than 0. got " << out);
     out_ = out;
   }
 
-  inline void set_in(std::uint32_t in) {
+  void set_in(std::uint32_t in) {
     ARBORIS_ASSERT(in > 0, "in must be greater than 0. got " << in);
     in_ = in;
   }
 
-  inline void set_text_content(std::string_view text_content) {
+  void set_text_content(std::string_view text_content) {
     ARBORIS_ASSERT(!text_content.empty(), "text_content must not be empty.");
     text_content_ = text_content;
   }
 
-  inline void AddChild(std::shared_ptr<Node> child) {
+  void AddChild(std::shared_ptr<Node> child) {
     children_.emplace_back(std::move(child));
   }
 

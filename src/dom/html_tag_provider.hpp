@@ -33,13 +33,15 @@ class HtmlTagProvider : public TagProvider {
 
   bool Parse() const override;
 
-  inline void set_feed_open_token_callback(FeedOpenTokenCallback&& callback) {
+  void set_feed_open_token_callback(FeedOpenTokenCallback&& callback) {
     feed_open_token_callback_ = std::move(callback);
   }
-  inline void set_feed_text_token_callback(FeedTextTokenCallback&& callback) {
+
+  void set_feed_text_token_callback(FeedTextTokenCallback&& callback) {
     feed_text_token_callback_ = std::move(callback);
   }
-  inline void set_feed_close_token_callback(FeedCloseTokenCallback&& callback) {
+
+  void set_feed_close_token_callback(FeedCloseTokenCallback&& callback) {
     feed_close_token_callback_ = std::move(callback);
   }
 
