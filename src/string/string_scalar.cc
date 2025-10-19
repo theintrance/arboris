@@ -20,14 +20,16 @@ inline bool IsValidPosition(std::string_view content, std::size_t pos) {
 }  // anonymous namespace
 
 std::size_t SkipWhitespace(std::string_view content, std::size_t begin) {
-  while (IsValidPosition(content, begin) && std::isspace(content[begin]))
+  while (IsValidPosition(content, begin) && std::isspace(content[begin])) {
     ++begin;
+  }
   return begin;
 }
 
 std::string_view ExtractSubstring(std::string_view content, std::size_t start, std::size_t end) {
-  if (start >= content.length() || start >= end)
-    return std::string_view();
+  if (start >= content.length() || start >= end) {
+    return std::string_view{};
+  }
 
   std::size_t actual_end = std::min(end, content.length());
   return content.substr(start, actual_end - start);
@@ -35,20 +37,22 @@ std::string_view ExtractSubstring(std::string_view content, std::size_t start, s
 
 std::size_t FindNextChar(std::string_view content, std::size_t begin, char target_char) {
   while (IsValidPosition(content, begin)) {
-    if (content[begin] == target_char)
+    if (content[begin] == target_char) {
       return begin;
+    }
     ++begin;
   }
   return std::string::npos;
 }
 
-std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, const char* target_chars) {
+std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, std::string_view target_chars) {
   while (IsValidPosition(content, begin)) {
-    for (const char* target = target_chars; *target != '\0'; ++target) {
-      if (content[begin] == *target)
+    for (char target : target_chars) {
+      if (content[begin] == target) {
         return begin;
+      }
+      ++begin;
     }
-    ++begin;
   }
   return std::string::npos;
 }

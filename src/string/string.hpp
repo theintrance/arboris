@@ -42,10 +42,10 @@ std::size_t FindNextChar(std::string_view content, std::size_t begin, char targe
  * @brief Find next occurrence of any character in a set, starting from given position
  * @param content The string content to search in
  * @param begin Starting position for search
- * @param target_chars Set of characters to find (null-terminated string)
+ * @param target_chars Set of characters to find
  * @return Position of found character, or std::string::npos if not found
  */
-std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, const char* target_chars);
+std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, std::string_view target_chars);
 
 /**
  * @brief Skip characters until a specific character is found

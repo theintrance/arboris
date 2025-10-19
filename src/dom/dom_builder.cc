@@ -21,7 +21,10 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
   auto parent = node_stack_.empty() ? nullptr : node_stack_.top();
   auto node = std::make_shared<Node>(
     next_node_id_++,
-    std::move(token),
+
+    // TODO(jayden): remove NOLINT after adding attributes in HtmlToken
+    std::move(token),  // NOLINT(performance-move-const-arg)
+
     parent);
 
   node->set_in(++euler_tour_timer_);

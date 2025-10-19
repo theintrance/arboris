@@ -20,11 +20,11 @@ namespace arboris {
 
 class Node {
  public:
-  explicit Node(
-    std::uint32_t id,
-    HtmlToken&& html_token,
-    const std::shared_ptr<Node> parent = nullptr)
-      : id_(id), parent_(parent), html_token_(std::move(html_token)) {}
+  // TODO(jayden): remove NOLINT(performance-move-const-arg) after adding attributes in HtmlToken
+  // NOLINTBEGIN(performance-move-const-arg, performance-unnecessary-value-param)
+  explicit Node(std::uint32_t id, HtmlToken&& html_token, std::shared_ptr<Node> parent = nullptr)
+      : id_(id), parent_(std::move(parent)), html_token_(std::move(html_token)) {}
+  // NOLINTEND(performance-move-const-arg, performance-unnecessary-value-param)
 
   Node(const Node&) = delete;
   Node& operator=(const Node&) = delete;
