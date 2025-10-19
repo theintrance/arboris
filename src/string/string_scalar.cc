@@ -36,22 +36,20 @@ std::string_view ExtractSubstring(std::string_view content, std::size_t start, s
 }
 
 std::size_t FindNextChar(std::string_view content, std::size_t begin, char target_char) {
-  while (IsValidPosition(content, begin)) {
-    if (content[begin] == target_char) {
-      return begin;
+  for (std::size_t i = begin; i < content.length(); i++) {
+    if (content[i] == target_char) {
+      return i;
     }
-    ++begin;
   }
   return std::string::npos;
 }
 
 std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, std::string_view target_chars) {
-  while (IsValidPosition(content, begin)) {
-    for (char target : target_chars) {
-      if (content[begin] == target) {
-        return begin;
+  for (std::size_t i = begin; i < content.length(); i++) {
+    for (const char target : target_chars) {
+      if (content[i] == target) {
+        return i;
       }
-      ++begin;
     }
   }
   return std::string::npos;
