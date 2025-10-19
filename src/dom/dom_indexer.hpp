@@ -28,7 +28,7 @@ class DOMIndexer {
   DOMIndexer& operator=(DOMIndexer&&) = delete;
   virtual ~DOMIndexer() = default;
 
-  void AddNode(std::shared_ptr<Node> node);
+  void AddNode(const std::shared_ptr<Node>& node);
 
  private:
   // TODO(team): consider using std::list instead of std::vector for indexes
