@@ -33,23 +33,23 @@ class Node {
 
   virtual ~Node() = default;
 
-  inline std::uint32_t id() const noexcept {
+  [[nodiscard]] std::uint32_t id() const noexcept {
       return id_;
   }
 
-  inline std::uint32_t in() const noexcept {
+  [[nodiscard]] std::uint32_t in() const noexcept {
     return in_;
   }
 
-  inline std::uint32_t out() const noexcept {
+  [[nodiscard]] std::uint32_t out() const noexcept {
     return out_;
   }
 
-  inline const HtmlToken& html_token() const noexcept {
+  [[nodiscard]] const HtmlToken& html_token() const noexcept {
     return html_token_;
   }
 
-  inline std::string_view text_content() const noexcept {
+  [[nodiscard]] std::string_view text_content() const noexcept {
     return text_content_;
   }
 
