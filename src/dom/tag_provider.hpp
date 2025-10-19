@@ -22,7 +22,7 @@ class TagProvider {
 
   virtual ~TagProvider() = default;
 
-  virtual bool Parse() const = 0;
+  [[nodiscard]] virtual bool Parse() const = 0;
 
  protected:
   std::string_view content_;

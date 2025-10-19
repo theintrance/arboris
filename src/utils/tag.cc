@@ -10,8 +10,8 @@
 
 namespace arboris {
 
-Tag from_string(std::string_view tag_name) {
-  static const std::unordered_map<std::string_view, Tag> tag_map = {
+Tag FromString(std::string_view tag_name) {
+  static const std::unordered_map<std::string_view, Tag> kTagMap = {
       {"a", Tag::kA},
       {"abbr", Tag::kAbbr},
       {"address", Tag::kAddress},
@@ -125,14 +125,14 @@ Tag from_string(std::string_view tag_name) {
       {"wbr", Tag::kWbr},
   };
 
-  auto it = tag_map.find(tag_name);
-  if (it == tag_map.end()) {
+  auto it = kTagMap.find(tag_name);
+  if (it == kTagMap.end()) {
     return Tag::kUnknown;
   }
   return it->second;
 }
 
-bool is_void_tag(Tag tag) {
+bool IsVoidTag(Tag tag) {
   switch (tag) {
     case Tag::kArea:
     case Tag::kBase:

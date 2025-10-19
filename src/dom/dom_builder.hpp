@@ -32,7 +32,7 @@ class DOMBuilder {
   DOMBuilder& operator=(DOMBuilder&&) = delete;
   virtual ~DOMBuilder() = default;
 
-  bool Validate() const;
+  [[nodiscard]] bool Validate() const;
   bool FeedOpenToken(HtmlToken&& token);
   bool FeedTextToken(HtmlTextToken&& token);
   bool FeedCloseToken(HtmlCloseToken&& token);

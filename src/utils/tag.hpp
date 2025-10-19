@@ -11,7 +11,7 @@
 
 namespace arboris {
 
-enum class Tag {
+enum class Tag : std::uint8_t {
   kUnknown,
   kA,
   kAbbr,
@@ -126,9 +126,9 @@ enum class Tag {
   kWbr,
 };
 
-Tag from_string(std::string_view tag_name);
+Tag FromString(std::string_view tag_name);
 
-bool is_void_tag(Tag tag);
+bool IsVoidTag(Tag tag);
 
 }  // namespace arboris
 
