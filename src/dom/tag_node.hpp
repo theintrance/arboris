@@ -20,7 +20,7 @@ namespace arboris {
 
 class TagNode final : public BaseNode {
   static constexpr NodeType kNodeType = NodeType::kTag;
-  
+
  public:
   explicit TagNode(std::uint32_t node_id, HtmlToken&& token, std::shared_ptr<BaseNode> parent = nullptr)
       : BaseNode(kNodeType, node_id, std::move(parent)), html_token_(std::move(token)) {}

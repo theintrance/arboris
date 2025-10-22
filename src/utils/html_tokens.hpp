@@ -22,7 +22,7 @@ struct BaseHtmlToken : public BaseToken {};
 struct HtmlToken : public BaseHtmlToken {
   Tag tag = Tag::kUnknown;
   bool is_void_tag = false;
-  
+
   // TODO(team): Consider using string_views with an external string pool
   std::unordered_map<std::string, std::string> attributes;
   std::vector<std::string> classes;
