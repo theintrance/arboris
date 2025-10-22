@@ -4,12 +4,14 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#ifndef SRC_DOM_NODE_HPP_
-#define SRC_DOM_NODE_HPP_
+#ifndef SRC_DOM_BASE_NODE_HPP_
+#define SRC_DOM_BASE_NODE_HPP_
 
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -18,23 +20,22 @@
 
 namespace arboris {
 
-class Node {
+enum class NodeType : std::uint8_t { kTag, kText };
+
+class BaseNode {
  public:
-  // TODO(jayden): remove NOLINT(performance-move-const-arg) after adding attributes in HtmlToken
-  // NOLINTBEGIN(performance-move-const-arg, performance-unnecessary-value-param)
-  explicit Node(std::uint32_t id, HtmlToken&& html_token, std::shared_ptr<Node> parent = nullptr)
-      : id_(id), parent_(std::move(parent)), html_token_(std::move(html_token)) {}
-  // NOLINTEND(performance-move-const-arg, performance-unnecessary-value-param)
+  explicit BaseNode(NodeType type, std::uint32_t id, std::shared_ptr<BaseNode> parent = nullptr)
+      : node_type_(type), node_id_(id), parent_(std::move(parent)) {}
 
-  Node(const Node&) = delete;
-  Node& operator=(const Node&) = delete;
-  Node(Node&&) = delete;
-  Node& operator=(Node&&) = delete;
+  BaseNode(const BaseNode&) = delete;
+  BaseNode& operator=(const BaseNode&) = delete;
+  BaseNode(BaseNode&&) = delete;
+  BaseNode& operator=(BaseNode&&) = delete;
 
-  virtual ~Node() = default;
+  virtual ~BaseNode() = default;
 
-  [[nodiscard]] std::uint32_t id() const noexcept {
-      return id_;
+  [[nodiscard]] std::uint32_t node_id() const noexcept {
+    return node_id_;
   }
 
   [[nodiscard]] std::uint32_t in() const noexcept {
@@ -43,10 +44,6 @@ class Node {
 
   [[nodiscard]] std::uint32_t out() const noexcept {
     return out_;
-  }
-
-  [[nodiscard]] const HtmlToken& html_token() const noexcept {
-    return html_token_;
   }
 
   [[nodiscard]] std::string_view text_content() const noexcept {
@@ -68,16 +65,15 @@ class Node {
     text_content_ = text_content;
   }
 
-  void AddChild(std::shared_ptr<Node> child) {
-    children_.emplace_back(std::move(child));
+  template <typename T>
+  T* As() const noexcept {
+    return (T::kNodeType == node_type_) ? static_cast<T*>(this) : nullptr;
   }
 
  private:
-  const std::uint32_t id_;
-  const std::weak_ptr<Node> parent_;
-  std::vector<std::shared_ptr<Node>> children_;
-
-  const HtmlToken html_token_;
+  const NodeType node_type_;
+  const std::uint32_t node_id_;
+  const std::weak_ptr<BaseNode> parent_;
   std::string_view text_content_;
 
   std::uint32_t in_{0};
@@ -86,4 +82,4 @@ class Node {
 
 }  // namespace arboris
 
-#endif  // SRC_DOM_NODE_HPP_
+#endif  // SRC_DOM_BASE_NODE_HPP_
