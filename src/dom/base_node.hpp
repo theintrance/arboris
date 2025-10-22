@@ -67,6 +67,10 @@ class BaseNode {
 
   template <typename T>
   T* As() const noexcept {
+    static_assert(std::is_base_of<BaseNode, T>::value, "T must be a derived class of BaseNode");
+    ARBORIS_ASSERT(T::kNodeType == node_type_, "Node type mismatch. got " << static_cast<std::uint32_t>(node_type_)
+                                                                          << " expected "
+                                                                          << static_cast<std::uint32_t>(T::kNodeType));
     return (T::kNodeType == node_type_) ? static_cast<T*>(this) : nullptr;
   }
 
