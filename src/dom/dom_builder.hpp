@@ -19,10 +19,10 @@
 namespace arboris {
 
 // forward declaration
-class Node;
+class BaseNode;
 
 class DOMBuilder {
-  using NodeCreationCallback = std::function<void(std::shared_ptr<Node>)>;
+  using NodeCreationCallback = std::function<void(std::shared_ptr<BaseNode>)>;
 
  public:
   DOMBuilder() = default;
@@ -49,9 +49,9 @@ class DOMBuilder {
   std::uint32_t euler_tour_timer_{0};
 
   // TODO(team): Make sure that root is necessary.
-  std::shared_ptr<Node> root_;
+  std::shared_ptr<BaseNode> root_;
 
-  std::stack<std::shared_ptr<Node>> node_stack_;
+  std::stack<std::shared_ptr<BaseNode>> node_stack_;
 
   NodeCreationCallback node_creation_callback_;
 };

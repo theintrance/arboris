@@ -18,6 +18,7 @@
 #include "utils/assertion.hpp"
 #include "utils/html_tokens.hpp"
 
+
 namespace arboris {
 
 enum class NodeType : std::uint8_t { kTag, kText };
@@ -66,7 +67,7 @@ class BaseNode {
   }
 
   template <typename T>
-  T* As() const noexcept {
+  T* As() noexcept {
     static_assert(std::is_base_of<BaseNode, T>::value, "T must be a derived class of BaseNode");
     ARBORIS_ASSERT(T::kNodeType == node_type_, "Node type mismatch. got " << static_cast<std::uint32_t>(node_type_)
                                                                           << " expected "

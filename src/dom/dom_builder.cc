@@ -8,7 +8,8 @@
 #include <utility>
 
 #include "dom/dom_builder.hpp"
-#include "dom/node.hpp"
+#include "dom/base_node.hpp"
+#include "dom/tag_node.hpp"
 
 namespace arboris {
 
@@ -19,7 +20,7 @@ bool DOMBuilder::Validate() const {
 bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
   bool is_void_tag = token.is_void_tag;
   auto parent = node_stack_.empty() ? nullptr : node_stack_.top();
-  auto node = std::make_shared<Node>(
+  auto node = std::make_shared<TagNode>(
     next_node_id_++,
 
     // TODO(jayden): remove NOLINT after adding attributes in HtmlToken
@@ -30,7 +31,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
   node->set_in(++euler_tour_timer_);
   node_stack_.push(node);
   if (parent) {
-    parent->AddChild(node);
+    parent->As<TagNode>()->AddChild(node);
   }
 
   if (!root_) {
