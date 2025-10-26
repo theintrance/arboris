@@ -25,13 +25,21 @@ class TagNode final : public BaseNode {
   explicit TagNode(std::uint32_t node_id, HtmlToken&& token, std::shared_ptr<BaseNode> parent = nullptr)
       : BaseNode(kNodeType, node_id, std::move(parent)), html_token_(std::move(token)) {}
 
-  const std::vector<std::shared_ptr<BaseNode>>& children() const noexcept { return children_; }
+  [[nodiscard]] const std::vector<std::shared_ptr<BaseNode>>& children() const noexcept {
+    return children_;
+  }
 
-  const std::unordered_map<std::string, std::string>& attributes() const noexcept { return html_token_.attributes; }
+  [[nodiscard]] const std::unordered_map<std::string, std::string>& attributes() const noexcept {
+    return html_token_.attributes;
+  }
 
-  const std::vector<std::string>& classes() const noexcept { return html_token_.classes; }
+  [[nodiscard]] const std::vector<std::string>& classes() const noexcept {
+    return html_token_.classes;
+  }
 
-  std::string_view id() const noexcept { return html_token_.id; }
+  [[nodiscard]] std::string_view id() const noexcept {
+    return html_token_.id;
+  }
 
   void AddChild(std::shared_ptr<BaseNode> child) {
     ARBORIS_ASSERT(child != nullptr, "child must not be nullptr.");
