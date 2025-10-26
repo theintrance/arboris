@@ -69,7 +69,6 @@ class BaseNode {
   }
 
   void set_text_content(std::string_view text_content) {
-    ARBORIS_ASSERT(!text_content.empty(), "text_content must not be empty.");
     text_content_ = text_content;
   }
 
