@@ -17,11 +17,14 @@
 
 namespace arboris {
 
+// forward declaration
+class TagNode;
+
 class TextNode final : public BaseNode {
  public:
   static constexpr NodeType kNodeType = NodeType::kText;
 
-  explicit TextNode(std::uint32_t node_id, std::shared_ptr<BaseNode> parent)
+  explicit TextNode(std::uint32_t node_id, std::shared_ptr<TagNode> parent)
       : BaseNode(kNodeType, node_id, std::move(parent)) {}
 };
 

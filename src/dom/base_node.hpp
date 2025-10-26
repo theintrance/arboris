@@ -23,9 +23,12 @@ namespace arboris {
 
 enum class NodeType : std::uint8_t { kTag, kText };
 
+// forward declaration
+class TagNode;
+
 class BaseNode {
  public:
-  explicit BaseNode(NodeType type, std::uint32_t id, std::shared_ptr<BaseNode> parent = nullptr)
+  explicit BaseNode(NodeType type, std::uint32_t id, std::shared_ptr<TagNode> parent = nullptr)
       : node_type_(type), node_id_(id), parent_(std::move(parent)) {}
 
   BaseNode(const BaseNode&) = delete;
@@ -85,7 +88,7 @@ class BaseNode {
  private:
   const NodeType node_type_;
   const std::uint32_t node_id_;
-  const std::weak_ptr<BaseNode> parent_;
+  const std::weak_ptr<TagNode> parent_;
   std::string_view text_content_;
 
   std::uint32_t in_{0};
