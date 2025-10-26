@@ -8,7 +8,8 @@
 #include <utility>
 
 #include "dom/dom_builder.hpp"
-#include "dom/node.hpp"
+#include "dom/base_node.hpp"
+#include "dom/tag_node.hpp"
 
 namespace arboris {
 
@@ -18,13 +19,10 @@ bool DOMBuilder::Validate() const {
 
 bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
   bool is_void_tag = token.is_void_tag;
-  auto parent = node_stack_.empty() ? nullptr : node_stack_.top();
-  auto node = std::make_shared<Node>(
+  auto parent = node_stack_.empty() ? root_ : node_stack_.top();
+  auto node = std::make_shared<TagNode>(
     next_node_id_++,
-
-    // TODO(jayden): remove NOLINT after adding attributes in HtmlToken
-    std::move(token),  // NOLINT(performance-move-const-arg)
-
+    std::move(token),
     parent);
 
   node->set_in(++euler_tour_timer_);
@@ -33,11 +31,6 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
     parent->AddChild(node);
   }
 
-  if (!root_) {
-    root_ = node;
-  }
-
-  // TODO(team): add attributes handling
 
   if (node_creation_callback_) {
     node_creation_callback_(node);
@@ -76,7 +69,7 @@ bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token) {
   ARBORIS_ASSERT(!node_stack_.empty(), "Node stack is empty");
 
   auto top_node = node_stack_.top();
-  if (token.tag != top_node->html_token().tag) {
+  if (token.tag != top_node->tag()) {
     return false;
   }
   return closeTopNode();

@@ -9,9 +9,11 @@ set(ARBORIS_SOURCES
 # Header files
 set(ARBORIS_HEADERS
   dom/dom_builder.hpp
-  dom/html_tag_provider.hpp
-  dom/node.hpp
   dom/tag_provider.hpp
+  dom/html_tag_provider.hpp
+  dom/base_node.hpp
+  dom/tag_node.hpp
+  dom/text_node.hpp
   string/string.hpp
   utils/html_tokens.hpp
   utils/tag.hpp
