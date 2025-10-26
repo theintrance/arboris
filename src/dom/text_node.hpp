@@ -21,7 +21,7 @@ class TextNode final : public BaseNode {
   static constexpr NodeType kNodeType = NodeType::kText;
 
  public:
-  explicit TextNode(std::uint32_t node_id, std::shared_ptr<BaseNode> parent = nullptr)
+  explicit TextNode(std::uint32_t node_id, std::shared_ptr<BaseNode> parent)
       : BaseNode(kNodeType, node_id, std::move(parent)) {}
 };
 
