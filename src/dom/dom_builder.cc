@@ -69,7 +69,6 @@ bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token) {
   ARBORIS_ASSERT(!node_stack_.empty(), "Node stack is empty");
 
   auto top_node = node_stack_.top();
-  ARBORIS_ASSERT(top_node->node_type() == NodeType::kTag, "Top node is not a tag node");
   if (token.tag != top_node->tag()) {
     return false;
   }
