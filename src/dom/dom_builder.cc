@@ -19,26 +19,18 @@ bool DOMBuilder::Validate() const {
 
 bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
   bool is_void_tag = token.is_void_tag;
-  auto parent = node_stack_.empty() ? nullptr : node_stack_.top();
+  auto parent = node_stack_.empty() ? root_ : node_stack_.top();
   auto node = std::make_shared<TagNode>(
     next_node_id_++,
-
-    // TODO(jayden): remove NOLINT after adding attributes in HtmlToken
-    std::move(token),  // NOLINT(performance-move-const-arg)
-
+    std::move(token),
     parent);
 
   node->set_in(++euler_tour_timer_);
   node_stack_.push(node);
-  if (parent && parent->node_type() == NodeType::kTag) {
-    parent->As<TagNode>()->AddChild(node);
+  if (parent) {
+    parent->AddChild(node);
   }
 
-  if (!root_) {
-    root_ = node;
-  }
-
-  // TODO(team): add attributes handling
 
   if (node_creation_callback_) {
     node_creation_callback_(node);
@@ -78,7 +70,7 @@ bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token) {
 
   auto top_node = node_stack_.top();
   ARBORIS_ASSERT(top_node->node_type() == NodeType::kTag, "Top node is not a tag node");
-  if (token.tag != top_node->As<TagNode>()->tag()) {
+  if (token.tag != top_node->tag()) {
     return false;
   }
   return closeTopNode();

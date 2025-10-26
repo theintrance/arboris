@@ -15,17 +15,15 @@
 #include <cstdint>
 
 #include "utils/html_tokens.hpp"
+#include "dom/tag_node.hpp"
 
 namespace arboris {
-
-// forward declaration
-class BaseNode;
 
 class DOMBuilder {
   using NodeCreationCallback = std::function<void(std::shared_ptr<BaseNode>)>;
 
  public:
-  DOMBuilder() = default;
+  DOMBuilder() : root_(std::make_shared<TagNode>(0, HtmlToken{{0, 0}, Tag::kHtml, false}, nullptr)) {}
   DOMBuilder(const DOMBuilder&) = delete;
   DOMBuilder& operator=(const DOMBuilder&) = delete;
   DOMBuilder(DOMBuilder&&) = delete;
@@ -48,10 +46,8 @@ class DOMBuilder {
   std::uint32_t next_node_id_{0};
   std::uint32_t euler_tour_timer_{0};
 
-  // TODO(team): Make sure that root is necessary.
-  std::shared_ptr<BaseNode> root_;
-
-  std::stack<std::shared_ptr<BaseNode>> node_stack_;
+  std::shared_ptr<TagNode> root_;
+  std::stack<std::shared_ptr<TagNode>> node_stack_;
 
   NodeCreationCallback node_creation_callback_;
 };
