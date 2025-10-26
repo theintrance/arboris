@@ -30,7 +30,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
 
   node->set_in(++euler_tour_timer_);
   node_stack_.push(node);
-  if (parent) {
+  if (parent && parent->node_type() == NodeType::kTag) {
     parent->As<TagNode>()->AddChild(node);
   }
 
@@ -77,7 +77,8 @@ bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token) {
   ARBORIS_ASSERT(!node_stack_.empty(), "Node stack is empty");
 
   auto top_node = node_stack_.top();
-  if (token.tag != top_node->html_token().tag) {
+  ARBORIS_ASSERT(top_node->node_type() == NodeType::kTag, "Top node is not a tag node");
+  if (token.tag != top_node->As<TagNode>()->tag()) {
     return false;
   }
   return closeTopNode();

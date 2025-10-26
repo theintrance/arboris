@@ -20,6 +20,8 @@ namespace arboris {
 
 class TagNode final : public BaseNode {
  public:
+  static constexpr NodeType kNodeType = NodeType::kTag;
+
   explicit TagNode(std::uint32_t node_id, HtmlToken&& token, std::shared_ptr<BaseNode> parent)
       : BaseNode(kNodeType, node_id, std::move(parent)), html_token_(std::move(token)) {}
 
@@ -39,13 +41,14 @@ class TagNode final : public BaseNode {
     return html_token_.id;
   }
 
+  [[nodiscard]] Tag tag() const noexcept {
+    return html_token_.tag;
+  }
+
   void AddChild(std::shared_ptr<BaseNode> child) {
     ARBORIS_ASSERT(child != nullptr, "child must not be nullptr.");
     children_.emplace_back(std::move(child));
   }
-
- protected:
-  static constexpr NodeType kNodeType = NodeType::kTag;
 
  private:
   const HtmlToken html_token_;

@@ -39,6 +39,10 @@ class BaseNode {
     return node_id_;
   }
 
+  [[nodiscard]] NodeType node_type() const noexcept {
+    return node_type_;
+  }
+
   [[nodiscard]] std::uint32_t in() const noexcept {
     return in_;
   }
@@ -69,10 +73,13 @@ class BaseNode {
   template <typename T>
   T* As() noexcept {
     static_assert(std::is_base_of<BaseNode, T>::value, "T must be a derived class of BaseNode");
-    ARBORIS_ASSERT(T::kNodeType == node_type_, "Node type mismatch. got " << static_cast<std::uint32_t>(node_type_)
-                                                                          << " expected "
-                                                                          << static_cast<std::uint32_t>(T::kNodeType));
     return (T::kNodeType == node_type_) ? static_cast<T*>(this) : nullptr;
+  }
+
+  template <typename T>
+  const T* As() const noexcept {
+    static_assert(std::is_base_of<BaseNode, T>::value, "T must be a derived class of BaseNode");
+    return (T::kNodeType == node_type_) ? static_cast<const T*>(this) : nullptr;
   }
 
  private:

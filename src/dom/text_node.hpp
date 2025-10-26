@@ -19,11 +19,10 @@ namespace arboris {
 
 class TextNode final : public BaseNode {
  public:
+  static constexpr NodeType kNodeType = NodeType::kText;
+
   explicit TextNode(std::uint32_t node_id, std::shared_ptr<BaseNode> parent)
       : BaseNode(kNodeType, node_id, std::move(parent)) {}
-
- protected:
-  static constexpr NodeType kNodeType = NodeType::kText;
 };
 
 }  // namespace arboris
