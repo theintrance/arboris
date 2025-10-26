@@ -72,13 +72,13 @@ class BaseNode {
 
   template <typename T>
   T* As() noexcept {
-    static_assert(std::is_base_of<BaseNode, T>::value, "T must be a derived class of BaseNode");
+    static_assert(std::is_base_of_v<BaseNode, T>, "T must be a derived class of BaseNode");
     return (T::kNodeType == node_type_) ? static_cast<T*>(this) : nullptr;
   }
 
   template <typename T>
   const T* As() const noexcept {
-    static_assert(std::is_base_of<BaseNode, T>::value, "T must be a derived class of BaseNode");
+    static_assert(std::is_base_of_v<BaseNode, T>, "T must be a derived class of BaseNode");
     return (T::kNodeType == node_type_) ? static_cast<const T*>(this) : nullptr;
   }
 
