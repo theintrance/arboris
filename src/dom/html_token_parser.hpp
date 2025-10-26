@@ -4,15 +4,15 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#ifndef SRC_DOM_HTML_TAG_PROVIDER_HPP_
-#define SRC_DOM_HTML_TAG_PROVIDER_HPP_
+#ifndef SRC_DOM_HTML_TOKEN_PARSER_HPP_
+#define SRC_DOM_HTML_TOKEN_PARSER_HPP_
 
 #include <memory>
 #include <functional>
 #include <string_view>
 #include <utility>
 
-#include "dom/tag_provider.hpp"
+#include "dom/token_parser.hpp"
 #include "utils/html_tokens.hpp"
 
 namespace arboris {
@@ -20,21 +20,21 @@ namespace arboris {
 // Forward declaration
 class StringPool;
 
-class HtmlTagProvider : public TagProvider {
+class HtmlTokenParser : public TokenParser {
  public:
   using FeedOpenTokenCallback = std::function<bool(HtmlToken&&, const char*)>;
   using FeedTextTokenCallback = std::function<bool(HtmlTextToken&&)>;
   using FeedCloseTokenCallback = std::function<bool(HtmlCloseToken&&, const char*)>;
 
-  explicit HtmlTagProvider(std::string_view content, std::shared_ptr<StringPool> string_pool)
-      : TagProvider(content), string_pool_(std::move(string_pool)) {}
+  explicit HtmlTokenParser(std::string_view content, std::shared_ptr<StringPool> string_pool)
+      : TokenParser(content), string_pool_(std::move(string_pool)) {}
 
-  HtmlTagProvider(const HtmlTagProvider&) = delete;
-  HtmlTagProvider& operator=(const HtmlTagProvider&) = delete;
-  HtmlTagProvider(HtmlTagProvider&&) = delete;
-  HtmlTagProvider& operator=(HtmlTagProvider&&) = delete;
+  HtmlTokenParser(const HtmlTokenParser&) = delete;
+  HtmlTokenParser& operator=(const HtmlTokenParser&) = delete;
+  HtmlTokenParser(HtmlTokenParser&&) = delete;
+  HtmlTokenParser& operator=(HtmlTokenParser&&) = delete;
 
-  ~HtmlTagProvider() override = default;
+  ~HtmlTokenParser() override = default;
 
   [[nodiscard]] bool Parse() const override;
 
@@ -71,4 +71,4 @@ class HtmlTagProvider : public TagProvider {
 
 }  // namespace arboris
 
-#endif  // SRC_DOM_HTML_TAG_PROVIDER_HPP_
+#endif  // SRC_DOM_HTML_TOKEN_PARSER_HPP_

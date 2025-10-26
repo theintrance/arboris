@@ -1,7 +1,7 @@
 # Source files
 set(ARBORIS_SOURCES
   dom/dom_builder.cc
-  dom/html_tag_provider.cc
+  dom/html_token_parser.cc
   string/string_scalar.cc
   utils/tag.cc
 )
@@ -9,8 +9,8 @@ set(ARBORIS_SOURCES
 # Header files
 set(ARBORIS_HEADERS
   dom/dom_builder.hpp
-  dom/tag_provider.hpp
-  dom/html_tag_provider.hpp
+  dom/token_parser.hpp
+  dom/html_token_parser.hpp
   dom/base_node.hpp
   dom/tag_node.hpp
   dom/text_node.hpp

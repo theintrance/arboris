@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include "dom/html_tag_provider.hpp"
+#include "dom/html_token_parser.hpp"
 #include "utils/html_tokens.hpp"
 #include "utils/tag.hpp"
 
@@ -50,7 +50,7 @@ class HtmlTagProviderTest : public ::testing::Test {
   void TearDown() override {}
 
   // helper function: set callback for collecting tokens
-  void SetupTokenCollectors(HtmlTagProvider& provider, std::vector<HtmlToken>& open_tokens,
+  void SetupTokenCollectors(HtmlTokenParser& provider, std::vector<HtmlToken>& open_tokens,
                             std::vector<HtmlTextToken>& text_tokens, std::vector<HtmlCloseToken>& close_tokens) {
     provider.set_feed_open_token_callback([&open_tokens](HtmlToken&& token) {
       open_tokens.push_back(std::move(token));
@@ -69,7 +69,7 @@ class HtmlTagProviderTest : public ::testing::Test {
   }
 
   // overloaded helper function using TokenCollectors struct
-  void SetupTokenCollectors(HtmlTagProvider& provider, TokenCollectors& collectors) {
+  void SetupTokenCollectors(HtmlTokenParser& provider, TokenCollectors& collectors) {
     SetupTokenCollectors(provider, collectors.open_tokens, collectors.text_tokens, collectors.close_tokens);
   }
 };
@@ -78,7 +78,7 @@ class HtmlTagProviderTest : public ::testing::Test {
  * 1. Test basic Parse() behavior
  */
 TEST_F(HtmlTagProviderTest, ParseEmptyString) {
-  HtmlTagProvider provider(kEmptyString);
+  HtmlTokenParser provider(kEmptyString);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -90,7 +90,7 @@ TEST_F(HtmlTagProviderTest, ParseEmptyString) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseTextOnly) {
-  HtmlTagProvider provider(kTextOnly);
+  HtmlTokenParser provider(kTextOnly);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -110,7 +110,7 @@ TEST_F(HtmlTagProviderTest, ParseTextOnly) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseSimpleTag) {
-  HtmlTagProvider provider(kSimpleTag);
+  HtmlTokenParser provider(kSimpleTag);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -133,7 +133,7 @@ TEST_F(HtmlTagProviderTest, ParseSimpleTag) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseTagWithText) {
-  HtmlTagProvider provider(kTagWithText);
+  HtmlTokenParser provider(kTagWithText);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -155,7 +155,7 @@ TEST_F(HtmlTagProviderTest, ParseTagWithText) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseNestedTags) {
-  HtmlTagProvider provider(kNestedTags);
+  HtmlTokenParser provider(kNestedTags);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -180,7 +180,7 @@ TEST_F(HtmlTagProviderTest, ParseNestedTags) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseVoidTag) {
-  HtmlTagProvider provider(kVoidTag);
+  HtmlTokenParser provider(kVoidTag);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -196,7 +196,7 @@ TEST_F(HtmlTagProviderTest, ParseVoidTag) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseMultipleVoidTags) {
-  HtmlTagProvider provider(kMultipleVoidTags);
+  HtmlTokenParser provider(kMultipleVoidTags);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -218,7 +218,7 @@ TEST_F(HtmlTagProviderTest, ParseMultipleVoidTags) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseTagWithAttributes) {
-  HtmlTagProvider provider(kTagWithAttributes);
+  HtmlTokenParser provider(kTagWithAttributes);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -241,7 +241,7 @@ TEST_F(HtmlTagProviderTest, ParseTagWithAttributes) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseComplexHtml) {
-  HtmlTagProvider provider(kComplexHtml);
+  HtmlTokenParser provider(kComplexHtml);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -293,7 +293,7 @@ TEST_F(HtmlTagProviderTest, ParseComplexHtml) {
 
 // Test error cases
 TEST_F(HtmlTagProviderTest, ParseMalformedTagUnclosedTag) {
-  HtmlTagProvider provider(kUnclosedTag);
+  HtmlTokenParser provider(kUnclosedTag);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -309,7 +309,7 @@ TEST_F(HtmlTagProviderTest, ParseMalformedTagUnclosedTag) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseMalformedTagEmptyTag) {
-  HtmlTagProvider provider(kEmptyTagName);
+  HtmlTokenParser provider(kEmptyTagName);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -320,7 +320,7 @@ TEST_F(HtmlTagProviderTest, ParseMalformedTagEmptyTag) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseMalformedTagIncompleteTag) {
-  HtmlTagProvider provider(kIncompleteTag);
+  HtmlTokenParser provider(kIncompleteTag);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -337,7 +337,7 @@ TEST_F(HtmlTagProviderTest, ParseMalformedTagIncompleteTag) {
 
 // Test callback return value
 TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseOpenToken) {
-  HtmlTagProvider provider(kSimpleTag);
+  HtmlTokenParser provider(kSimpleTag);
 
   std::vector<HtmlToken> open_tokens;
   std::vector<HtmlTextToken> text_tokens;
@@ -366,7 +366,7 @@ TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseOpenToken) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseTextToken) {
-  HtmlTagProvider provider(kTagWithText);
+  HtmlTokenParser provider(kTagWithText);
 
   std::vector<HtmlToken> open_tokens;
   std::vector<HtmlTextToken> text_tokens;
@@ -395,7 +395,7 @@ TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseTextToken) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseCloseToken) {
-  HtmlTagProvider provider(kSimpleTag);
+  HtmlTokenParser provider(kSimpleTag);
 
   std::vector<HtmlToken> open_tokens;
   std::vector<HtmlTextToken> text_tokens;
@@ -425,7 +425,7 @@ TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseCloseToken) {
 
 // Test parsing without callbacks
 TEST_F(HtmlTagProviderTest, ParseNoCallbacks) {
-  HtmlTagProvider provider(kComplexHtml);
+  HtmlTokenParser provider(kComplexHtml);
 
   // Parse without callbacks
   EXPECT_TRUE(provider.Parse());  // Parse should succeed even without callbacks
@@ -433,7 +433,7 @@ TEST_F(HtmlTagProviderTest, ParseNoCallbacks) {
 
 // Test position information accuracy
 TEST_F(HtmlTagProviderTest, ParsePositionAccuracy) {
-  HtmlTagProvider provider(kPositionTest);
+  HtmlTokenParser provider(kPositionTest);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -453,7 +453,7 @@ TEST_F(HtmlTagProviderTest, ParsePositionAccuracy) {
 
 // Test whitespace handling within tags and text
 TEST_F(HtmlTagProviderTest, ParseWhitespaceHandling) {
-  HtmlTagProvider provider(kWhitespaceTest);
+  HtmlTokenParser provider(kWhitespaceTest);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);
@@ -475,7 +475,7 @@ TEST_F(HtmlTagProviderTest, ParseWhitespaceHandling) {
 
 // Test nested tags with mixed text content
 TEST_F(HtmlTagProviderTest, ParseNestedTagsWithMixedText) {
-  HtmlTagProvider provider(kNestedTagsWithText);
+  HtmlTokenParser provider(kNestedTagsWithText);
   TokenCollectors tokens;
 
   SetupTokenCollectors(provider, tokens);

@@ -4,7 +4,7 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#include "dom/html_tag_provider.hpp"
+#include "dom/html_token_parser.hpp"
 
 #include <cctype>
 #include <cstdint>
@@ -17,7 +17,7 @@
 
 namespace arboris {
 
-bool HtmlTagProvider::Parse() const {
+bool HtmlTokenParser::Parse() const {
   std::size_t pos = 0;
 
   while (pos < content_.length() && pos != std::string::npos) {
@@ -37,7 +37,7 @@ bool HtmlTagProvider::Parse() const {
   return pos != std::string::npos;
 }
 
-std::size_t HtmlTagProvider::parseOpenTag(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin) const {
   std::size_t current_pos = begin;
   ++current_pos;  // Skip '<'
 
@@ -66,7 +66,7 @@ std::size_t HtmlTagProvider::parseOpenTag(std::size_t begin) const {
   return current_pos;
 }
 
-std::size_t HtmlTagProvider::parseCloseTag(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseCloseTag(std::size_t begin) const {
   std::size_t current_pos = begin;
 
   current_pos += 2;  // Skip '</'
@@ -96,7 +96,7 @@ std::size_t HtmlTagProvider::parseCloseTag(std::size_t begin) const {
   return current_pos;
 }
 
-std::size_t HtmlTagProvider::parseTextContent(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseTextContent(std::size_t begin) const {
   std::size_t current_pos = begin;
 
   // Read text until '<' or end of string
@@ -122,7 +122,7 @@ std::size_t HtmlTagProvider::parseTextContent(std::size_t begin) const {
   return current_pos;
 }
 
-std::string_view HtmlTagProvider::extractTagName(std::size_t* begin, std::string_view delimiters) const {
+std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, std::string_view delimiters) const {
   // Find start of tag name
   *begin = SkipWhitespace(content_, *begin);
   std::size_t tag_name_start = *begin;
@@ -138,7 +138,7 @@ std::string_view HtmlTagProvider::extractTagName(std::size_t* begin, std::string
   return result;
 }
 
-bool HtmlTagProvider::skipToTagEnd(std::size_t* begin) const {
+bool HtmlTokenParser::skipToTagEnd(std::size_t* begin) const {
   // Find '>'
   std::size_t found_pos = SkipUntilChar(content_, *begin, '>');
   if (found_pos == std::string::npos) {
