@@ -10,6 +10,7 @@
 #include "dom/dom_builder.hpp"
 #include "dom/base_node.hpp"
 #include "dom/tag_node.hpp"
+#include "dom/text_node.hpp"
 
 namespace arboris {
 
@@ -17,7 +18,7 @@ bool DOMBuilder::Validate() const {
   return node_stack_.empty();
 }
 
-bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
+bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
   bool is_void_tag = token.is_void_tag;
   auto parent = node_stack_.empty() ? root_ : node_stack_.top();
   auto node = std::make_shared<TagNode>(
@@ -30,6 +31,8 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token) {
   if (parent) {
     parent->AddChild(node);
   }
+
+  node->set_text_content({text_begin, 0});
 
 
   if (node_creation_callback_) {
@@ -51,27 +54,26 @@ bool DOMBuilder::FeedTextToken(HtmlTextToken&& token) {
 
   auto top_node = node_stack_.top();
 
-  /*
-    TODO(jayden): Edge case handling for text token.
+  auto text_node = std::make_shared<TextNode>(
+    next_node_id_++,
+    token.text_content,
+    top_node);
 
-    Edge case example:
-      <p>Hello <b>Beautiful</b> World!</p>
-    
-    "Hello" and "World!" should be added to the text content of the <p> tag.
-    But this code currently cannot handle this edge case.
-  */
-
-  top_node->set_text_content(token.text_content);
+  top_node->AddChild(text_node);
   return true;
 }
 
-bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token) {
+bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token, const char* text_end) {
   ARBORIS_ASSERT(!node_stack_.empty(), "Node stack is empty");
 
   auto top_node = node_stack_.top();
   if (token.tag != top_node->tag()) {
     return false;
   }
+
+  auto text_begin = top_node->text_content().begin();
+  top_node->set_text_content({text_begin, text_end});
+
   return closeTopNode();
 }
 

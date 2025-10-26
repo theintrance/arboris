@@ -31,9 +31,9 @@ class DOMBuilder {
   virtual ~DOMBuilder() = default;
 
   [[nodiscard]] bool Validate() const;
-  bool FeedOpenToken(HtmlToken&& token);
+  bool FeedOpenToken(HtmlToken&& token, const char* text_begin);
   bool FeedTextToken(HtmlTextToken&& token);
-  bool FeedCloseToken(HtmlCloseToken&& token);
+  bool FeedCloseToken(HtmlCloseToken&& token, const char* text_end);
 
   void SetNodeCreationCallback(NodeCreationCallback&& callback) {
     node_creation_callback_ = std::move(callback);

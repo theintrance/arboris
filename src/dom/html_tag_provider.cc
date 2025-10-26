@@ -13,6 +13,7 @@
 #include <utility>
 
 #include "string/string.hpp"
+#include "utils/string_pool.hpp"
 
 namespace arboris {
 
@@ -57,7 +58,7 @@ std::size_t HtmlTagProvider::parseOpenTag(std::size_t begin) const {
   HtmlToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag, IsVoidTag(tag)};
 
   if (feed_open_token_callback_) {
-    if (!feed_open_token_callback_(std::move(token))) {
+    if (!feed_open_token_callback_(std::move(token), string_pool_->GetCursor())) {
       return std::string::npos;
     }
   }
@@ -87,7 +88,7 @@ std::size_t HtmlTagProvider::parseCloseTag(std::size_t begin) const {
   HtmlCloseToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag};
 
   if (feed_close_token_callback_) {
-    if (!feed_close_token_callback_(std::move(token))) {
+    if (!feed_close_token_callback_(std::move(token), string_pool_->GetCursor())) {
       return std::string::npos;
     }
   }
@@ -107,9 +108,10 @@ std::size_t HtmlTagProvider::parseTextContent(std::size_t begin) const {
 
   // Extract text content
   std::string_view text_content = ExtractSubstring(content_, begin, current_pos);
+  auto pooled_text = string_pool_->Append(text_content);
 
   // Create HtmlTextToken and call callback
-  HtmlTextToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, text_content};
+  HtmlTextToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, pooled_text};
 
   if (feed_text_token_callback_) {
     if (!feed_text_token_callback_(std::move(token))) {
