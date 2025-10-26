@@ -4,7 +4,7 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
-#include "dom/html_tag_provider.hpp"
+#include "dom/html_token_parser.hpp"
 
 #include <cctype>
 #include <cstdint>
@@ -13,10 +13,11 @@
 #include <utility>
 
 #include "string/string.hpp"
+#include "utils/string_pool.hpp"
 
 namespace arboris {
 
-bool HtmlTagProvider::Parse() const {
+bool HtmlTokenParser::Parse() const {
   std::size_t pos = 0;
 
   while (pos < content_.length() && pos != std::string::npos) {
@@ -36,7 +37,7 @@ bool HtmlTagProvider::Parse() const {
   return pos != std::string::npos;
 }
 
-std::size_t HtmlTagProvider::parseOpenTag(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin) const {
   std::size_t current_pos = begin;
   ++current_pos;  // Skip '<'
 
@@ -57,7 +58,7 @@ std::size_t HtmlTagProvider::parseOpenTag(std::size_t begin) const {
   HtmlToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag, IsVoidTag(tag)};
 
   if (feed_open_token_callback_) {
-    if (!feed_open_token_callback_(std::move(token))) {
+    if (!feed_open_token_callback_(std::move(token), string_pool_->GetCursor())) {
       return std::string::npos;
     }
   }
@@ -65,7 +66,7 @@ std::size_t HtmlTagProvider::parseOpenTag(std::size_t begin) const {
   return current_pos;
 }
 
-std::size_t HtmlTagProvider::parseCloseTag(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseCloseTag(std::size_t begin) const {
   std::size_t current_pos = begin;
 
   current_pos += 2;  // Skip '</'
@@ -87,7 +88,7 @@ std::size_t HtmlTagProvider::parseCloseTag(std::size_t begin) const {
   HtmlCloseToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag};
 
   if (feed_close_token_callback_) {
-    if (!feed_close_token_callback_(std::move(token))) {
+    if (!feed_close_token_callback_(std::move(token), string_pool_->GetCursor())) {
       return std::string::npos;
     }
   }
@@ -95,7 +96,7 @@ std::size_t HtmlTagProvider::parseCloseTag(std::size_t begin) const {
   return current_pos;
 }
 
-std::size_t HtmlTagProvider::parseTextContent(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseTextContent(std::size_t begin) const {
   std::size_t current_pos = begin;
 
   // Read text until '<' or end of string
@@ -107,9 +108,10 @@ std::size_t HtmlTagProvider::parseTextContent(std::size_t begin) const {
 
   // Extract text content
   std::string_view text_content = ExtractSubstring(content_, begin, current_pos);
+  auto pooled_text = string_pool_->Append(text_content);
 
   // Create HtmlTextToken and call callback
-  HtmlTextToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, text_content};
+  HtmlTextToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, pooled_text};
 
   if (feed_text_token_callback_) {
     if (!feed_text_token_callback_(std::move(token))) {
@@ -120,7 +122,7 @@ std::size_t HtmlTagProvider::parseTextContent(std::size_t begin) const {
   return current_pos;
 }
 
-std::string_view HtmlTagProvider::extractTagName(std::size_t* begin, std::string_view delimiters) const {
+std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, std::string_view delimiters) const {
   // Find start of tag name
   *begin = SkipWhitespace(content_, *begin);
   std::size_t tag_name_start = *begin;
@@ -136,7 +138,7 @@ std::string_view HtmlTagProvider::extractTagName(std::size_t* begin, std::string
   return result;
 }
 
-bool HtmlTagProvider::skipToTagEnd(std::size_t* begin) const {
+bool HtmlTokenParser::skipToTagEnd(std::size_t* begin) const {
   // Find '>'
   std::size_t found_pos = SkipUntilChar(content_, *begin, '>');
   if (found_pos == std::string::npos) {

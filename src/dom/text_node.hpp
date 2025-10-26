@@ -24,8 +24,10 @@ class TextNode final : public BaseNode {
  public:
   static constexpr NodeType kNodeType = NodeType::kText;
 
-  explicit TextNode(std::uint32_t node_id, std::shared_ptr<TagNode> parent)
-      : BaseNode(kNodeType, node_id, std::move(parent)) {}
+  explicit TextNode(std::uint32_t node_id, std::string_view text_content, std::shared_ptr<TagNode> parent)
+    : BaseNode(kNodeType, node_id, std::move(parent)) {
+    set_text_content(text_content);
+  }
 };
 
 }  // namespace arboris
