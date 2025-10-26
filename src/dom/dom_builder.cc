@@ -32,7 +32,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
     parent->AddChild(node);
   }
 
-  node->set_text_content({text_begin, 0});
+  node->set_text_content({text_begin, 0});  // NOTLINT(bugprone-string-constructor)
 
 
   if (node_creation_callback_) {
