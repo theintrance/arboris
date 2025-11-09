@@ -7,12 +7,11 @@
 #include <memory>
 
 #include "dom/dom_indexer.hpp"
-#include "dom/node.hpp"
 
 namespace arboris {
 
-void DOMIndexer::AddNode(const std::shared_ptr<Node>& node) {
-  tag_index_[node->html_token().tag].emplace_back(node);
+void DOMIndexer::AddNode(const std::shared_ptr<TagNode>& node) {
+  tag_index_[node->tag()].emplace_back(node);
   // TODO(team): add class index
   // TODO(team): add id index
 }
