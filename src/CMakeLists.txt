@@ -1,6 +1,8 @@
 # Source files
 set(ARBORIS_SOURCES
+  dom/dom_manager.cc
   dom/dom_builder.cc
+  dom/dom_indexer.cc
   dom/html_token_parser.cc
   string/string_scalar.cc
   utils/tag.cc
@@ -8,6 +10,7 @@ set(ARBORIS_SOURCES
 
 # Header files
 set(ARBORIS_HEADERS
+  dom/dom_manager.hpp
   dom/dom_builder.hpp
   dom/token_parser.hpp
   dom/html_token_parser.hpp
