@@ -101,6 +101,9 @@ std::size_t HtmlTokenParser::parseTextContent(std::size_t begin) const {
 
   // Read text until '<' or end of string
   current_pos = FindNextChar(content_, current_pos, '<');
+  if (current_pos == std::string::npos) {
+    current_pos = content_.length();
+  }
 
   if (current_pos == begin) {
     return current_pos;

@@ -12,12 +12,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "utils/tag.hpp"
+#include "dom/tag_node.hpp"
 
 namespace arboris {
-
-// forward declaration
-class Node;
 
 class DOMIndexer {
  public:
@@ -28,13 +25,13 @@ class DOMIndexer {
   DOMIndexer& operator=(DOMIndexer&&) = delete;
   virtual ~DOMIndexer() = default;
 
-  void AddNode(const std::shared_ptr<Node>& node);
+  void AddNode(const std::shared_ptr<TagNode>& node);
 
  private:
   // TODO(team): consider using std::list instead of std::vector for indexes
-  std::unordered_map<std::string, std::shared_ptr<Node>> id_index_;
-  std::unordered_map<Tag, std::vector<std::shared_ptr<Node>>> tag_index_;
-  std::unordered_map<std::string, std::vector<std::shared_ptr<Node>>> class_index_;
+  std::unordered_map<std::string, std::shared_ptr<TagNode>> id_index_;
+  std::unordered_map<Tag, std::vector<std::shared_ptr<TagNode>>> tag_index_;
+  std::unordered_map<std::string, std::vector<std::shared_ptr<TagNode>>> class_index_;
 };
 
 }  // namespace arboris

@@ -20,7 +20,7 @@
 namespace arboris {
 
 class DOMBuilder {
-  using NodeCreationCallback = std::function<void(std::shared_ptr<BaseNode>)>;
+  using NodeCreationCallback = std::function<void(const std::shared_ptr<TagNode>&)>;
 
  public:
   DOMBuilder() : root_(std::make_shared<TagNode>(0, HtmlToken{{0, 0}, Tag::kHtml, false}, nullptr)) {}

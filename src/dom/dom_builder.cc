@@ -46,20 +46,14 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
 }
 
 bool DOMBuilder::FeedTextToken(HtmlTextToken&& token) {
-  ARBORIS_ASSERT(!node_stack_.empty(), "Node stack is empty");
-
-  if (node_stack_.empty()) {
-    return false;
-  }
-
-  auto top_node = node_stack_.top();
+  auto parent = node_stack_.empty() ? root_ : node_stack_.top();
 
   auto text_node = std::make_shared<TextNode>(
     next_node_id_++,
     token.text_content,
-    top_node);
+    parent);
 
-  top_node->AddChild(text_node);
+  parent->AddChild(text_node);
   return true;
 }
 
