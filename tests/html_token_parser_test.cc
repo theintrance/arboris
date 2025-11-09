@@ -5,12 +5,14 @@
  */
 
 #include <gtest/gtest.h>
+#include <memory>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 #include "dom/html_token_parser.hpp"
 #include "utils/html_tokens.hpp"
+#include "utils/string_pool.hpp"
 #include "utils/tag.hpp"
 
 namespace arboris {
@@ -50,27 +52,27 @@ class HtmlTagProviderTest : public ::testing::Test {
   void TearDown() override {}
 
   // helper function: set callback for collecting tokens
-  void SetupTokenCollectors(HtmlTokenParser& provider, std::vector<HtmlToken>& open_tokens,
+  void SetupTokenCollectors(HtmlTokenParser& parser, std::vector<HtmlToken>& open_tokens,
                             std::vector<HtmlTextToken>& text_tokens, std::vector<HtmlCloseToken>& close_tokens) {
-    provider.set_feed_open_token_callback([&open_tokens](HtmlToken&& token) {
+    parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, const char*) {
       open_tokens.push_back(std::move(token));
       return true;
     });
 
-    provider.set_feed_text_token_callback([&text_tokens](HtmlTextToken&& token) {
+    parser.set_feed_text_token_callback([&text_tokens](HtmlTextToken&& token) {
       text_tokens.push_back(std::move(token));
       return true;
     });
 
-    provider.set_feed_close_token_callback([&close_tokens](HtmlCloseToken&& token) {
+    parser.set_feed_close_token_callback([&close_tokens](HtmlCloseToken&& token, const char*) {
       close_tokens.push_back(std::move(token));
       return true;
     });
   }
 
   // overloaded helper function using TokenCollectors struct
-  void SetupTokenCollectors(HtmlTokenParser& provider, TokenCollectors& collectors) {
-    SetupTokenCollectors(provider, collectors.open_tokens, collectors.text_tokens, collectors.close_tokens);
+  void SetupTokenCollectors(HtmlTokenParser& parser, TokenCollectors& collectors) {
+    SetupTokenCollectors(parser, collectors.open_tokens, collectors.text_tokens, collectors.close_tokens);
   }
 };
 
@@ -78,27 +80,29 @@ class HtmlTagProviderTest : public ::testing::Test {
  * 1. Test basic Parse() behavior
  */
 TEST_F(HtmlTagProviderTest, ParseEmptyString) {
-  HtmlTokenParser provider(kEmptyString);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kEmptyString, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
   EXPECT_TRUE(tokens.open_tokens.empty());
   EXPECT_TRUE(tokens.text_tokens.empty());
   EXPECT_TRUE(tokens.close_tokens.empty());
 }
 
 TEST_F(HtmlTagProviderTest, ParseTextOnly) {
-  HtmlTokenParser provider(kTextOnly);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kTextOnly, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
   // TODO(Team): Discuss with team about returning false for text-only content
   // Text-only content always causes Parse() to return false
   // because FindNextChar returns npos when '<' is not found
-  EXPECT_FALSE(provider.Parse());
+  EXPECT_FALSE(parser.Parse());
 
   // Even though parsing fails, text token should still be created
   EXPECT_TRUE(tokens.open_tokens.empty());
@@ -110,12 +114,13 @@ TEST_F(HtmlTagProviderTest, ParseTextOnly) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseSimpleTag) {
-  HtmlTokenParser provider(kSimpleTag);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kSimpleTag, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
   EXPECT_EQ(tokens.open_tokens.size(), 1);
   EXPECT_TRUE(tokens.text_tokens.empty());
   EXPECT_EQ(tokens.close_tokens.size(), 1);
@@ -133,12 +138,13 @@ TEST_F(HtmlTagProviderTest, ParseSimpleTag) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseTagWithText) {
-  HtmlTokenParser provider(kTagWithText);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kTagWithText, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
   EXPECT_EQ(tokens.open_tokens.size(), 1);
   EXPECT_EQ(tokens.text_tokens.size(), 1);
   EXPECT_EQ(tokens.close_tokens.size(), 1);
@@ -155,12 +161,13 @@ TEST_F(HtmlTagProviderTest, ParseTagWithText) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseNestedTags) {
-  HtmlTokenParser provider(kNestedTags);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kNestedTags, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
   EXPECT_EQ(tokens.open_tokens.size(), 2);
   EXPECT_EQ(tokens.text_tokens.size(), 1);
   EXPECT_EQ(tokens.close_tokens.size(), 2);
@@ -180,12 +187,13 @@ TEST_F(HtmlTagProviderTest, ParseNestedTags) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseVoidTag) {
-  HtmlTokenParser provider(kVoidTag);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kVoidTag, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
   EXPECT_EQ(tokens.open_tokens.size(), 1);
   EXPECT_TRUE(tokens.text_tokens.empty());
   EXPECT_TRUE(tokens.close_tokens.empty());
@@ -196,12 +204,13 @@ TEST_F(HtmlTagProviderTest, ParseVoidTag) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseMultipleVoidTags) {
-  HtmlTokenParser provider(kMultipleVoidTags);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kMultipleVoidTags, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
   EXPECT_EQ(tokens.open_tokens.size(), 3);
   EXPECT_TRUE(tokens.text_tokens.empty());
   EXPECT_TRUE(tokens.close_tokens.empty());
@@ -218,12 +227,13 @@ TEST_F(HtmlTagProviderTest, ParseMultipleVoidTags) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseTagWithAttributes) {
-  HtmlTokenParser provider(kTagWithAttributes);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kTagWithAttributes, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
   EXPECT_EQ(tokens.open_tokens.size(), 1);
   EXPECT_EQ(tokens.text_tokens.size(), 1);
   EXPECT_EQ(tokens.close_tokens.size(), 1);
@@ -241,12 +251,13 @@ TEST_F(HtmlTagProviderTest, ParseTagWithAttributes) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseComplexHtml) {
-  HtmlTokenParser provider(kComplexHtml);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kComplexHtml, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
 
   // Expected tags: html, head, title, body, div
   EXPECT_EQ(tokens.open_tokens.size(), 5);
@@ -293,14 +304,15 @@ TEST_F(HtmlTagProviderTest, ParseComplexHtml) {
 
 // Test error cases
 TEST_F(HtmlTagProviderTest, ParseMalformedTagUnclosedTag) {
-  HtmlTokenParser provider(kUnclosedTag);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kUnclosedTag, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
   // Unclosed tag with trailing text always causes Parse() to return false
   // because FindNextChar returns npos when no more '<' is found after the text
-  EXPECT_FALSE(provider.Parse());
+  EXPECT_FALSE(parser.Parse());
 
   // Even though parsing fails, tokens should still be created
   EXPECT_EQ(tokens.open_tokens.size(), 1);   // <div> tag parsed
@@ -309,25 +321,27 @@ TEST_F(HtmlTagProviderTest, ParseMalformedTagUnclosedTag) {
 }
 
 TEST_F(HtmlTagProviderTest, ParseMalformedTagEmptyTag) {
-  HtmlTokenParser provider(kEmptyTagName);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kEmptyTagName, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
   // Empty tag name always causes Parse() to return false
   // because extractTagName returns empty string, causing parseOpenTag to return npos
-  EXPECT_FALSE(provider.Parse());
+  EXPECT_FALSE(parser.Parse());
 }
 
 TEST_F(HtmlTagProviderTest, ParseMalformedTagIncompleteTag) {
-  HtmlTokenParser provider(kIncompleteTag);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kIncompleteTag, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
   // Incomplete tag (missing '>') always causes Parse() to return false
   // because skipToTagEnd cannot find '>', causing parseOpenTag to return npos
-  EXPECT_FALSE(provider.Parse());
+  EXPECT_FALSE(parser.Parse());
 
   // No tokens should be created since tag parsing fails early
   EXPECT_TRUE(tokens.open_tokens.empty());
@@ -337,87 +351,90 @@ TEST_F(HtmlTagProviderTest, ParseMalformedTagIncompleteTag) {
 
 // Test callback return value
 TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseOpenToken) {
-  HtmlTokenParser provider(kSimpleTag);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kSimpleTag, string_pool);
 
   std::vector<HtmlToken> open_tokens;
   std::vector<HtmlTextToken> text_tokens;
   std::vector<HtmlCloseToken> close_tokens;
 
   // Set callback to return false for open token
-  provider.set_feed_open_token_callback([&open_tokens](HtmlToken&& token) {
+  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, const char*) {
     open_tokens.push_back(std::move(token));
     return false;  // parsing stop
   });
 
-  provider.set_feed_text_token_callback([&text_tokens](HtmlTextToken&& token) {
+  parser.set_feed_text_token_callback([&text_tokens](HtmlTextToken&& token) {
     text_tokens.push_back(std::move(token));
     return true;
   });
 
-  provider.set_feed_close_token_callback([&close_tokens](HtmlCloseToken&& token) {
+  parser.set_feed_close_token_callback([&close_tokens](HtmlCloseToken&& token, const char*) {
     close_tokens.push_back(std::move(token));
     return true;
   });
 
-  EXPECT_FALSE(provider.Parse());    // false return due to parsing failure
+  EXPECT_FALSE(parser.Parse());      // false return due to parsing failure
   EXPECT_EQ(open_tokens.size(), 1);  // first token is processed
   EXPECT_TRUE(text_tokens.empty());  // subsequent tokens are not processed
   EXPECT_TRUE(close_tokens.empty());
 }
 
 TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseTextToken) {
-  HtmlTokenParser provider(kTagWithText);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kTagWithText, string_pool);
 
   std::vector<HtmlToken> open_tokens;
   std::vector<HtmlTextToken> text_tokens;
   std::vector<HtmlCloseToken> close_tokens;
 
-  provider.set_feed_open_token_callback([&open_tokens](HtmlToken&& token) {
+  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, const char*) {
     open_tokens.push_back(std::move(token));
     return true;
   });
 
   // Set callback to return false for text token
-  provider.set_feed_text_token_callback([&text_tokens](HtmlTextToken&& token) {
+  parser.set_feed_text_token_callback([&text_tokens](HtmlTextToken&& token) {
     text_tokens.push_back(std::move(token));
     return false;  // parsing stop
   });
 
-  provider.set_feed_close_token_callback([&close_tokens](HtmlCloseToken&& token) {
+  parser.set_feed_close_token_callback([&close_tokens](HtmlCloseToken&& token, const char*) {
     close_tokens.push_back(std::move(token));
     return true;
   });
 
-  EXPECT_FALSE(provider.Parse());     // false return due to parsing failure
+  EXPECT_FALSE(parser.Parse());       // false return due to parsing failure
   EXPECT_EQ(open_tokens.size(), 1);   // Open tag is processed
   EXPECT_EQ(text_tokens.size(), 1);   // Text token is processed
   EXPECT_TRUE(close_tokens.empty());  // Close tag is not processed
 }
 
 TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseCloseToken) {
-  HtmlTokenParser provider(kSimpleTag);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kSimpleTag, string_pool);
 
   std::vector<HtmlToken> open_tokens;
   std::vector<HtmlTextToken> text_tokens;
   std::vector<HtmlCloseToken> close_tokens;
 
-  provider.set_feed_open_token_callback([&open_tokens](HtmlToken&& token) {
+  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, const char*) {
     open_tokens.push_back(std::move(token));
     return true;
   });
 
-  provider.set_feed_text_token_callback([&text_tokens](HtmlTextToken&& token) {
+  parser.set_feed_text_token_callback([&text_tokens](HtmlTextToken&& token) {
     text_tokens.push_back(std::move(token));
     return true;
   });
 
   // Set callback to return false for close token
-  provider.set_feed_close_token_callback([&close_tokens](HtmlCloseToken&& token) {
+  parser.set_feed_close_token_callback([&close_tokens](HtmlCloseToken&& token, const char*) {
     close_tokens.push_back(std::move(token));
     return false;  // parsing stop
   });
 
-  EXPECT_FALSE(provider.Parse());     // false return due to parsing failure
+  EXPECT_FALSE(parser.Parse());       // false return due to parsing failure
   EXPECT_EQ(open_tokens.size(), 1);   // Open tag is processed
   EXPECT_TRUE(text_tokens.empty());   // Text is empty
   EXPECT_EQ(close_tokens.size(), 1);  // Close tag is processed
@@ -425,20 +442,22 @@ TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseCloseToken) {
 
 // Test parsing without callbacks
 TEST_F(HtmlTagProviderTest, ParseNoCallbacks) {
-  HtmlTokenParser provider(kComplexHtml);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kComplexHtml, string_pool);
 
   // Parse without callbacks
-  EXPECT_TRUE(provider.Parse());  // Parse should succeed even without callbacks
+  EXPECT_TRUE(parser.Parse());  // Parse should succeed even without callbacks
 }
 
 // Test position information accuracy
 TEST_F(HtmlTagProviderTest, ParsePositionAccuracy) {
-  HtmlTokenParser provider(kPositionTest);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kPositionTest, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
 
   // Position accuracy validation
   EXPECT_EQ(tokens.open_tokens[0].begin_pos, 0);  // <p>
@@ -453,13 +472,14 @@ TEST_F(HtmlTagProviderTest, ParsePositionAccuracy) {
 
 // Test whitespace handling within tags and text
 TEST_F(HtmlTagProviderTest, ParseWhitespaceHandling) {
-  HtmlTokenParser provider(kWhitespaceTest);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kWhitespaceTest, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
   // Whitespace within tags should be handled correctly and parsing should succeed
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
 
   // All tokens should be created correctly despite whitespace
   EXPECT_EQ(tokens.open_tokens.size(), 1);
@@ -475,12 +495,13 @@ TEST_F(HtmlTagProviderTest, ParseWhitespaceHandling) {
 
 // Test nested tags with mixed text content
 TEST_F(HtmlTagProviderTest, ParseNestedTagsWithMixedText) {
-  HtmlTokenParser provider(kNestedTagsWithText);
+  auto string_pool = std::make_shared<StringPool>(1024);
+  HtmlTokenParser parser(kNestedTagsWithText, string_pool);
   TokenCollectors tokens;
 
-  SetupTokenCollectors(provider, tokens);
+  SetupTokenCollectors(parser, tokens);
 
-  EXPECT_TRUE(provider.Parse());
+  EXPECT_TRUE(parser.Parse());
 
   // Expected structure: <p>Hello<b>content</b>World</p>
   // Open tags: p, b
