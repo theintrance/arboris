@@ -10,7 +10,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <vector>
+#include <unordered_set>
 
 #include "utils/tag.hpp"
 #include "utils/tokens.hpp"
@@ -25,7 +25,7 @@ struct HtmlToken : public BaseHtmlToken {
 
   // TODO(team): Consider using string_views with an external string pool
   std::unordered_map<std::string, std::string> attributes;
-  std::vector<std::string> classes;
+  std::unordered_set<std::string> classes;
   std::string id;
 };
 
