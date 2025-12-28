@@ -39,8 +39,12 @@ class DOMQuery {
   std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
  private:
-    std::reference_wrapper<const TagNode> root_;
-    std::reference_wrapper<const DOMIndexer> dom_indexer_;
+  NodeList searchCandidatesFromIndexer(const QueryOptions& options) const;
+  bool matchAllConditions(const NodePtr& node, const QueryOptions& options) const;
+  inline bool isSubNode(const NodePtr& node) const;
+
+  std::reference_wrapper<const TagNode> root_;
+  std::reference_wrapper<const DOMIndexer> dom_indexer_;
 };
 
 }  // namespace arboris
