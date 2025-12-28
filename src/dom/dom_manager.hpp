@@ -30,16 +30,17 @@ class DOMManager {
 
   bool IsValid() const {
     ARBORIS_ASSERT(dom_builder_, "DOMBuilder is null");
-    return dom_builder_->Validate();
+    return dom_builder_.Validate();
   }
 
  private:
   void parse();
 
-  std::unique_ptr<DOMBuilder> dom_builder_;
-  std::unique_ptr<DOMIndexer> dom_indexer_;
-  std::unique_ptr<HtmlTokenParser> html_token_parser_;
+  // string pool must be initialized before parser and builder
   std::shared_ptr<StringPool> string_pool_;
+  DOMBuilder dom_builder_;
+  DOMIndexer dom_indexer_;
+  HtmlTokenParser html_token_parser_;
 };
 
 }  // namespace arboris
