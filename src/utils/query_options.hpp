@@ -39,17 +39,9 @@ class TextQueryCondition {
 };
 
 struct QueryOptions {
-  std::optional<TagSet> tags_all;
-  std::optional<TagSet> tags_any;
-
-  std::optional<std::vector<std::string>> classes_all;
-  std::optional<std::vector<std::string>> classes_any;
-
-  std::optional<std::vector<std::pair<std::string, std::string>>> attributes_all;
-  std::optional<std::vector<std::pair<std::string, std::string>>> attributes_any;
-
-  std::optional<std::vector<std::string>> ids;
-
+  std::optional<Tag> tag;
+  std::optional<std::vector<std::string>> classes;
+  std::optional<std::vector<std::pair<std::string, std::string>>> attributes;
   std::optional<TextQueryCondition> text;
 };
 
