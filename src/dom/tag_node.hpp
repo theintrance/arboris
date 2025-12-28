@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -33,7 +34,7 @@ class TagNode final : public BaseNode {
     return html_token_.attributes;
   }
 
-  [[nodiscard]] const std::vector<std::string>& classes() const noexcept {
+  [[nodiscard]] const std::unordered_set<std::string>& classes() const noexcept {
     return html_token_.classes;
   }
 
