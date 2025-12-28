@@ -36,6 +36,7 @@ class DOMIndexer {
   std::unordered_map<std::string, NodePtr> id_index_;
   std::unordered_map<Tag, NodeList> tag_index_;
   std::unordered_map<std::string, NodeList> class_index_;
+  std::unordered_map<std::string, NodeList> attr_index_;
 };
 
 }  // namespace arboris
