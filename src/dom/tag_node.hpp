@@ -30,11 +30,11 @@ class TagNode final : public BaseNode {
     return children_;
   }
 
-  [[nodiscard]] const std::unordered_map<std::string, std::string>& attributes() const noexcept {
+  [[nodiscard]] const AttributeMap& attributes() const noexcept {
     return html_token_.attributes;
   }
 
-  [[nodiscard]] const std::unordered_set<std::string>& classes() const noexcept {
+  [[nodiscard]] const ClassSet& classes() const noexcept {
     return html_token_.classes;
   }
 
