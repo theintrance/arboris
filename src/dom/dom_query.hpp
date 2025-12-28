@@ -28,17 +28,19 @@ class DOMQuery {
       : root_(root),
         dom_indexer_(dom_indexer) {}
 
-  DOMQuery(const DOMQuery&) = delete;
+  DOMQuery(const DOMQuery&) = default;
   DOMQuery& operator=(const DOMQuery&) = delete;
-  DOMQuery(DOMQuery&&) = delete;
+  DOMQuery(DOMQuery&&) = default;
   DOMQuery& operator=(DOMQuery&&) = delete;
   virtual ~DOMQuery() = default;
 
-  std::vector<std::shared_ptr<const TagNode>> Find(const QueryOptions& options) const;
+  std::optional<DOMQuery> Find(const QueryOptions& options) const;
+  std::optional<DOMQuery> Find(const std::string& id) const;
+  std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
  private:
-    const TagNode& root_;
-    const DOMIndexer& dom_indexer_;
+    std::reference_wrapper<const TagNode> root_;
+    std::reference_wrapper<const DOMIndexer> dom_indexer_;
 };
 
 }  // namespace arboris
