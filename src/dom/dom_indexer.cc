@@ -37,4 +37,9 @@ std::optional<NodeList> DOMIndexer::GetNodesByClass(std::string_view class_name)
   return it != class_index_.end() ? std::make_optional(it->second) : std::nullopt;
 }
 
+std::optional<NodeList> DOMIndexer::GetNodesByAttribute(std::string_view attribute_name) const {
+  auto it = attr_index_.find(std::string(attribute_name));
+  return it != attr_index_.end() ? std::make_optional(it->second) : std::nullopt;
+}
+
 }  // namespace arboris
