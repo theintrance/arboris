@@ -18,7 +18,6 @@ std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
 }
 
 std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
-  // TODO(team): Implement this
   NodePtr node = dom_indexer_.get().GetNodeById(id);
   if (node) {
     return DOMQuery(*node, dom_indexer_);
