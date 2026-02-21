@@ -8,13 +8,14 @@
 #define SRC_UTILS_QUERY_OPTIONS_HPP_
 
 #include <optional>
-#include <vector>
+#include <unordered_set>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <functional>
 
 #include "utils/tag.hpp"
+#include "utils/html_tokens.hpp"
 
 namespace arboris {
 
@@ -40,8 +41,8 @@ class TextQueryCondition {
 
 struct QueryOptions {
   std::optional<Tag> tag;
-  std::optional<std::vector<std::string>> classes;
-  std::optional<std::vector<std::pair<std::string, std::string>>> attributes;
+  std::optional<ClassSet> classes;
+  std::optional<AttributeMap> attributes;
   std::optional<TextQueryCondition> text;
 };
 

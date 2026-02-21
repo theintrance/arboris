@@ -11,6 +11,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "dom/dom_builder.hpp"
 #include "dom/dom_indexer.hpp"
@@ -28,19 +29,16 @@ class DOMManager {
   DOMManager& operator=(DOMManager&&) = delete;
   virtual ~DOMManager() = default;
 
-  bool IsValid() const {
-    ARBORIS_ASSERT(dom_builder_, "DOMBuilder is null");
-    return dom_builder_.Validate();
+  [[nodiscard]] const TagNode& GetRoot() const {
+    ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
+    return dfs_node_list_.front();
   }
 
  private:
-  void parse();
-
-  // string pool must be initialized before parser and builder
+  // Nodes list ordered by DFS in-order
+  std::vector<TagNode> dfs_node_list_;
   std::shared_ptr<StringPool> string_pool_;
-  DOMBuilder dom_builder_;
   DOMIndexer dom_indexer_;
-  HtmlTokenParser html_token_parser_;
 };
 
 }  // namespace arboris

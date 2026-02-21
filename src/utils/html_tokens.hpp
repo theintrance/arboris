@@ -9,13 +9,17 @@
 
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "utils/tag.hpp"
 #include "utils/tokens.hpp"
 
 namespace arboris {
+
+using AttributeMap = std::unordered_map<std::string, std::unordered_set<std::string>>;
+using ClassSet = std::unordered_set<std::string>;
 
 struct BaseHtmlToken : public BaseToken {};
 
@@ -24,8 +28,8 @@ struct HtmlToken : public BaseHtmlToken {
   bool is_void_tag = false;
 
   // TODO(team): Consider using string_views with an external string pool
-  std::unordered_map<std::string, std::string> attributes;
-  std::vector<std::string> classes;
+  AttributeMap attributes;
+  ClassSet classes;
   std::string id;
 };
 

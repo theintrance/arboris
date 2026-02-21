@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -22,18 +23,18 @@ class TagNode final : public BaseNode {
  public:
   static constexpr NodeType kNodeType = NodeType::kTag;
 
-  explicit TagNode(std::uint32_t node_id, HtmlToken&& token, std::shared_ptr<TagNode> parent)
-      : BaseNode(kNodeType, node_id, std::move(parent)), html_token_(std::move(token)) {}
+  explicit TagNode(std::uint32_t node_id, HtmlToken&& token, const std::shared_ptr<TagNode> parent)
+      : BaseNode(kNodeType, node_id, parent), html_token_(std::move(token)) {}
 
   [[nodiscard]] const std::vector<std::shared_ptr<BaseNode>>& children() const noexcept {
     return children_;
   }
 
-  [[nodiscard]] const std::unordered_map<std::string, std::string>& attributes() const noexcept {
+  [[nodiscard]] const AttributeMap& attributes() const noexcept {
     return html_token_.attributes;
   }
 
-  [[nodiscard]] const std::vector<std::string>& classes() const noexcept {
+  [[nodiscard]] const ClassSet& classes() const noexcept {
     return html_token_.classes;
   }
 
