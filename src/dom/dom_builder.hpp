@@ -13,6 +13,7 @@
 #include <functional>
 #include <utility>
 #include <cstdint>
+#include <vector>
 
 #include "utils/html_tokens.hpp"
 #include "dom/tag_node.hpp"
@@ -23,7 +24,7 @@ class DOMBuilder {
   using NodeCreationCallback = std::function<void(const std::shared_ptr<TagNode>&)>;
 
  public:
-  DOMBuilder() : root_(std::make_shared<TagNode>(0, HtmlToken{{0, 0}, Tag::kHtml, false}, nullptr)) {}
+  DOMBuilder(): dfs_node_list_{std::make_shared<TagNode>(0, HtmlToken{{0, 0}, Tag::kHtml, false}, nullptr)} {}
   DOMBuilder(const DOMBuilder&) = delete;
   DOMBuilder& operator=(const DOMBuilder&) = delete;
   DOMBuilder(DOMBuilder&&) = delete;
@@ -39,14 +40,23 @@ class DOMBuilder {
     node_creation_callback_ = std::move(callback);
   }
 
+  [[nodiscard]] const std::vector<std::shared_ptr<TagNode>>& GetNodeList() const {
+    return dfs_node_list_;
+  }
+
  private:
+  [[nodiscard]] std::shared_ptr<TagNode> root() {
+    ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
+    return dfs_node_list_.front();
+  }
+
   bool closeTopNode();
 
  private:
   std::uint32_t next_node_id_{0};
   std::uint32_t euler_tour_timer_{0};
 
-  std::shared_ptr<TagNode> root_;
+  std::vector<std::shared_ptr<TagNode>> dfs_node_list_;
   std::stack<std::shared_ptr<TagNode>> node_stack_;
 
   NodeCreationCallback node_creation_callback_;
