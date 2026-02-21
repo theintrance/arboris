@@ -20,11 +20,11 @@ bool DOMBuilder::Validate() const {
 
 bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
   bool is_void_tag = token.is_void_tag;
-  auto parent = node_stack_.empty() ? root_ : node_stack_.top();
+  auto parent = node_stack_.empty() ? root() : node_stack_.top();
   auto node = std::make_shared<TagNode>(
     next_node_id_++,
     std::move(token),
-    parent);
+    parent.get());
 
   node->set_in(++euler_tour_timer_);
   node_stack_.push(node);
@@ -46,7 +46,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
 }
 
 bool DOMBuilder::FeedTextToken(HtmlTextToken&& token) {
-  auto parent = node_stack_.empty() ? root_ : node_stack_.top();
+  auto parent = node_stack_.empty() ? root() : node_stack_.top();
 
   auto text_node = std::make_shared<TextNode>(
     next_node_id_++,

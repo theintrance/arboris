@@ -7,6 +7,8 @@
 #ifndef SRC_UTILS_TAG_HPP_
 #define SRC_UTILS_TAG_HPP_
 
+#include <array>
+#include <cstdint>
 #include <string_view>
 
 namespace arboris {
@@ -126,9 +128,14 @@ enum class Tag : std::uint8_t {
   kWbr,
 };
 
-Tag FromString(std::string_view tag_name);
+struct TagSet {
+  std::uint64_t bits[static_cast<std::uint8_t>(Tag::kWbr) / 64 + 1] = {0};
+};
 
-bool IsVoidTag(Tag tag);
+Tag FromString(std::string_view tag_name);
+inline bool IsVoidTag(Tag tag);
+inline bool ContainsTag(TagSet tag_set, Tag tag);
+constexpr TagSet CreateTagSet(std::initializer_list<Tag> tags);
 
 }  // namespace arboris
 
