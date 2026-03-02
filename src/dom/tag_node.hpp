@@ -14,8 +14,8 @@
 #include <utility>
 #include <vector>
 
-#include "dom/dom_types.hpp"
 #include "dom/base_node.hpp"
+#include "dom/dom_types.hpp"
 #include "utils/html_tokens.hpp"
 
 namespace arboris {
@@ -27,29 +27,17 @@ class TagNode final : public BaseNode {
   explicit TagNode(std::uint32_t node_id, HtmlToken&& token, const std::shared_ptr<TagNode> parent)
       : BaseNode(kNodeType, node_id, parent), html_token_(std::move(token)) {}
 
-  [[nodiscard]] const std::vector<std::shared_ptr<BaseNode>>& children() const noexcept {
-    return children_;
-  }
+  [[nodiscard]] const std::vector<std::shared_ptr<BaseNode>>& children() const noexcept { return children_; }
 
-  [[nodiscard]] const AttributeMap& attributes() const noexcept {
-    return html_token_.attributes;
-  }
+  [[nodiscard]] const AttributeMap& attributes() const noexcept { return html_token_.attributes; }
 
-  [[nodiscard]] const ClassSet& classes() const noexcept {
-    return html_token_.classes;
-  }
+  [[nodiscard]] const ClassSet& classes() const noexcept { return html_token_.classes; }
 
-  [[nodiscard]] std::string_view id() const noexcept {
-    return html_token_.id;
-  }
+  [[nodiscard]] std::string_view id() const noexcept { return html_token_.id; }
 
-  [[nodiscard]] NodeKey key() const noexcept {
-    return html_token_.begin_pos;
-  }
+  [[nodiscard]] NodeKey key() const noexcept { return in(); }
 
-  [[nodiscard]] Tag tag() const noexcept {
-    return html_token_.tag;
-  }
+  [[nodiscard]] Tag tag() const noexcept { return html_token_.tag; }
 
   void AddChild(std::shared_ptr<BaseNode> child) {
     ARBORIS_ASSERT(child != nullptr, "child must not be nullptr.");
