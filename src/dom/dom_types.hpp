@@ -14,6 +14,8 @@ namespace arboris {
 
 class TagNode;
 
+using NodeKey = std::uint32_t;
+using NodeKeyList = std::vector<NodeKey>;
 using NodePtr = std::shared_ptr<TagNode>;
 using NodeList = std::vector<NodePtr>;
 

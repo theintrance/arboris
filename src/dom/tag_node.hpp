@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "dom/dom_types.hpp"
 #include "dom/base_node.hpp"
 #include "utils/html_tokens.hpp"
 
@@ -40,6 +41,10 @@ class TagNode final : public BaseNode {
 
   [[nodiscard]] std::string_view id() const noexcept {
     return html_token_.id;
+  }
+
+  [[nodiscard]] NodeKey key() const noexcept {
+    return html_token_.begin_pos;
   }
 
   [[nodiscard]] Tag tag() const noexcept {
