@@ -40,12 +40,12 @@ class DOMBuilder {
     node_creation_callback_ = std::move(callback);
   }
 
-  [[nodiscard]] const std::vector<std::shared_ptr<TagNode>>& GetNodeList() const {
+  [[nodiscard]] const NodeList& GetNodeList() const {
     return dfs_node_list_;
   }
 
  private:
-  [[nodiscard]] std::shared_ptr<TagNode> root() {
+  [[nodiscard]] NodePtr root() {
     ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
     return dfs_node_list_.front();
   }
@@ -56,8 +56,8 @@ class DOMBuilder {
   std::uint32_t next_node_id_{0};
   std::uint32_t euler_tour_timer_{0};
 
-  std::vector<std::shared_ptr<TagNode>> dfs_node_list_;
-  std::stack<std::shared_ptr<TagNode>> node_stack_;
+  NodeList dfs_node_list_;
+  std::stack<NodePtr> node_stack_;
 
   NodeCreationCallback node_creation_callback_;
 };
