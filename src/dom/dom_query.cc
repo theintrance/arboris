@@ -17,7 +17,6 @@
 namespace arboris {
 
 std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
-  // TODO(team): Implement this
   auto candidate_keys = searchCandidatesFromSubtree(options);
   if (candidate_keys.empty()) {
     return std::nullopt;
@@ -26,8 +25,7 @@ std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
   for (const auto& candidate_key : candidate_keys) {
     const auto& candidate = subtree_.GetNodeByKey(candidate_key);
     if (matchAllConditions(candidate, options)) {
-      const auto& node = subtree_.GetNodeByKey(candidate_key);
-      return DOMQuery(node, subtree_);
+      return buildSubQuery(candidate_key);
     }
   }
 
@@ -39,8 +37,7 @@ std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
   if (!node_key) {
     return std::nullopt;
   }
-  const auto& node = subtree_.GetNodeByKey(node_key.value());
-  return DOMQuery(node, subtree_);
+  return buildSubQuery(node_key.value());
 }
 
 
@@ -51,7 +48,7 @@ std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
   for (const auto& candidate_key : candidate_keys) {
     const auto& candidate = subtree_.GetNodeByKey(candidate_key);
     if (matchAllConditions(candidate, options)) {
-      ret.push_back(DOMQuery(candidate, subtree_));
+      ret.push_back(buildSubQuery(candidate_key));
     }
   }
   return ret;
@@ -112,6 +109,12 @@ bool DOMQuery::matchAllConditions(const TagNode& node, const QueryOptions& optio
   }
   // TODO(team): Implement text condition matching
   return true;
+}
+
+DOMQuery DOMQuery::buildSubQuery(NodeKey subtree_root_key) const {
+  const auto& subtree_root = subtree_.GetNodeByKey(subtree_root_key);
+  DOMSubtree subtree(subtree_, subtree_root);
+  return DOMQuery(subtree);
 }
 
 }  // namespace arboris

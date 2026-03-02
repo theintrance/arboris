@@ -32,11 +32,17 @@ class DOMSubtree {
       global_dfs_node_list_(global_dfs_node_list),
       global_dom_indexer_(global_dom_indexer) {}
 
+  // Constructor for duplicate subtree
+  DOMSubtree(const DOMSubtree& subtree) = default;
+
   [[nodiscard]] std::optional<NodeKey> GetNodeById(std::string_view id) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByTag(Tag tag) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByClass(std::string_view class_name) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByAttribute(std::string_view attribute_name) const;
   [[nodiscard]] const TagNode& GetNodeByKey(NodeKey node_key) const;
+  [[nodiscard]] NodeKey GetRootKey() const noexcept {
+    return in_;
+  }
 
  private:
   bool isInSubtree(NodeKey node_key) const noexcept {

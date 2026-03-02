@@ -42,14 +42,14 @@ DOMManager::DOMManager(std::string_view html_content) :
 std::optional<DOMQuery> DOMManager::Find(const QueryOptions& options) const {
   const auto& root = GetRoot();
   DOMSubtree root_subtree(dfs_node_list_, dom_indexer_, root);
-  DOMQuery root_query(root, root_subtree);
+  DOMQuery root_query(root_subtree);
   return root_query.Find(options);
 }
 
 std::vector<DOMQuery> DOMManager::FindAll(const QueryOptions& options) const {
   const auto& root = GetRoot();
   DOMSubtree root_subtree(dfs_node_list_, dom_indexer_, root);
-  DOMQuery root_query(root, root_subtree);
+  DOMQuery root_query(root_subtree);
   return root_query.FindAll(options);
 }
 
