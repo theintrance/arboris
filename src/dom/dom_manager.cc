@@ -5,6 +5,8 @@
  */
 
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "dom/dom_manager.hpp"
 
@@ -31,9 +33,24 @@ DOMManager::DOMManager(std::string_view html_content) :
 
   html_token_parser.Parse();
 
+  dfs_node_list_ = std::move(builder.GetNodeList());
+
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");
 }
 
 
+std::optional<DOMQuery> DOMManager::Find(const QueryOptions& options) const {
+  const auto& root = GetRoot();
+  DOMSubtree root_subtree(dfs_node_list_, dom_indexer_, root);
+  DOMQuery root_query(root, root_subtree);
+  return root_query.Find(options);
+}
+
+std::vector<DOMQuery> DOMManager::FindAll(const QueryOptions& options) const {
+  const auto& root = GetRoot();
+  DOMSubtree root_subtree(dfs_node_list_, dom_indexer_, root);
+  DOMQuery root_query(root, root_subtree);
+  return root_query.FindAll(options);
+}
 
 }  // namespace arboris
