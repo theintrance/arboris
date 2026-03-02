@@ -25,6 +25,7 @@ class DOMIndexer {
   DOMIndexer& operator=(DOMIndexer&&) = delete;
   virtual ~DOMIndexer() = default;
 
+  // TODO(team): avoid using const reference for NodePtr
   void AddNode(const NodePtr& node);
 
   [[nodiscard]] std::optional<NodeKey> GetNodeKeyById(std::string_view id) const;
