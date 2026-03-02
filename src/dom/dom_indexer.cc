@@ -16,28 +16,30 @@
 namespace arboris {
 
 void DOMIndexer::AddNode(const NodePtr& node) {
-  tag_index_[node->tag()].emplace_back(node);
-  // TODO(team): add class index
+  tag_index_[node->tag()].emplace_back(node->key());
+  for (const auto& class_name : node->classes()) {
+    class_index_[class_name].emplace_back(node->key());
+  }
   // TODO(team): add id index
 }
 
-NodePtr DOMIndexer::GetNodeById(std::string_view id) const {
+std::optional<NodeKey> DOMIndexer::GetNodeKeyById(std::string_view id) const {
   // TODO(team): consider heterogeneous lookup to avoid std::string allocation
   auto it = id_index_.find(std::string(id));
-  return it != id_index_.end() ? it->second : nullptr;
+  return it != id_index_.end() ? std::make_optional(it->second) : std::nullopt;
 }
 
-std::optional<NodeList> DOMIndexer::GetNodesByTag(Tag tag) const {
+std::optional<NodeKeyList> DOMIndexer::GetNodeKeyListByTag(Tag tag) const {
   auto it = tag_index_.find(tag);
   return it != tag_index_.end() ? std::make_optional(it->second) : std::nullopt;
 }
 
-std::optional<NodeList> DOMIndexer::GetNodesByClass(std::string_view class_name) const {
+std::optional<NodeKeyList> DOMIndexer::GetNodeKeyListByClass(std::string_view class_name) const {
   auto it = class_index_.find(std::string(class_name));
   return it != class_index_.end() ? std::make_optional(it->second) : std::nullopt;
 }
 
-std::optional<NodeList> DOMIndexer::GetNodesByAttribute(std::string_view attribute_name) const {
+std::optional<NodeKeyList> DOMIndexer::GetNodeKeyListByAttribute(std::string_view attribute_name) const {
   auto it = attr_index_.find(std::string(attribute_name));
   return it != attr_index_.end() ? std::make_optional(it->second) : std::nullopt;
 }
