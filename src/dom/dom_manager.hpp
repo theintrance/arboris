@@ -15,8 +15,10 @@
 
 #include "dom/dom_builder.hpp"
 #include "dom/dom_indexer.hpp"
+#include "dom/dom_query.hpp"
 #include "dom/html_token_parser.hpp"
 #include "utils/string_pool.hpp"
+#include "utils/query_options.hpp"
 
 namespace arboris {
 
@@ -31,12 +33,15 @@ class DOMManager {
 
   [[nodiscard]] const TagNode& GetRoot() const {
     ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
-    return dfs_node_list_.front();
+    return *dfs_node_list_.front();
   }
+
+  std::optional<DOMQuery> Find(const QueryOptions& options) const;
+  std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
  private:
   // Nodes list ordered by DFS in-order
-  std::vector<TagNode> dfs_node_list_;
+  NodeList dfs_node_list_;
   std::shared_ptr<StringPool> string_pool_;
   DOMIndexer dom_indexer_;
 };

@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <vector>
+#include <span>
 
 namespace arboris {
 
@@ -16,6 +17,7 @@ class TagNode;
 
 using NodeKey = std::uint32_t;
 using NodeKeyList = std::vector<NodeKey>;
+using NodeKeySpan = std::span<const NodeKey>;
 using NodePtr = std::shared_ptr<TagNode>;
 using NodeList = std::vector<NodePtr>;
 
