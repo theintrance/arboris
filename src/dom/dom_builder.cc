@@ -24,7 +24,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
   auto node = std::make_shared<TagNode>(
     next_node_id_++,
     std::move(token),
-    parent.get());
+    parent);
 
   node->set_in(++euler_tour_timer_);
   node_stack_.push(node);
