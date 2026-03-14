@@ -29,7 +29,7 @@ class TagNode;
 class BaseNode {
  public:
   explicit BaseNode(NodeType type, std::uint32_t id, std::shared_ptr<TagNode> parent = nullptr)
-      : node_type_(type), node_id_(id), parent_(std::move(parent)) {}
+      : node_type_(type), key_(id), parent_(std::move(parent)) {}
 
   BaseNode(const BaseNode&) = delete;
   BaseNode& operator=(const BaseNode&) = delete;
@@ -38,34 +38,16 @@ class BaseNode {
 
   virtual ~BaseNode() = default;
 
-  [[nodiscard]] std::uint32_t node_id() const noexcept {
-    return node_id_;
+  [[nodiscard]] std::uint32_t key() const noexcept {
+    return key_;
   }
 
   [[nodiscard]] NodeType node_type() const noexcept {
     return node_type_;
   }
 
-  [[nodiscard]] std::uint32_t in() const noexcept {
-    return in_;
-  }
-
-  [[nodiscard]] std::uint32_t out() const noexcept {
-    return out_;
-  }
-
   [[nodiscard]] std::string_view text_content() const noexcept {
     return text_content_;
-  }
-
-  void set_out(std::uint32_t out) {
-    ARBORIS_ASSERT(out > 0, "out must be greater than 0. got " << out);
-    out_ = out;
-  }
-
-  void set_in(std::uint32_t in) {
-    ARBORIS_ASSERT(in > 0, "in must be greater than 0. got " << in);
-    in_ = in;
   }
 
   void set_text_content(std::string_view text_content) {
@@ -86,12 +68,9 @@ class BaseNode {
 
  private:
   const NodeType node_type_;
-  const std::uint32_t node_id_;
+  const std::uint32_t key_;
   const std::weak_ptr<TagNode> parent_;
   std::string_view text_content_;
-
-  std::uint32_t in_{0};
-  std::uint32_t out_{0};
 };
 
 }  // namespace arboris

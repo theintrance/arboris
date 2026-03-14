@@ -7,6 +7,7 @@
 #ifndef SRC_DOM_TAG_NODE_HPP_
 #define SRC_DOM_TAG_NODE_HPP_
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -43,12 +44,16 @@ class TagNode final : public BaseNode {
     return html_token_.id;
   }
 
-  [[nodiscard]] NodeKey key() const noexcept {
-    return in();
-  }
-
   [[nodiscard]] Tag tag() const noexcept {
     return html_token_.tag;
+  }
+
+  void set_sub_tree_size(uint32_t size) noexcept {
+    sub_tree_size_ = size;
+  }
+
+  [[nodiscard]] std::size_t sub_tree_size() const noexcept {
+    return sub_tree_size_;
   }
 
   void AddChild(std::shared_ptr<BaseNode> child) {
@@ -57,6 +62,7 @@ class TagNode final : public BaseNode {
   }
 
  private:
+  std::size_t sub_tree_size_;
   const HtmlToken html_token_;
   std::vector<std::shared_ptr<BaseNode>> children_;
 };
