@@ -27,10 +27,10 @@ class DOMSubtree {
     const NodeList& global_dfs_node_list,
     const DOMIndexer& global_dom_indexer,
     const TagNode& subtree_root) :
-      in_(subtree_root.in()),
-      out_(subtree_root.out()),
       global_dfs_node_list_(global_dfs_node_list),
-      global_dom_indexer_(global_dom_indexer) {}
+      global_dom_indexer_(global_dom_indexer),
+      sub_tree_size_(subtree_root.sub_tree_size()),
+      node_key_(subtree_root.key()) {}
 
   [[nodiscard]] std::optional<NodeKey> GetNodeById(std::string_view id) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByTag(Tag tag) const;
@@ -40,18 +40,18 @@ class DOMSubtree {
 
  private:
   bool isInSubtree(NodeKey node_key) const noexcept {
-    return node_key >= in_ && node_key <= out_;
+    return node_key >= node_key_ && node_key < node_key_ + sub_tree_size_;
   }
 
   std::span<const NodeKey> sliceSubtreeRange(const NodeKeyList& node_keys) const noexcept {
-    auto it  = std::lower_bound(node_keys.begin(), node_keys.end(), in_);
-    auto end = std::upper_bound(node_keys.begin(), node_keys.end(), out_);
-    return std::span<const NodeKey>(it, static_cast<std::size_t>(std::distance(it, end)));
+    auto start_it = global_dfs_node_list_.begin() + node_key_;
+    auto end_it = start_it + sub_tree_size_;
+    return {start_it, end_it};
   }
 
  private:
-  const std::uint32_t in_;
-  const std::uint32_t out_;
+  const NodeKey node_key_;
+  const uint32_t sub_tree_size_;
 
   const NodeList& global_dfs_node_list_;
   const DOMIndexer& global_dom_indexer_;
