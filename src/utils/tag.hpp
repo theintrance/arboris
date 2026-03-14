@@ -129,13 +129,23 @@ enum class Tag : std::uint8_t {
 };
 
 struct TagSet {
-  std::uint64_t bits[static_cast<std::uint8_t>(Tag::kWbr) / 64 + 1] = {0};
+  std::array<std::uint64_t, static_cast<std::uint8_t>(Tag::kWbr) / 64 + 1> bits{0};
 };
 
 Tag FromString(std::string_view tag_name);
-inline bool IsVoidTag(Tag tag);
-inline bool ContainsTag(TagSet tag_set, Tag tag);
-constexpr TagSet CreateTagSet(std::initializer_list<Tag> tags);
+bool IsVoidTag(Tag tag);
+bool ContainsTag(TagSet tag_set, Tag tag);
+
+template <std::size_t N>
+constexpr TagSet CreateTagSet(std::array<Tag, N> tags) {
+  TagSet tag_set{};
+  for (std::size_t i = 0; i < N; ++i) {
+    const auto tag = tags[i];
+    std::uint8_t tag_index = static_cast<std::uint8_t>(tag);
+    tag_set.bits[tag_index >> 6] |= (1ULL << (tag_index & 63));
+  }
+  return tag_set;
+}
 
 }  // namespace arboris
 

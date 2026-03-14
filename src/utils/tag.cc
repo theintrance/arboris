@@ -133,7 +133,7 @@ Tag FromString(std::string_view tag_name) {
 }
 
 bool IsVoidTag(Tag tag) {
-  static constexpr auto kVoidTags = CreateTagSet({
+  static constexpr auto kVoidTags = CreateTagSet(std::array{
     Tag::kArea,
     Tag::kBase,
     Tag::kBr,
@@ -156,13 +156,6 @@ bool ContainsTag(TagSet tag_set, Tag tag) {
   return tag_set.bits[tag_index >> 6] & (1ULL << (tag_index & 63));
 }
 
-constexpr TagSet CreateTagSet(std::initializer_list<Tag> tags) {
-  TagSet tag_set{};
-  for (const auto tag : tags) {
-    std::uint8_t tag_index = static_cast<std::uint8_t>(tag);
-    tag_set.bits[tag_index >> 6] |= (1ULL << (tag_index & 63));
-  }
-  return tag_set;
-}
+
 
 }  // namespace arboris
