@@ -7,6 +7,12 @@
 #ifndef INCLUDE_ARBORIS_ARBORIS_HPP_
 #define INCLUDE_ARBORIS_ARBORIS_HPP_
 
-// TODO(team): Add public APIs
+#include "dom/dom_manager.hpp"
+
+namespace arboris {
+
+using Arboris = DOMManager;
+
+}  // namespace arboris
 
 #endif  // INCLUDE_ARBORIS_ARBORIS_HPP_

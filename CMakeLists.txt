@@ -40,3 +40,7 @@ endif()
 if (NOT NO_BENCHMARK)
   add_subdirectory(benchmark)
 endif()
+
+if (NOT NO_CPP_EXAMPLES)
+  add_subdirectory(examples/cpp)
+endif()
