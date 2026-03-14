@@ -20,9 +20,9 @@ bool DOMBuilder::Validate() const {
 
 bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
   bool is_void_tag = token.is_void_tag;
-  auto parent = node_stack_.empty() ? root() : node_stack_.top();
+  auto parent = node_stack_.empty() ? nullptr : node_stack_.top();
   auto node = std::make_shared<TagNode>(
-    next_node_id_++,
+    next_node_key_++,
     std::move(token),
     parent);
 
@@ -34,9 +34,10 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
 
   node->set_text_content({text_begin, 0});  // NOTLINT(bugprone-string-constructor)
 
+  dfs_node_list_.emplace_back(node);
 
   if (node_creation_callback_) {
-    node_creation_callback_(node);
+    node_creation_callback_(*node.get());
   }
 
   if (is_void_tag) {
@@ -46,14 +47,17 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
 }
 
 bool DOMBuilder::FeedTextToken(HtmlTextToken&& token) {
-  auto parent = node_stack_.empty() ? root() : node_stack_.top();
+  auto parent = node_stack_.empty() ? nullptr : node_stack_.top();
 
   auto text_node = std::make_shared<TextNode>(
-    next_node_id_++,
+    0,  // Text nodes do not have unique IDs as they are not indexed
     token.text_content,
     parent);
 
-  parent->AddChild(text_node);
+  if (parent) {
+    parent->AddChild(text_node);
+  }
+
   return true;
 }
 

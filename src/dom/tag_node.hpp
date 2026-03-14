@@ -24,8 +24,8 @@ class TagNode final : public BaseNode {
  public:
   static constexpr NodeType kNodeType = NodeType::kTag;
 
-  explicit TagNode(std::uint32_t node_id, HtmlToken&& token, const std::shared_ptr<TagNode> parent)
-      : BaseNode(kNodeType, node_id, parent), html_token_(std::move(token)) {}
+  explicit TagNode(NodeKey key, HtmlToken&& token, const std::shared_ptr<TagNode> parent)
+      : BaseNode(kNodeType, key, parent), html_token_(std::move(token)) {}
 
   [[nodiscard]] const std::vector<std::shared_ptr<BaseNode>>& children() const noexcept {
     return children_;
@@ -41,10 +41,6 @@ class TagNode final : public BaseNode {
 
   [[nodiscard]] std::string_view id() const noexcept {
     return html_token_.id;
-  }
-
-  [[nodiscard]] NodeKey key() const noexcept {
-    return in();
   }
 
   [[nodiscard]] Tag tag() const noexcept {

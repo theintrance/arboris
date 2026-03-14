@@ -28,7 +28,7 @@ std::optional<NodeKey> DOMSubtree::GetNodeById(std::string_view id) const {
 }
 
 std::optional<NodeKeySpan> DOMSubtree::GetNodesByTag(Tag tag) const {
-  const auto& node_keys = global_dom_indexer_.GetNodeKeyListByTag(tag);
+  const auto* node_keys = global_dom_indexer_.GetNodeKeyListByTag(tag);
   if (!node_keys || node_keys->empty()) {
     return std::nullopt;
   }
@@ -36,7 +36,7 @@ std::optional<NodeKeySpan> DOMSubtree::GetNodesByTag(Tag tag) const {
 }
 
 std::optional<NodeKeySpan> DOMSubtree::GetNodesByClass(std::string_view class_name) const {
-  const auto& node_keys = global_dom_indexer_.GetNodeKeyListByClass(class_name);
+  const auto* node_keys = global_dom_indexer_.GetNodeKeyListByClass(class_name);
   if (!node_keys || node_keys->empty()) {
     return std::nullopt;
   }
@@ -44,16 +44,16 @@ std::optional<NodeKeySpan> DOMSubtree::GetNodesByClass(std::string_view class_na
 }
 
 std::optional<NodeKeySpan> DOMSubtree::GetNodesByAttribute(std::string_view attribute_name) const {
-  const auto& node_keys = global_dom_indexer_.GetNodeKeyListByAttribute(attribute_name);
+  const auto* node_keys = global_dom_indexer_.GetNodeKeyListByAttribute(attribute_name);
   if (!node_keys || node_keys->empty()) {
     return std::nullopt;
   }
   return sliceSubtreeRange(*node_keys);
 }
 
-const TagNode& DOMSubtree::GetNodeByKey(NodeKey node_key) const {
-  ARBORIS_ASSERT(isInSubtree(node_key), "Node key must be in subtree.");
-  return *global_dfs_node_list_[node_key];
+const TagNode& DOMSubtree::GetNodeByKey(NodeKey key) const {
+  ARBORIS_ASSERT(isInSubtree(key), "Node key must be in subtree.");
+  return *global_dfs_node_list_[key];
 }
 
 }  // namespace arboris

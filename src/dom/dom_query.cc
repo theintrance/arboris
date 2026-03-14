@@ -45,7 +45,7 @@ std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
   std::vector<DOMQuery> ret;
 
   auto candidate_keys = searchCandidatesFromSubtree(options);
-  for (const auto& candidate_key : candidate_keys) {
+  for (auto candidate_key : candidate_keys) {
     const auto& candidate = subtree_.GetNodeByKey(candidate_key);
     if (matchAllConditions(candidate, options)) {
       ret.push_back(buildSubQuery(candidate_key));

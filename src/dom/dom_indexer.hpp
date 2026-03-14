@@ -25,22 +25,21 @@ class DOMIndexer {
   DOMIndexer& operator=(DOMIndexer&&) = delete;
   virtual ~DOMIndexer() = default;
 
-  // TODO(team): avoid using const reference for NodePtr
-  void AddNode(const NodePtr& node);
+  void AddNode(const TagNode& node);
 
-  [[nodiscard]] std::optional<NodeKey> GetNodeKeyById(std::string_view id) const;
-  [[nodiscard]] std::optional<NodeKeyList> GetNodeKeyListByTag(Tag tag) const;
-  [[nodiscard]] std::optional<NodeKeyList> GetNodeKeyListByClass(std::string_view class_name) const;
-  [[nodiscard]] std::optional<NodeKeyList> GetNodeKeyListByAttribute(std::string_view attribute_name) const;
+  [[nodiscard]] std::optional<NodeLocator> GetNodeKeyById(std::string_view id) const;
+  [[nodiscard]] const NodeLocatorList* GetNodeKeyListByTag(Tag tag) const;
+  [[nodiscard]] const NodeLocatorList* GetNodeKeyListByClass(std::string_view class_name) const;
+  [[nodiscard]] const NodeLocatorList* GetNodeKeyListByAttribute(std::string_view attribute_name) const;
 
  private:
   // TODO(team): consider using std::list instead of std::vector for indexes
-  std::unordered_map<std::string, NodeKey> id_index_;
-  std::unordered_map<Tag, NodeKeyList> tag_index_;
-  std::unordered_map<std::string, NodeKeyList> class_index_;
+  std::unordered_map<std::string, NodeLocator> id_index_;
+  std::unordered_map<Tag, NodeLocatorList> tag_index_;
+  std::unordered_map<std::string, NodeLocatorList> class_index_;
 
   // TODO(team): consider indexing by value instead of name
-  std::unordered_map<std::string, NodeKeyList> attr_index_;
+  std::unordered_map<std::string, NodeLocatorList> attr_index_;
 };
 
 }  // namespace arboris

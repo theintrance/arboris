@@ -16,10 +16,15 @@ namespace arboris {
 class TagNode;
 
 using NodeKey = std::uint32_t;
-using NodeKeyList = std::vector<NodeKey>;
+using NodeLocatorList = std::vector<NodeLocator>;
 using NodeKeySpan = std::span<const NodeKey>;
 using NodePtr = std::shared_ptr<TagNode>;
 using NodeList = std::vector<NodePtr>;
+
+struct NodeLocator {
+    NodeKey key;
+    std::size_t in;
+};
 
 }  // namespace arboris
 

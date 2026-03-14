@@ -21,10 +21,10 @@
 namespace arboris {
 
 class DOMBuilder {
-  using NodeCreationCallback = std::function<void(const std::shared_ptr<TagNode>&)>;
+  using NodeCreationCallback = std::function<void(const TagNode&)>;
 
  public:
-  DOMBuilder(): dfs_node_list_{std::make_shared<TagNode>(0, HtmlToken{{0, 0}, Tag::kHtml, false}, nullptr)} {}
+  DOMBuilder() = default;
   DOMBuilder(const DOMBuilder&) = delete;
   DOMBuilder& operator=(const DOMBuilder&) = delete;
   DOMBuilder(DOMBuilder&&) = delete;
@@ -53,7 +53,7 @@ class DOMBuilder {
   bool closeTopNode();
 
  private:
-  std::uint32_t next_node_id_{0};
+  std::uint32_t next_node_key_{0};
   std::uint32_t euler_tour_timer_{0};
 
   NodeList dfs_node_list_;

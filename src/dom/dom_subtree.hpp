@@ -39,20 +39,21 @@ class DOMSubtree {
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByTag(Tag tag) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByClass(std::string_view class_name) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByAttribute(std::string_view attribute_name) const;
-  [[nodiscard]] const TagNode& GetNodeByKey(NodeKey node_key) const;
+  [[nodiscard]] const TagNode& GetNodeByKey(NodeKey key) const;
   [[nodiscard]] NodeKey GetRootKey() const noexcept {
     return in_;
   }
 
  private:
-  bool isInSubtree(NodeKey node_key) const noexcept {
-    return node_key >= in_ && node_key <= out_;
+  bool isInSubtree(std::uint32_t euler_tour_in) const noexcept {
+    return euler_tour_in >= in_ && euler_tour_in <= out_;
   }
 
   std::span<const NodeKey> sliceSubtreeRange(const NodeKeyList& node_keys) const noexcept {
     auto it  = std::lower_bound(node_keys.begin(), node_keys.end(), in_);
     auto end = std::upper_bound(node_keys.begin(), node_keys.end(), out_);
-    return std::span<const NodeKey>(it, static_cast<std::size_t>(std::distance(it, end)));
+    auto res = std::span<const NodeKey>(it, static_cast<std::size_t>(std::distance(it, end)));
+    return res;
   }
 
  private:
