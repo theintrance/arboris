@@ -37,11 +37,11 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
     node_creation_callback_(node);
   }
 
+  dfs_node_list_.emplace_back(std::move(node));
+
   if (is_void_tag) {
     return closeTopNode();
   }
-
-  dfs_node_list_.emplace_back(std::move(node));
   return true;
 }
 
@@ -53,7 +53,6 @@ bool DOMBuilder::FeedTextToken(HtmlTextToken&& token) {
     parent);
 
   parent->AddChild(text_node);
-  dfs_node_list_.emplace_back(std::move(text_node));
   return true;
 }
 
@@ -81,11 +80,15 @@ bool DOMBuilder::closeTopNode() {
   auto top_node = node_stack_.top();
   node_stack_.pop();
 
-  std::uint32_t sum_of_sub_tree_sizes = 0;
-  for (const auto& child : top_node.children();) {
-    sum_of_sub_tree_sizes += child.sub_tree_size();
+  std::uint32_t sum_of_sub_tree_sizes = 1;
+  for (const auto& child : top_node->children()) {
+    const auto* tag_node = child->As<TagNode>();
+    if (tag_node == nullptr) {
+      continue;
+    }
+    sum_of_sub_tree_sizes += tag_node->sub_tree_size();
   }
-  top_node->set_sub_tree_size(sum_of_sub_tree_sizes + 1);
+  top_node->set_sub_tree_size(sum_of_sub_tree_sizes);
 
   return true;
 }
