@@ -43,10 +43,12 @@ class DOMSubtree {
     return key >= root_key_ && key < root_key_ + sub_tree_size_;
   }
 
-  std::span<const NodeKey> sliceSubtreeRange(const NodeKeyList& node_keys) const noexcept {
-    auto start_it = global_dfs_node_list_.begin() + root_key_;
-    auto end_it = start_it + sub_tree_size_;
-    return {start_it, end_it};
+  std::span<const NodeKey> sliceSubtreeRange(const NodeKeyList& keys) const noexcept {
+    const auto subtree_begin = root_key_;
+    const auto subtree_end = root_key_ + sub_tree_size_;
+    const auto first = std::lower_bound(keys.begin(), keys.end(), subtree_begin);
+    const auto last = std::lower_bound(first, keys.end(), subtree_end);
+    return {first, static_cast<std::size_t>(last - first)};
   }
 
  private:
