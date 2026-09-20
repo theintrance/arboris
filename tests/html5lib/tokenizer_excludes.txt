@@ -1,0 +1,7 @@
+# html5lib-tests tokenizer cases to leave out of the run, one "<file>:<index>" per line.
+# Text after '#' is ignored; <index> is the position in the file's "tests" array at the
+# html5lib-tests commit pinned in tests/CMakeLists.txt.
+#
+# Broken HTML (cases html5lib-tests marks with parse "errors") is already skipped by
+# conftest.py and does not belong here. Use this file only for a case the team decided
+# not to support, with a reason.
