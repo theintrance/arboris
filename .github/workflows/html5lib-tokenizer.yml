@@ -1,0 +1,70 @@
+name: html5lib tokenizer
+
+on:
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: compare with ${{ github.base_ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+
+      - name: Checkout ${{ github.base_ref }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # FetchContent pulls googletest, benchmark and html5lib-tests on every build.
+      - name: Cache FetchContent downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps
+            base/build/_deps
+          key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'tests/CMakeLists.txt') }}
+          restore-keys: deps-${{ runner.os }}-
+
+      - name: Build pull request
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DNO_BENCHMARK=ON -DARBORIS_HTML5LIB_TESTS=ON
+          cmake --build build -j"$(nproc)" --target html5lib_tokenizer_dump
+
+      # The base branch is measured with THIS pull request's harness, so both runs use the
+      # same yardstick even when the pull request changes the harness itself. Only the
+      # library differs. Building the dump binary by hand keeps base's tests/CMakeLists.txt
+      # out of it.
+      - name: Build ${{ github.base_ref }}
+        run: |
+          cmake -S base -B base/build -DCMAKE_BUILD_TYPE=Release \
+            -DNO_BENCHMARK=ON -DNO_TESTS=ON
+          cmake --build base/build -j"$(nproc)" --target arboris
+          c++ -std=c++20 -O2 -I base/src -o base/tokenizer_dump \
+            tests/html5lib/tokenizer_dump.cc -Lbase/build/src -larboris
+
+      - name: Run pull request
+        run: |
+          uv run --group test pytest tests/html5lib -q --junitxml=head.xml || true
+
+      - name: Run ${{ github.base_ref }}
+        run: |
+          uv run --group test pytest tests/html5lib -q --junitxml=base.xml \
+            --dump base/tokenizer_dump \
+            --tests-dir build/_deps/html5lib_tests-src/tokenizer || true
+
+      - name: Compare
+        shell: bash
+        run: |
+          uv run --group test python scripts/compare-html5lib-results.py \
+            --base base.xml --head head.xml | tee -a "$GITHUB_STEP_SUMMARY"
