@@ -40,12 +40,12 @@ class DOMBuilder {
     node_creation_callback_ = std::move(callback);
   }
 
-  [[nodiscard]] const NodeList& GetNodeList() const {
+  [[nodiscard]] const TagNodeList& GetNodeList() const {
     return dfs_node_list_;
   }
 
  private:
-  [[nodiscard]] NodePtr root() {
+  [[nodiscard]] TagNodePtr root() {
     ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
     return dfs_node_list_.front();
   }
@@ -55,8 +55,8 @@ class DOMBuilder {
  private:
   NodeKey next_node_key_{1};
 
-  NodeList dfs_node_list_;
-  std::stack<NodePtr> node_stack_;
+  TagNodeList dfs_node_list_;
+  std::stack<TagNodePtr> node_stack_;
 
   NodeCreationCallback node_creation_callback_;
 };

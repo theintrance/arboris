@@ -15,7 +15,7 @@
 
 namespace arboris {
 
-void DOMIndexer::AddNode(const NodePtr& node) {
+void DOMIndexer::AddNode(const TagNodePtr& node) {
   tag_index_[node->tag()].emplace_back(node->key());
   for (const auto& class_name : node->classes()) {
     class_index_[class_name].emplace_back(node->key());
