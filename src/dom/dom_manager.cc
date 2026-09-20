@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "dom/dom_manager.hpp"
+#include "dom/dom_types.hpp"
 
 namespace arboris {
 

@@ -28,8 +28,8 @@ class TagNode;
 
 class BaseNode {
  public:
-  explicit BaseNode(NodeType type, std::uint32_t id, std::shared_ptr<TagNode> parent = nullptr)
-      : node_type_(type), key_(id), parent_(std::move(parent)) {}
+  explicit BaseNode(NodeType type, std::shared_ptr<TagNode> parent = nullptr)
+      : node_type_(type), parent_(std::move(parent)) {}
 
   BaseNode(const BaseNode&) = delete;
   BaseNode& operator=(const BaseNode&) = delete;
@@ -37,10 +37,6 @@ class BaseNode {
   BaseNode& operator=(BaseNode&&) = delete;
 
   virtual ~BaseNode() = default;
-
-  [[nodiscard]] std::uint32_t key() const noexcept {
-    return key_;
-  }
 
   [[nodiscard]] NodeType node_type() const noexcept {
     return node_type_;
@@ -68,7 +64,6 @@ class BaseNode {
 
  private:
   const NodeType node_type_;
-  const std::uint32_t key_;
   const std::weak_ptr<TagNode> parent_;
   std::string_view text_content_;
 };

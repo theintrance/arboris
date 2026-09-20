@@ -41,7 +41,7 @@ class DOMManager {
 
  private:
   // Nodes list ordered by DFS in-order
-  NodeList dfs_node_list_;
+  TagNodeList dfs_node_list_;
   std::shared_ptr<StringPool> string_pool_;
   DOMIndexer dom_indexer_;
 };

@@ -132,37 +132,4 @@ Tag FromString(std::string_view tag_name) {
   return it->second;
 }
 
-bool IsVoidTag(Tag tag) {
-  static constexpr auto kVoidTags = CreateTagSet({
-    Tag::kArea,
-    Tag::kBase,
-    Tag::kBr,
-    Tag::kCol,
-    Tag::kEmbed,
-    Tag::kHr,
-    Tag::kImg,
-    Tag::kInput,
-    Tag::kLink,
-    Tag::kMeta,
-    Tag::kSource,
-    Tag::kTrack,
-    Tag::kWbr,
-  });
-  return ContainsTag(kVoidTags, tag);
-}
-
-bool ContainsTag(TagSet tag_set, Tag tag) {
-  std::size_t tag_index = static_cast<std::size_t>(tag);
-  return tag_set.bits[tag_index >> 6] & (1ULL << (tag_index & 63));
-}
-
-constexpr TagSet CreateTagSet(std::initializer_list<Tag> tags) {
-  TagSet tag_set{};
-  for (const auto tag : tags) {
-    std::uint8_t tag_index = static_cast<std::uint8_t>(tag);
-    tag_set.bits[tag_index >> 6] |= (1ULL << (tag_index & 63));
-  }
-  return tag_set;
-}
-
 }  // namespace arboris

@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cstdint>
+#include <initializer_list>
 #include <string_view>
 
 namespace arboris {
@@ -133,9 +134,40 @@ struct TagSet {
 };
 
 Tag FromString(std::string_view tag_name);
-inline bool IsVoidTag(Tag tag);
-inline bool ContainsTag(TagSet tag_set, Tag tag);
-constexpr TagSet CreateTagSet(std::initializer_list<Tag> tags);
+
+constexpr TagSet CreateTagSet(std::initializer_list<Tag> tags) {
+  TagSet tag_set{};
+  for (const auto tag : tags) {
+    std::uint8_t tag_index = static_cast<std::uint8_t>(tag);
+    tag_set.bits[tag_index >> 6] |= (1ULL << (tag_index & 63));
+  }
+  return tag_set;
+}
+
+constexpr bool ContainsTag(TagSet tag_set, Tag tag) {
+  std::size_t tag_index = static_cast<std::size_t>(tag);
+  return (tag_set.bits[tag_index >> 6] & (1ULL << (tag_index & 63))) != 0;
+}
+
+inline bool IsVoidTag(Tag tag) {
+  static constexpr auto kVoidTags = CreateTagSet({
+    Tag::kArea,
+    Tag::kBase,
+    Tag::kBr,
+    Tag::kCol,
+    Tag::kEmbed,
+    Tag::kHr,
+    Tag::kImg,
+    Tag::kInput,
+    Tag::kLink,
+    Tag::kMeta,
+    Tag::kSource,
+    Tag::kTrack,
+    Tag::kWbr,
+  });
+
+  return ContainsTag(kVoidTags, tag);
+}
 
 }  // namespace arboris
 

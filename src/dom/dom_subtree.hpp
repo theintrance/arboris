@@ -24,13 +24,13 @@ class DOMSubtree {
 
   // Constructor for subtree of the root node
   DOMSubtree(
-    const NodeList& global_dfs_node_list,
+    const TagNodeList& global_dfs_node_list,
     const DOMIndexer& global_dom_indexer,
     const TagNode& subtree_root) :
       global_dfs_node_list_(global_dfs_node_list),
       global_dom_indexer_(global_dom_indexer),
       sub_tree_size_(subtree_root.sub_tree_size()),
-      node_key_(subtree_root.key()) {}
+      root_key_(subtree_root.key()) {}
 
   [[nodiscard]] std::optional<NodeKey> GetNodeById(std::string_view id) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByTag(Tag tag) const;
@@ -39,21 +39,23 @@ class DOMSubtree {
   [[nodiscard]] const TagNode& GetNodeByKey(NodeKey node_key) const;
 
  private:
-  bool isInSubtree(NodeKey node_key) const noexcept {
-    return node_key >= node_key_ && node_key < node_key_ + sub_tree_size_;
+  bool isInSubtree(NodeKey key) const noexcept {
+    return key >= root_key_ && key < root_key_ + sub_tree_size_;
   }
 
-  std::span<const NodeKey> sliceSubtreeRange(const NodeKeyList& node_keys) const noexcept {
-    auto start_it = global_dfs_node_list_.begin() + node_key_;
-    auto end_it = start_it + sub_tree_size_;
-    return {start_it, end_it};
+  std::span<const NodeKey> sliceSubtreeRange(const NodeKeyList& keys) const noexcept {
+    const auto subtree_begin = root_key_;
+    const auto subtree_end = root_key_ + sub_tree_size_;
+    const auto first = std::lower_bound(keys.begin(), keys.end(), subtree_begin);
+    const auto last = std::lower_bound(first, keys.end(), subtree_end);
+    return {first, static_cast<std::size_t>(last - first)};
   }
 
  private:
-  const NodeKey node_key_;
+  const NodeKey root_key_;
   const uint32_t sub_tree_size_;
 
-  const NodeList& global_dfs_node_list_;
+  const TagNodeList& global_dfs_node_list_;
   const DOMIndexer& global_dom_indexer_;
 };
 
