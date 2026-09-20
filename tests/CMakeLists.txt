@@ -13,7 +13,8 @@ endfunction()
 add_gtest(example_test example_test.cc)
 add_gtest(string_test string_test.cc)
 add_gtest(html_token_parser_test html_token_parser_test.cc)
-add_gtest(dom_manager_test dom_manager_test.cc)
+# TODO(team): add tests/dom_manager_test.cc (missing from #24) and re-enable
+# add_gtest(dom_manager_test dom_manager_test.cc)
 
 # TODO(team): enable this test after fixing DomBuilder
 # add_gtest(dom_builder_test dom_builder_test.cc)
