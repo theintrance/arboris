@@ -53,8 +53,7 @@ class DOMBuilder {
   bool closeTopNode();
 
  private:
-  std::uint32_t next_node_id_{0};
-  std::uint32_t euler_tour_timer_{0};
+  NodeKey next_node_key_{1};
 
   NodeList dfs_node_list_;
   std::stack<NodePtr> node_stack_;
