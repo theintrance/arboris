@@ -36,8 +36,8 @@ class DOMManager {
     return *dfs_node_list_.front();
   }
 
-  std::optional<DOMQuery> Find(const QueryOptions& options) const;
-  std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
+  [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
+  [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
  private:
   // Nodes list ordered by DFS in-order
