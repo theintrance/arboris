@@ -43,15 +43,13 @@ DOMManager::DOMManager(std::string_view html_content) :
   const bool success = html_token_parser.Parse();
   ARBORIS_ASSERT(success, "Failed to parse HTML content.");
 
-  TagNodeList nodes = builder.ReleaseNodeList();
-  // The root is opened in the builder's constructor and never closed, so its size is set
-  // here: it spans the whole document.
-  nodes.front()->set_sub_tree_size(static_cast<std::uint32_t>(nodes.size()));
-  store_.set_nodes(std::move(nodes));
+  builder.Finish();
+  store_.set_nodes(builder.ReleaseNodeList());
+  store_.set_text_arena(builder.ReleaseTextArena());
 
   // Indexing walks the finished nodes in key order, which is also memory order.
   for (const auto& node : store_.nodes()) {
-    store_.mutable_indexer().AddNode(NodeRef(node->key(), store_));
+    store_.mutable_indexer().AddNode(NodeRef(node.key(), store_));
   }
 
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");

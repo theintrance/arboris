@@ -14,6 +14,7 @@
 
 #include "dom/dom_indexer.hpp"
 #include "dom/dom_types.hpp"
+#include "dom/tag_node.hpp"
 #include "utils/html_tokens.hpp"
 
 namespace arboris {
@@ -54,8 +55,16 @@ class DOMStore {
     return attr_arena_;
   }
 
+  [[nodiscard]] const std::vector<TextRun>& text_arena() const noexcept {
+    return text_arena_;
+  }
+
   void set_nodes(TagNodeList&& nodes) {
     nodes_ = std::move(nodes);
+  }
+
+  void set_text_arena(std::vector<TextRun>&& text_arena) {
+    text_arena_ = std::move(text_arena);
   }
 
   DOMIndexer& mutable_indexer() noexcept {
@@ -71,6 +80,7 @@ class DOMStore {
   // array. The node keeps the run's offset and length; see HtmlToken.
   std::vector<std::string_view> class_arena_;
   std::vector<Attribute> attr_arena_;
+  std::vector<TextRun> text_arena_;
 
   DOMIndexer indexer_;
 };

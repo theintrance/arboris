@@ -7,8 +7,11 @@
 #ifndef SRC_DOM_NODE_REF_HPP_
 #define SRC_DOM_NODE_REF_HPP_
 
+#include <algorithm>
+#include <cstdint>
 #include <span>
 #include <string_view>
+#include <vector>
 
 #include "dom/dom_store.hpp"
 #include "dom/dom_types.hpp"
@@ -52,14 +55,39 @@ class NodeRef {
     return {store_->class_arena().data() + tag_node.class_begin(), tag_node.class_count()};
   }
 
+  // The text written directly inside this tag, in document order. Text further down sits
+  // on the node that holds it.
+  [[nodiscard]] std::span<const TextRun> text_runs() const noexcept {
+    const auto& tag_node = node();
+    return {store_->text_arena().data() + tag_node.text_begin(), tag_node.text_count()};
+  }
+
   [[nodiscard]] std::span<const Attribute> attributes() const noexcept {
     const auto& tag_node = node();
     return {store_->attr_arena().data() + tag_node.attr_begin(), tag_node.attr_count()};
   }
 
+  [[nodiscard]] NodeRef parent() const noexcept {
+    return NodeRef(node().parent_key(), *store_);
+  }
+
+  // Children are found by walking keys, not by keeping a list: the first child is the next
+  // key, and each sibling sits one whole subtree further on.
+  [[nodiscard]] std::vector<NodeRef> children() const {
+    std::vector<NodeRef> out;
+    const auto& tag_node = node();
+    const NodeKey end = key_ + tag_node.sub_tree_size();
+    for (NodeKey child = key_ + 1; child < end;) {
+      out.emplace_back(child, *store_);
+      // Never step by nothing: a size of 0 would loop here forever.
+      child += std::max(1U, store_->nodes()[child].sub_tree_size());
+    }
+    return out;
+  }
+
   [[nodiscard]] const TagNode& node() const noexcept {
     ARBORIS_ASSERT(key_ < store_->nodes().size(), "Node key is out of range.");
-    return *store_->nodes()[key_];
+    return store_->nodes()[key_];
   }
 
  private:
