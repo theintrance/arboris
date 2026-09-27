@@ -11,8 +11,9 @@
 #include <span>
 #include <vector>
 
+#include "dom/dom_store.hpp"
 #include "dom/dom_types.hpp"
-#include "dom/dom_indexer.hpp"
+#include "dom/tag_node.hpp"
 #include "utils/query_options.hpp"
 
 namespace arboris {
@@ -23,14 +24,10 @@ class DOMSubtree {
   DOMSubtree(const DOMSubtree& parent, const TagNode& subtree_root);
 
   // Constructor for subtree of the root node
-  DOMSubtree(
-    const TagNodeList& global_dfs_node_list,
-    const DOMIndexer& global_dom_indexer,
-    const TagNode& subtree_root) :
+  DOMSubtree(const DOMStore& store, const TagNode& subtree_root) :
       root_key_(subtree_root.key()),
       sub_tree_size_(subtree_root.sub_tree_size()),
-      global_dfs_node_list_(global_dfs_node_list),
-      global_dom_indexer_(global_dom_indexer) {}
+      store_(&store) {}
 
   [[nodiscard]] std::optional<NodeKey> GetNodeById(std::string_view id) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByTag(Tag tag) const;
@@ -52,11 +49,10 @@ class DOMSubtree {
   }
 
  private:
-  const NodeKey root_key_;
-  const uint32_t sub_tree_size_;
+  NodeKey root_key_;
+  std::uint32_t sub_tree_size_;
 
-  const TagNodeList& global_dfs_node_list_;
-  const DOMIndexer& global_dom_indexer_;
+  const DOMStore* store_;
 };
 
 }  // namespace arboris

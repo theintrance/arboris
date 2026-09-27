@@ -14,8 +14,8 @@
 #include <vector>
 
 #include "dom/dom_builder.hpp"
-#include "dom/dom_indexer.hpp"
 #include "dom/dom_query.hpp"
+#include "dom/dom_store.hpp"
 #include "dom/html_token_parser.hpp"
 #include "utils/string_pool.hpp"
 #include "utils/query_options.hpp"
@@ -32,18 +32,16 @@ class DOMManager {
   virtual ~DOMManager() = default;
 
   [[nodiscard]] const TagNode& GetRoot() const {
-    ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
-    return *dfs_node_list_.front();
+    ARBORIS_ASSERT(!store_.nodes().empty(), "Root node is nullptr.");
+    return *store_.nodes().front();
   }
 
   [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
  private:
-  // Nodes list ordered by DFS in-order
-  TagNodeList dfs_node_list_;
+  DOMStore store_;
   std::shared_ptr<StringPool> string_pool_;
-  DOMIndexer dom_indexer_;
 };
 
 }  // namespace arboris

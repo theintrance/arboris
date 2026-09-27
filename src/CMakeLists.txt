@@ -19,6 +19,7 @@ set(ARBORIS_HEADERS
   dom/token_parser.hpp
   dom/html_token_parser.hpp
   dom/base_node.hpp
+  dom/dom_store.hpp
   dom/tag_node.hpp
   dom/text_node.hpp
   string/string.hpp

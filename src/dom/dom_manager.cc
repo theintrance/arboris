@@ -14,10 +14,12 @@
 namespace arboris {
 
 DOMManager::DOMManager(std::string_view html_content) :
-  string_pool_(std::make_shared<StringPool>(html_content.size())),
-  dom_indexer_() {
+  store_(html_content),
+  string_pool_(std::make_shared<StringPool>(html_content.size())) {
   DOMBuilder builder;
-  HtmlTokenParser html_token_parser(html_content, string_pool_);
+
+  // Parsing reads the store's own copy of the document, not the caller's buffer.
+  HtmlTokenParser html_token_parser(store_.document(), string_pool_);
 
   html_token_parser.set_feed_open_token_callback(
       std::bind(&DOMBuilder::FeedOpenToken, &builder, std::placeholders::_1, std::placeholders::_2));
@@ -30,13 +32,14 @@ DOMManager::DOMManager(std::string_view html_content) :
 
   // Set up node creation callback for DOMBuilder to index nodes
   builder.SetNodeCreationCallback(
-      std::bind(&DOMIndexer::AddNode, &dom_indexer_, std::placeholders::_1));
+      std::bind(&DOMIndexer::AddNode, &store_.mutable_indexer(), std::placeholders::_1));
 
   bool success = html_token_parser.Parse();
   ARBORIS_ASSERT(success, "Failed to parse HTML content.");
 
-  dfs_node_list_ = builder.ReleaseNodeList();
-  dfs_node_list_.front()->set_sub_tree_size(dfs_node_list_.size());
+  TagNodeList nodes = builder.ReleaseNodeList();
+  nodes.front()->set_sub_tree_size(static_cast<std::uint32_t>(nodes.size()));
+  store_.set_nodes(std::move(nodes));
 
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");
 }
@@ -44,14 +47,14 @@ DOMManager::DOMManager(std::string_view html_content) :
 
 std::optional<DOMQuery> DOMManager::Find(const QueryOptions& options) const {
   const auto& root = GetRoot();
-  DOMSubtree root_subtree(dfs_node_list_, dom_indexer_, root);
+  DOMSubtree root_subtree(store_, root);
   DOMQuery root_query(root, root_subtree);
   return root_query.Find(options);
 }
 
 std::vector<DOMQuery> DOMManager::FindAll(const QueryOptions& options) const {
   const auto& root = GetRoot();
-  DOMSubtree root_subtree(dfs_node_list_, dom_indexer_, root);
+  DOMSubtree root_subtree(store_, root);
   DOMQuery root_query(root, root_subtree);
   return root_query.FindAll(options);
 }
