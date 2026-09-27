@@ -44,6 +44,11 @@ class DOMBuilder {
     return dfs_node_list_;
   }
 
+  // Hands the nodes over instead of copying every shared_ptr out of the builder.
+  [[nodiscard]] TagNodeList ReleaseNodeList() {
+    return std::move(dfs_node_list_);
+  }
+
  private:
   [[nodiscard]] TagNodePtr root() {
     ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");

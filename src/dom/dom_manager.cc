@@ -35,7 +35,7 @@ DOMManager::DOMManager(std::string_view html_content) :
   bool success = html_token_parser.Parse();
   ARBORIS_ASSERT(success, "Failed to parse HTML content.");
 
-  dfs_node_list_ = std::move(builder.GetNodeList());
+  dfs_node_list_ = builder.ReleaseNodeList();
   dfs_node_list_.front()->set_sub_tree_size(dfs_node_list_.size());
 
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");
