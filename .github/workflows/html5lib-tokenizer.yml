@@ -68,3 +68,10 @@ jobs:
         run: |
           uv run --group test python scripts/compare-html5lib-results.py \
             --base base.xml --head head.xml | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Runs even when Compare failed, so a regression does not hide a stale README and
+      # a stale README does not hide a regression.
+      - name: Check the README status table
+        if: always()
+        run: |
+          uv run --group test python scripts/html5lib_status.py --junit head.xml --check
