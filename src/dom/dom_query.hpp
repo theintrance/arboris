@@ -26,7 +26,7 @@ namespace arboris {
 class DOMQuery {
  public:
   explicit DOMQuery(const TagNode& subtree_root, const DOMSubtree& subtree) :
-    subtree_(subtree, subtree_root) {}
+    subtree_root_(subtree_root), subtree_(subtree, subtree_root) {}
 
   DOMQuery(const DOMQuery&) = default;
   DOMQuery& operator=(const DOMQuery&) = delete;
@@ -34,7 +34,7 @@ class DOMQuery {
   DOMQuery& operator=(DOMQuery&&) = delete;
   virtual ~DOMQuery() = default;
 
-  [[nodiscard]] NodePtr Get() const noexcept {
+  [[nodiscard]] const TagNode& Get() const noexcept {
     return subtree_root_;
   }
 
@@ -46,7 +46,7 @@ class DOMQuery {
   [[nodiscard]] NodeKeySpan searchCandidatesFromSubtree(const QueryOptions& options) const;
   [[nodiscard]] bool matchAllConditions(const TagNode& node, const QueryOptions& options) const;
 
-  const NodePtr subtree_root_;
+  const TagNode& subtree_root_;
   DOMSubtree subtree_;
 };
 
