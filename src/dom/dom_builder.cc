@@ -53,6 +53,13 @@ void DOMBuilder::flushPendingRuns(TagNode* node) {
 }
 
 void DOMBuilder::Finish() {
+  // Parsing can stop early on markup the tokenizer cannot follow, leaving tags open. Their
+  // subtree size would stay 0, and a walk that steps by subtree size would never move on.
+  // Closing them here keeps every node's size at least 1 whatever the parse did.
+  while (!node_stack_.empty()) {
+    closeTopNode();
+  }
+
   flushPendingRuns(&root());
   root().set_sub_tree_size(static_cast<std::uint32_t>(dfs_node_list_.size()));
 }

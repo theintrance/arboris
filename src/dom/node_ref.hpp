@@ -7,6 +7,7 @@
 #ifndef SRC_DOM_NODE_REF_HPP_
 #define SRC_DOM_NODE_REF_HPP_
 
+#include <algorithm>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -75,8 +76,10 @@ class NodeRef {
     std::vector<NodeRef> out;
     const auto& tag_node = node();
     const NodeKey end = key_ + tag_node.sub_tree_size();
-    for (NodeKey child = key_ + 1; child < end; child += store_->nodes()[child].sub_tree_size()) {
+    for (NodeKey child = key_ + 1; child < end;) {
       out.emplace_back(child, *store_);
+      // Never step by nothing: a size of 0 would loop here forever.
+      child += std::max(1U, store_->nodes()[child].sub_tree_size());
     }
     return out;
   }
