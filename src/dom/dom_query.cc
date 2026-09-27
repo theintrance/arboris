@@ -6,31 +6,45 @@
 
 #include "dom/dom_query.hpp"
 
-#include <optional>
-#include <string>
+#include <algorithm>
 #include <limits>
+#include <optional>
+#include <span>
+#include <string>
 #include <vector>
-#include <utility>
 
+#include "utils/html_tokens.hpp"
 #include "utils/set_utils.hpp"
 
 namespace arboris {
 
-std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
-  // TODO(team): Implement this
-  auto candidate_keys = searchCandidatesFromSubtree(options);
-  if (candidate_keys.empty()) {
-    return std::nullopt;
-  }
+namespace {
 
-  for (const auto& candidate_key : candidate_keys) {
-    const auto& candidate = subtree_.GetNodeByKey(candidate_key);
-    if (matchAllConditions(candidate, options)) {
-      const auto& node = subtree_.GetNodeByKey(candidate_key);
-      return DOMQuery(node, subtree_);
+// An attribute asked for with no value matches on its name alone, which is how a
+// `[disabled]` style condition reads. A node carries few attributes, so its run is scanned
+// rather than hashed.
+bool MatchesAttributes(const AttributeMap& wanted, std::span<const Attribute> attributes) {
+  for (const auto& [name, values] : wanted) {
+    const auto found = std::ranges::find(attributes, name, &Attribute::name);
+    if (found == attributes.end()) {
+      return false;
+    }
+    if (!values.empty() && !values.contains(std::string(found->value))) {
+      return false;
     }
   }
+  return true;
+}
 
+}  // anonymous namespace
+
+std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
+  for (const auto& candidate_key : searchCandidatesFromSubtree(options)) {
+    const auto candidate = subtree_.GetNodeByKey(candidate_key);
+    if (matchAllConditions(candidate, options)) {
+      return DOMQuery(candidate, subtree_);
+    }
+  }
   return std::nullopt;
 }
 
@@ -39,17 +53,14 @@ std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
   if (!node_key) {
     return std::nullopt;
   }
-  const auto& node = subtree_.GetNodeByKey(node_key.value());
-  return DOMQuery(node, subtree_);
+  return DOMQuery(subtree_.GetNodeByKey(*node_key), subtree_);
 }
-
 
 std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
   std::vector<DOMQuery> ret;
 
-  auto candidate_keys = searchCandidatesFromSubtree(options);
-  for (const auto& candidate_key : candidate_keys) {
-    const auto& candidate = subtree_.GetNodeByKey(candidate_key);
+  for (const auto& candidate_key : searchCandidatesFromSubtree(options)) {
+    const auto candidate = subtree_.GetNodeByKey(candidate_key);
     if (matchAllConditions(candidate, options)) {
       ret.push_back(DOMQuery(candidate, subtree_));
     }
@@ -57,48 +68,39 @@ std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
   return ret;
 }
 
+// The cheapest index wins: every candidate is checked against all conditions anyway, so
+// the shortest list is the one worth walking.
 NodeKeySpan DOMQuery::searchCandidatesFromSubtree(const QueryOptions& options) const {
   std::size_t min_size = std::numeric_limits<std::size_t>::max();
   NodeKeySpan min_candidates;
 
-  if (options.tag.has_value()) {
-    auto tag_index_keys = subtree_.GetNodesByTag(options.tag.value());
-    if (tag_index_keys.has_value()) {
-      if (tag_index_keys->size() < min_size) {
-        min_size = tag_index_keys->size();
-        min_candidates = *tag_index_keys;
-      }
+  const auto consider = [&min_size, &min_candidates](NodeKeySpan keys) {
+    if (!keys.empty() && keys.size() < min_size) {
+      min_size = keys.size();
+      min_candidates = keys;
     }
+  };
+
+  if (options.tag.has_value()) {
+    consider(subtree_.GetNodesByTag(options.tag.value()));
   }
 
   if (options.classes.has_value()) {
     for (const auto& class_name : *options.classes) {
-      auto class_index_keys = subtree_.GetNodesByClass(class_name);
-      if (class_index_keys.has_value()) {
-        if (class_index_keys->size() < min_size) {
-          min_size = class_index_keys->size();
-          min_candidates = *class_index_keys;
-        }
-      }
+      consider(subtree_.GetNodesByClass(class_name));
     }
   }
 
   if (options.attributes.has_value()) {
     for (const auto& [attribute_name, _] : options.attributes.value()) {
-      auto attribute_index_keys = subtree_.GetNodesByAttribute(attribute_name);
-      if (attribute_index_keys.has_value()) {
-        if (attribute_index_keys->size() < min_size) {
-          min_size = attribute_index_keys->size();
-          min_candidates = *attribute_index_keys;
-        }
-      }
+      consider(subtree_.GetNodesByAttribute(attribute_name));
     }
   }
 
   return min_candidates;
 }
 
-bool DOMQuery::matchAllConditions(const TagNode& node, const QueryOptions& options) const {
+bool DOMQuery::matchAllConditions(const NodeRef& node, const QueryOptions& options) const {
   if (options.tag && node.tag() != options.tag.value()) {
     return false;
   }
@@ -107,7 +109,7 @@ bool DOMQuery::matchAllConditions(const TagNode& node, const QueryOptions& optio
     return false;
   }
 
-  if (options.attributes && !IsSubset(options.attributes.value(), node.attributes())) {
+  if (options.attributes && !MatchesAttributes(options.attributes.value(), node.attributes())) {
     return false;
   }
   // TODO(team): Implement text condition matching

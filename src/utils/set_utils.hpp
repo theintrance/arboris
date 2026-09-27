@@ -7,6 +7,9 @@
 #ifndef SRC_UTILS_SET_UTILS_HPP_
 #define SRC_UTILS_SET_UTILS_HPP_
 
+#include <algorithm>
+#include <iterator>
+#include <ranges>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -41,6 +44,22 @@ bool IsSubset(const std::unordered_map<T, std::unordered_set<U>>& subset,
     }
   }
   return true;
+}
+
+// The superset as a plain range rather than a set. A short contiguous range is faster to
+// scan than to hash, which is what a node's own classes are. The set-to-set overload above
+// is the more specialised one, so a set on the right still hashes.
+template <typename T, std::ranges::input_range Range>
+bool IsSubset(const std::unordered_set<T>& subset, const Range& super_set) {
+  if constexpr (std::ranges::sized_range<Range>) {
+    if (subset.size() > std::ranges::size(super_set)) {
+      return false;
+    }
+  }
+
+  return std::all_of(subset.begin(), subset.end(), [&super_set](const auto& value) {
+    return std::ranges::find(super_set, value) != std::ranges::end(super_set);
+  });
 }
 
 }  // namespace arboris
