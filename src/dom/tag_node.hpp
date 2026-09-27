@@ -67,7 +67,7 @@ class TagNode final : public BaseNode {
 
  private:
   const NodeKey key_;
-  std::size_t sub_tree_size_;
+  std::size_t sub_tree_size_{0};
   const HtmlToken html_token_;
   std::vector<std::shared_ptr<BaseNode>> children_;
 };

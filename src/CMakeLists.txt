@@ -3,6 +3,8 @@ set(ARBORIS_SOURCES
   dom/dom_manager.cc
   dom/dom_builder.cc
   dom/dom_indexer.cc
+  dom/dom_subtree.cc
+  dom/dom_query.cc
   dom/html_token_parser.cc
   string/string_scalar.cc
   utils/tag.cc
@@ -12,6 +14,8 @@ set(ARBORIS_SOURCES
 set(ARBORIS_HEADERS
   dom/dom_manager.hpp
   dom/dom_builder.hpp
+  dom/dom_subtree.hpp
+  dom/dom_query.hpp
   dom/token_parser.hpp
   dom/html_token_parser.hpp
   dom/base_node.hpp

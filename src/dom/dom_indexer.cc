@@ -29,19 +29,19 @@ std::optional<NodeKey> DOMIndexer::GetNodeKeyById(std::string_view id) const {
   return it != id_index_.end() ? std::make_optional(it->second) : std::nullopt;
 }
 
-std::optional<NodeKeyList> DOMIndexer::GetNodeKeyListByTag(Tag tag) const {
+NodeKeySpan DOMIndexer::GetNodeKeyListByTag(Tag tag) const {
   auto it = tag_index_.find(tag);
-  return it != tag_index_.end() ? std::make_optional(it->second) : std::nullopt;
+  return it != tag_index_.end() ? NodeKeySpan{it->second} : NodeKeySpan{};
 }
 
-std::optional<NodeKeyList> DOMIndexer::GetNodeKeyListByClass(std::string_view class_name) const {
+NodeKeySpan DOMIndexer::GetNodeKeyListByClass(std::string_view class_name) const {
   auto it = class_index_.find(std::string(class_name));
-  return it != class_index_.end() ? std::make_optional(it->second) : std::nullopt;
+  return it != class_index_.end() ? NodeKeySpan{it->second} : NodeKeySpan{};
 }
 
-std::optional<NodeKeyList> DOMIndexer::GetNodeKeyListByAttribute(std::string_view attribute_name) const {
+NodeKeySpan DOMIndexer::GetNodeKeyListByAttribute(std::string_view attribute_name) const {
   auto it = attr_index_.find(std::string(attribute_name));
-  return it != attr_index_.end() ? std::make_optional(it->second) : std::nullopt;
+  return it != attr_index_.end() ? NodeKeySpan{it->second} : NodeKeySpan{};
 }
 
 }  // namespace arboris

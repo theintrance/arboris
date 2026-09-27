@@ -38,13 +38,13 @@ class DOMQuery {
     return subtree_root_;
   }
 
-  std::optional<DOMQuery> Find(const QueryOptions& options) const;
-  std::optional<DOMQuery> Find(const std::string& id) const;
-  std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
+  [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
+  [[nodiscard]] std::optional<DOMQuery> Find(const std::string& id) const;
+  [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
  private:
-  NodeKeySpan searchCandidatesFromSubtree(const QueryOptions& options) const;
-  bool matchAllConditions(const TagNode& node, const QueryOptions& options) const;
+  [[nodiscard]] NodeKeySpan searchCandidatesFromSubtree(const QueryOptions& options) const;
+  [[nodiscard]] bool matchAllConditions(const TagNode& node, const QueryOptions& options) const;
 
   const NodePtr subtree_root_;
   DOMSubtree subtree_;

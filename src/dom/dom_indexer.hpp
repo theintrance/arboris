@@ -29,9 +29,9 @@ class DOMIndexer {
   void AddNode(const TagNodePtr& node);
 
   [[nodiscard]] std::optional<NodeKey> GetNodeKeyById(std::string_view id) const;
-  [[nodiscard]] std::optional<NodeKeyList> GetNodeKeyListByTag(Tag tag) const;
-  [[nodiscard]] std::optional<NodeKeyList> GetNodeKeyListByClass(std::string_view class_name) const;
-  [[nodiscard]] std::optional<NodeKeyList> GetNodeKeyListByAttribute(std::string_view attribute_name) const;
+  [[nodiscard]] NodeKeySpan GetNodeKeyListByTag(Tag tag) const;
+  [[nodiscard]] NodeKeySpan GetNodeKeyListByClass(std::string_view class_name) const;
+  [[nodiscard]] NodeKeySpan GetNodeKeyListByAttribute(std::string_view attribute_name) const;
 
  private:
   // TODO(team): consider using std::list instead of std::vector for indexes
