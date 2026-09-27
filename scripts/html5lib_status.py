@@ -42,6 +42,17 @@ def percent(passed: int, total: int) -> int:
     return passed * 100 // total if total else 0
 
 
+def status(passed: int, total: int) -> str:
+    """Complete, started, untouched.
+
+    Keyed off the counts rather than the floored rate: 2266 of 2272 shows as 99% but is
+    not finished, and a rate that floors to 0% with a case or two passing has started.
+    """
+    if passed == total:
+        return "✅"
+    return "❌" if passed == 0 else "⚠️"
+
+
 def count_out_of_scope(tests_dir: Path) -> tuple[int, int]:
     """(broken HTML, needs state switching), counted the way conftest skips them."""
     broken = switching = 0
@@ -67,7 +78,7 @@ def tally(cases: list[Case], results: dict[str, bool]) -> tuple[Counter[Area], C
 
 def render(cases: list[Case], results: dict[str, bool], tests_dir: Path) -> str:
     passed, total = tally(cases, results)
-    rows = ["| Area | Passing | Rate |", "|---|---:|---:|"]
+    rows = ["| Area | Passing | Rate | |", "|---|---:|---:|:-:|"]
     rates: list[int] = []
 
     for major in MAJORS:
@@ -78,12 +89,18 @@ def render(cases: list[Case], results: dict[str, bool], tests_dir: Path) -> str:
         major_total = sum(total[a] for a in features)
         rate = percent(major_passed, major_total)
         rates.append(rate)
-        rows.append(f"| **{major}** | **{major_passed} / {major_total}** | **{rate}%** |")
+        rows.append(
+            f"| **{major}** | **{major_passed} / {major_total}** | **{rate}%** "
+            f"| {status(major_passed, major_total)} |"
+        )
         # One feature says no more than its area already did.
         if len(features) > 1:
             for area in features:
                 share = percent(passed[area], total[area])
-                rows.append(f"| ↳ {area.feature} | {passed[area]} / {total[area]} | {share}% |")
+                rows.append(
+                    f"| ↳ {area.feature} | {passed[area]} / {total[area]} | {share}% "
+                    f"| {status(passed[area], total[area])} |"
+                )
 
     overall = sum(rates) // len(rates)
     in_scope_passed = sum(passed.values())
@@ -95,6 +112,8 @@ def render(cases: list[Case], results: dict[str, bool], tests_dir: Path) -> str:
             MARKER_START,
             "",
             f"**{overall}% conformant** — the unweighted mean of the six area rates below.",
+            "",
+            "✅ complete · ⚠️ in progress · ❌ nothing passes yet",
             "",
             *rows,
             "",
