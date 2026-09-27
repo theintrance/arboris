@@ -6,14 +6,37 @@
 
 #include "dom/dom_query.hpp"
 
+#include <algorithm>
 #include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
+#include "utils/html_tokens.hpp"
 #include "utils/set_utils.hpp"
 
 namespace arboris {
+
+namespace {
+
+// An attribute asked for with no value matches on its name alone, which is how a
+// `[disabled]` style condition reads. A node carries few attributes, so its run is scanned
+// rather than hashed.
+bool MatchesAttributes(const AttributeMap& wanted, std::span<const Attribute> attributes) {
+  for (const auto& [name, values] : wanted) {
+    const auto found = std::ranges::find(attributes, name, &Attribute::name);
+    if (found == attributes.end()) {
+      return false;
+    }
+    if (!values.empty() && !values.contains(std::string(found->value))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+}  // anonymous namespace
 
 std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
   for (const auto& candidate_key : searchCandidatesFromSubtree(options)) {
@@ -86,7 +109,7 @@ bool DOMQuery::matchAllConditions(const NodeRef& node, const QueryOptions& optio
     return false;
   }
 
-  if (options.attributes && !IsSubset(options.attributes.value(), node.attributes())) {
+  if (options.attributes && !MatchesAttributes(options.attributes.value(), node.attributes())) {
     return false;
   }
   // TODO(team): Implement text condition matching

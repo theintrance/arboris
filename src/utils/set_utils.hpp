@@ -8,13 +8,10 @@
 #define SRC_UTILS_SET_UTILS_HPP_
 
 #include <algorithm>
-#include <span>
-#include <string>
-#include <string_view>
+#include <iterator>
+#include <ranges>
 #include <unordered_map>
 #include <unordered_set>
-
-#include "utils/html_tokens.hpp"
 
 namespace arboris {
 
@@ -49,34 +46,20 @@ bool IsSubset(const std::unordered_map<T, std::unordered_set<U>>& subset,
   return true;
 }
 
-// A node carries a handful of classes in one contiguous run, so scanning it beats hashing
-// each name. Same for attributes below.
-inline bool IsSubset(const ClassSet& wanted, std::span<const std::string_view> classes) {
-  if (wanted.size() > classes.size()) {
-    return false;
+// The superset as a plain range rather than a set. A short contiguous range is faster to
+// scan than to hash, which is what a node's own classes are. The set-to-set overload above
+// is the more specialised one, so a set on the right still hashes.
+template <typename T, std::ranges::input_range Range>
+bool IsSubset(const std::unordered_set<T>& subset, const Range& super_set) {
+  if constexpr (std::ranges::sized_range<Range>) {
+    if (subset.size() > std::ranges::size(super_set)) {
+      return false;
+    }
   }
 
-  return std::all_of(wanted.begin(), wanted.end(), [classes](std::string_view name) {
-    return std::find(classes.begin(), classes.end(), name) != classes.end();
+  return std::all_of(subset.begin(), subset.end(), [&super_set](const auto& value) {
+    return std::ranges::find(super_set, value) != std::ranges::end(super_set);
   });
-}
-
-// An attribute named with no wanted value matches on the name alone, which is how
-// `[disabled]` style conditions read.
-inline bool IsSubset(const AttributeMap& wanted, std::span<const Attribute> attributes) {
-  for (const auto& [name, values] : wanted) {
-    const auto found = std::find_if(
-        attributes.begin(), attributes.end(),
-        [&name](const Attribute& attribute) { return attribute.name == name; });
-
-    if (found == attributes.end()) {
-      return false;
-    }
-    if (!values.empty() && !values.contains(std::string(found->value))) {
-      return false;
-    }
-  }
-  return true;
 }
 
 }  // namespace arboris
