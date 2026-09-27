@@ -87,6 +87,7 @@ Testing/
 # IDE settings
 .vscode/
 .idea/
+.claude/
 
 # CMake
 cmake-build-debug/
