@@ -9,10 +9,8 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include "dom/dom_types.hpp"
 #include "dom/base_node.hpp"
@@ -26,15 +24,16 @@ class TagNode final : public BaseNode {
  public:
   static constexpr NodeType kNodeType = NodeType::kTag;
 
-  explicit TagNode(NodeKey key, HtmlToken&& token, const std::shared_ptr<TagNode> parent)
-      : BaseNode(kNodeType, parent), key_(key), html_token_(std::move(token)) {}
+  TagNode(NodeKey key, NodeKey parent_key, HtmlToken&& token)
+      : BaseNode(kNodeType), key_(key), parent_key_(parent_key), html_token_(std::move(token)) {}
 
   [[nodiscard]] NodeKey key() const noexcept {
     return key_;
   }
 
-  [[nodiscard]] const std::vector<std::shared_ptr<TagNode>>& children() const noexcept {
-    return children_;
+  // The root is its own parent, so walking up always terminates.
+  [[nodiscard]] NodeKey parent_key() const noexcept {
+    return parent_key_;
   }
 
   [[nodiscard]] std::string_view id() const noexcept {
@@ -82,18 +81,13 @@ class TagNode final : public BaseNode {
     return sub_tree_size_;
   }
 
-  void AddChild(std::shared_ptr<TagNode> child) {
-    ARBORIS_ASSERT(child != nullptr, "child must not be nullptr.");
-    children_.emplace_back(std::move(child));
-  }
-
  private:
   const NodeKey key_;
+  const NodeKey parent_key_;
   std::uint32_t sub_tree_size_{0};
   std::uint32_t text_begin_{0};
   std::uint32_t text_count_{0};
   const HtmlToken html_token_;
-  std::vector<std::shared_ptr<TagNode>> children_;
 };
 
 }  // namespace arboris

@@ -28,8 +28,7 @@ class TagNode;
 
 class BaseNode {
  public:
-  explicit BaseNode(NodeType type, std::shared_ptr<TagNode> parent = nullptr)
-      : node_type_(type), parent_(std::move(parent)) {}
+  explicit BaseNode(NodeType type) : node_type_(type) {}
 
   BaseNode(const BaseNode&) = delete;
   BaseNode& operator=(const BaseNode&) = delete;
@@ -64,7 +63,6 @@ class BaseNode {
 
  private:
   const NodeType node_type_;
-  const std::weak_ptr<TagNode> parent_;
   std::string_view text_content_;
 };
 

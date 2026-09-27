@@ -18,18 +18,12 @@ bool DOMBuilder::Validate() const {
 }
 
 bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
-  bool is_void_tag = token.is_void_tag;
-  auto parent = node_stack_.empty() ? root() : node_stack_.top();
-  auto node = std::make_shared<TagNode>(
-    next_node_key_++,
-    std::move(token),
-    parent);
+  const bool is_void_tag = token.is_void_tag;
+  const NodeKey parent_key = node_stack_.empty() ? root()->key() : node_stack_.top()->key();
+  auto node = std::make_shared<TagNode>(next_node_key_++, parent_key, std::move(token));
 
   node_stack_.push(node);
   pending_marks_.push_back(static_cast<std::uint32_t>(pending_runs_.size()));
-  if (parent) {
-    parent->AddChild(node);
-  }
 
   node->set_text_content({text_begin, 0});  // NOTLINT(bugprone-string-constructor)
 

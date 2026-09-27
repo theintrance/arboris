@@ -21,7 +21,7 @@ namespace arboris {
 
 class DOMBuilder {
  public:
-  DOMBuilder(): dfs_node_list_{std::make_shared<TagNode>(0, HtmlToken{{0, 0}, Tag::kHtml, false}, nullptr)} {}
+  DOMBuilder(): dfs_node_list_{std::make_shared<TagNode>(0, 0, HtmlToken{{0, 0}, Tag::kHtml, false})} {}
   DOMBuilder(const DOMBuilder&) = delete;
   DOMBuilder& operator=(const DOMBuilder&) = delete;
   DOMBuilder(DOMBuilder&&) = delete;
