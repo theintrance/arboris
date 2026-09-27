@@ -11,25 +11,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import re
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
-CASE_ID_RE = re.compile(r"\[(.+)\]$")
-NOT_RUN = {"failure", "error", "skipped"}
-
-
-def load_results(path: Path) -> dict[str, bool]:
-    """Map every case id in a JUnit XML file to whether it passed."""
-    results: dict[str, bool] = {}
-    for testcase in ET.parse(path).getroot().iter("testcase"):
-        match = CASE_ID_RE.search(testcase.get("name", ""))
-        if match is None:
-            continue
-        passed = all(child.tag not in NOT_RUN for child in testcase)
-        results[match.group(1)] = passed
-    return results
+from html5lib_junit import load_results
 
 
 def format_list(title: str, case_ids: list[str], limit: int) -> list[str]:
