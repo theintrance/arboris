@@ -7,7 +7,6 @@
 #include "dom/dom_indexer.hpp"
 
 #include <optional>
-#include <string>
 #include <string_view>
 #include <unordered_map>
 
@@ -16,20 +15,37 @@
 
 namespace arboris {
 
-void DOMIndexer::AddNode(const NodeRef& node) {
-  const NodeKey node_key = node.key();
+namespace {
 
-  tag_index_[node.tag()].emplace_back(node_key);
+NodeKeySpan Lookup(const std::unordered_map<std::string_view, NodeKeyList>& index,
+                   std::string_view key) {
+  auto it = index.find(key);
+  return it != index.end() ? NodeKeySpan{it->second} : NodeKeySpan{};
+}
+
+}  // anonymous namespace
+
+void DOMIndexer::AddNode(const NodeRef& node) {
+  const NodeKey key = node.key();
+
+  tag_index_[node.tag()].emplace_back(key);
 
   for (const auto& class_name : node.classes()) {
-    class_index_[class_name].emplace_back(node_key);
+    class_index_[class_name].emplace_back(key);
   }
-  // TODO(team): add id index
+
+  for (const auto& attribute : node.attributes()) {
+    attr_index_[attribute.name].emplace_back(key);
+  }
+
+  // The first id wins, as querySelector does with a repeated id.
+  if (!node.id().empty()) {
+    id_index_.try_emplace(node.id(), key);
+  }
 }
 
 std::optional<NodeKey> DOMIndexer::GetNodeKeyById(std::string_view id) const {
-  // TODO(team): consider heterogeneous lookup to avoid std::string allocation
-  auto it = id_index_.find(std::string(id));
+  auto it = id_index_.find(id);
   return it != id_index_.end() ? std::make_optional(it->second) : std::nullopt;
 }
 
@@ -39,13 +55,11 @@ NodeKeySpan DOMIndexer::GetNodeKeyListByTag(Tag tag) const {
 }
 
 NodeKeySpan DOMIndexer::GetNodeKeyListByClass(std::string_view class_name) const {
-  auto it = class_index_.find(std::string(class_name));
-  return it != class_index_.end() ? NodeKeySpan{it->second} : NodeKeySpan{};
+  return Lookup(class_index_, class_name);
 }
 
 NodeKeySpan DOMIndexer::GetNodeKeyListByAttribute(std::string_view attribute_name) const {
-  auto it = attr_index_.find(std::string(attribute_name));
-  return it != attr_index_.end() ? NodeKeySpan{it->second} : NodeKeySpan{};
+  return Lookup(attr_index_, attribute_name);
 }
 
 }  // namespace arboris

@@ -4,12 +4,17 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
+#include "dom/dom_manager.hpp"
+
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
-#include "dom/dom_manager.hpp"
+#include "dom/dom_builder.hpp"
+#include "dom/dom_subtree.hpp"
 #include "dom/dom_types.hpp"
+#include "dom/html_token_parser.hpp"
 
 namespace arboris {
 
@@ -18,27 +23,33 @@ DOMManager::DOMManager(std::string_view html_content) :
   string_pool_(std::make_shared<StringPool>(html_content.size())) {
   DOMBuilder builder;
 
-  // Parsing reads the store's own copy of the document, not the caller's buffer.
+  // Parsing reads the store's own copy, so every view a token keeps points into a buffer
+  // that outlives the caller's.
   HtmlTokenParser html_token_parser(store_.document(), string_pool_);
 
   html_token_parser.set_feed_open_token_callback(
-      std::bind(&DOMBuilder::FeedOpenToken, &builder, std::placeholders::_1, std::placeholders::_2));
+      [&builder](HtmlToken&& token, const char* text_begin) {
+        return builder.FeedOpenToken(std::move(token), text_begin);
+      });
 
   html_token_parser.set_feed_text_token_callback(
-      std::bind(&DOMBuilder::FeedTextToken, &builder, std::placeholders::_1));
+      [&builder](HtmlTextToken&& token) { return builder.FeedTextToken(std::move(token)); });
 
   html_token_parser.set_feed_close_token_callback(
-      std::bind(&DOMBuilder::FeedCloseToken, &builder, std::placeholders::_1, std::placeholders::_2));
+      [&builder](HtmlCloseToken&& token, const char* text_end) {
+        return builder.FeedCloseToken(std::move(token), text_end);
+      });
 
-  bool success = html_token_parser.Parse();
+  const bool success = html_token_parser.Parse();
   ARBORIS_ASSERT(success, "Failed to parse HTML content.");
 
   TagNodeList nodes = builder.ReleaseNodeList();
+  // The root is opened in the builder's constructor and never closed, so its size is set
+  // here: it spans the whole document.
   nodes.front()->set_sub_tree_size(static_cast<std::uint32_t>(nodes.size()));
   store_.set_nodes(std::move(nodes));
 
-  // Indexing walks the finished nodes in key order, which is also memory order. Done from
-  // a creation callback it could not see the root, which the builder makes on its own.
+  // Indexing walks the finished nodes in key order, which is also memory order.
   for (const auto& node : store_.nodes()) {
     store_.mutable_indexer().AddNode(NodeRef(node->key(), store_));
   }
@@ -46,19 +57,16 @@ DOMManager::DOMManager(std::string_view html_content) :
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");
 }
 
-
 std::optional<DOMQuery> DOMManager::Find(const QueryOptions& options) const {
   const auto root = GetRoot();
   DOMSubtree root_subtree(store_, root.node());
-  DOMQuery root_query(root, root_subtree);
-  return root_query.Find(options);
+  return DOMQuery(root, root_subtree).Find(options);
 }
 
 std::vector<DOMQuery> DOMManager::FindAll(const QueryOptions& options) const {
   const auto root = GetRoot();
   DOMSubtree root_subtree(store_, root.node());
-  DOMQuery root_query(root, root_subtree);
-  return root_query.FindAll(options);
+  return DOMQuery(root, root_subtree).FindAll(options);
 }
 
 }  // namespace arboris

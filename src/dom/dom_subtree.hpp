@@ -7,18 +7,20 @@
 #ifndef SRC_DOM_DOM_SUBTREE_HPP_
 #define SRC_DOM_DOM_SUBTREE_HPP_
 
+#include <algorithm>
 #include <cstdint>
-#include <span>
-#include <vector>
+#include <optional>
+#include <string_view>
 
 #include "dom/dom_store.hpp"
-#include "dom/node_ref.hpp"
 #include "dom/dom_types.hpp"
+#include "dom/node_ref.hpp"
 #include "dom/tag_node.hpp"
-#include "utils/query_options.hpp"
 
 namespace arboris {
 
+// A key range of the document: nodes are numbered in DFS order, so one subtree is
+// [root_key_, root_key_ + sub_tree_size_). Index hits are sliced down to that range.
 class DOMSubtree {
  public:
   // Constructor for subtree of a parent subtree
@@ -31,12 +33,17 @@ class DOMSubtree {
       store_(&store) {}
 
   [[nodiscard]] std::optional<NodeKey> GetNodeById(std::string_view id) const;
-  [[nodiscard]] std::optional<NodeKeySpan> GetNodesByTag(Tag tag) const;
-  [[nodiscard]] std::optional<NodeKeySpan> GetNodesByClass(std::string_view class_name) const;
-  [[nodiscard]] std::optional<NodeKeySpan> GetNodesByAttribute(std::string_view attribute_name) const;
+  [[nodiscard]] NodeKeySpan GetNodesByTag(Tag tag) const;
+  [[nodiscard]] NodeKeySpan GetNodesByClass(std::string_view class_name) const;
+  [[nodiscard]] NodeKeySpan GetNodesByAttribute(std::string_view attribute_name) const;
+
   [[nodiscard]] NodeRef GetNodeByKey(NodeKey node_key) const {
     ARBORIS_ASSERT(isInSubtree(node_key), "Node key must be in subtree.");
     return NodeRef(node_key, *store_);
+  }
+
+  [[nodiscard]] const DOMStore& store() const noexcept {
+    return *store_;
   }
 
  private:

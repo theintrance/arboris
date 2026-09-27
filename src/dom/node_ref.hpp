@@ -7,7 +7,7 @@
 #ifndef SRC_DOM_NODE_REF_HPP_
 #define SRC_DOM_NODE_REF_HPP_
 
-#include <cstdint>
+#include <span>
 #include <string_view>
 
 #include "dom/dom_store.hpp"
@@ -20,9 +20,9 @@ namespace arboris {
 
 // A handle to one node: a key and the store to resolve it against, 16 bytes, no ownership.
 //
-// Queries hand these out instead of the node itself, so how nodes are stored stays behind
-// this class. A key rather than a pointer, because the arrays a node lives in grow while
-// the document is parsed and every pointer into them moves with them.
+// Queries hand these out instead of the node itself, so the way nodes are stored stays
+// behind this class. A key rather than a pointer, because the node array and the arenas
+// grow while a document is parsed and every pointer into them moves with them.
 class NodeRef {
  public:
   NodeRef(NodeKey key, const DOMStore& store) noexcept : key_(key), store_(&store) {}
@@ -44,15 +44,17 @@ class NodeRef {
   }
 
   [[nodiscard]] std::uint32_t sub_tree_size() const noexcept {
-    return static_cast<std::uint32_t>(node().sub_tree_size());
+    return node().sub_tree_size();
   }
 
-  [[nodiscard]] const ClassSet& classes() const noexcept {
-    return node().classes();
+  [[nodiscard]] std::span<const std::string_view> classes() const noexcept {
+    const auto& tag_node = node();
+    return {store_->class_arena().data() + tag_node.class_begin(), tag_node.class_count()};
   }
 
-  [[nodiscard]] const AttributeMap& attributes() const noexcept {
-    return node().attributes();
+  [[nodiscard]] std::span<const Attribute> attributes() const noexcept {
+    const auto& tag_node = node();
+    return {store_->attr_arena().data() + tag_node.attr_begin(), tag_node.attr_count()};
   }
 
   [[nodiscard]] const TagNode& node() const noexcept {

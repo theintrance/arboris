@@ -21,6 +21,10 @@ set(ARBORIS_HEADERS
   dom/base_node.hpp
   dom/dom_store.hpp
   dom/node_ref.hpp
+  dom/dom_query.hpp
+  dom/dom_subtree.hpp
+  dom/dom_indexer.hpp
+  dom/dom_types.hpp
   dom/tag_node.hpp
   dom/text_node.hpp
   string/string.hpp

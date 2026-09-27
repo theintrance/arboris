@@ -8,10 +8,9 @@
 #define SRC_DOM_TAG_NODE_HPP_
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -21,6 +20,8 @@
 
 namespace arboris {
 
+// A node knows where its classes and attributes sit, not what they say: the names and
+// values live in DOMStore's arenas. NodeRef is what reads them back.
 class TagNode final : public BaseNode {
  public:
   static constexpr NodeType kNodeType = NodeType::kTag;
@@ -36,14 +37,6 @@ class TagNode final : public BaseNode {
     return children_;
   }
 
-  [[nodiscard]] const AttributeMap& attributes() const noexcept {
-    return html_token_.attributes;
-  }
-
-  [[nodiscard]] const ClassSet& classes() const noexcept {
-    return html_token_.classes;
-  }
-
   [[nodiscard]] std::string_view id() const noexcept {
     return html_token_.id;
   }
@@ -52,11 +45,27 @@ class TagNode final : public BaseNode {
     return html_token_.tag;
   }
 
-  void set_sub_tree_size(uint32_t size) noexcept {
+  [[nodiscard]] std::uint32_t class_begin() const noexcept {
+    return html_token_.class_begin;
+  }
+
+  [[nodiscard]] std::uint32_t class_count() const noexcept {
+    return html_token_.class_count;
+  }
+
+  [[nodiscard]] std::uint32_t attr_begin() const noexcept {
+    return html_token_.attr_begin;
+  }
+
+  [[nodiscard]] std::uint32_t attr_count() const noexcept {
+    return html_token_.attr_count;
+  }
+
+  void set_sub_tree_size(std::uint32_t size) noexcept {
     sub_tree_size_ = size;
   }
 
-  [[nodiscard]] std::size_t sub_tree_size() const noexcept {
+  [[nodiscard]] std::uint32_t sub_tree_size() const noexcept {
     return sub_tree_size_;
   }
 
@@ -67,7 +76,7 @@ class TagNode final : public BaseNode {
 
  private:
   const NodeKey key_;
-  std::size_t sub_tree_size_{0};
+  std::uint32_t sub_tree_size_{0};
   const HtmlToken html_token_;
   std::vector<std::shared_ptr<BaseNode>> children_;
 };
