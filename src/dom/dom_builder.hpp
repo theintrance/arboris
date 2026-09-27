@@ -29,6 +29,10 @@ class DOMBuilder {
   virtual ~DOMBuilder() = default;
 
   [[nodiscard]] bool Validate() const;
+
+  // Closes the root, which no end tag ever closes: its own text runs are flushed and its
+  // subtree covers every node.
+  void Finish();
   bool FeedOpenToken(HtmlToken&& token, const char* text_begin);
   bool FeedTextToken(HtmlTextToken&& token);
   bool FeedCloseToken(HtmlCloseToken&& token, const char* text_end);
@@ -42,6 +46,10 @@ class DOMBuilder {
     return std::move(dfs_node_list_);
   }
 
+  [[nodiscard]] std::vector<TextRun> ReleaseTextArena() {
+    return std::move(text_arena_);
+  }
+
  private:
   [[nodiscard]] TagNodePtr root() {
     ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
@@ -49,12 +57,20 @@ class DOMBuilder {
   }
 
   bool closeTopNode();
+  void flushPendingRuns(const TagNodePtr& node);
 
  private:
   NodeKey next_node_key_{1};
 
   TagNodeList dfs_node_list_;
   std::stack<TagNodePtr> node_stack_;
+
+  // Text runs land here in document order, a node's own runs ending up side by side: a
+  // node closes after every child it contains, so its pending runs are the tail left
+  // above the mark it took when it opened.
+  std::vector<TextRun> text_arena_;
+  std::vector<TextRun> pending_runs_;
+  std::vector<std::uint32_t> pending_marks_;
 };
 
 }  // namespace arboris

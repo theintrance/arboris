@@ -26,7 +26,6 @@ set(ARBORIS_HEADERS
   dom/dom_indexer.hpp
   dom/dom_types.hpp
   dom/tag_node.hpp
-  dom/text_node.hpp
   string/string.hpp
   utils/html_tokens.hpp
   utils/tag.hpp

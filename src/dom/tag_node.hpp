@@ -33,7 +33,7 @@ class TagNode final : public BaseNode {
     return key_;
   }
 
-  [[nodiscard]] const std::vector<std::shared_ptr<BaseNode>>& children() const noexcept {
+  [[nodiscard]] const std::vector<std::shared_ptr<TagNode>>& children() const noexcept {
     return children_;
   }
 
@@ -61,6 +61,19 @@ class TagNode final : public BaseNode {
     return html_token_.attr_count;
   }
 
+  [[nodiscard]] std::uint32_t text_begin() const noexcept {
+    return text_begin_;
+  }
+
+  [[nodiscard]] std::uint32_t text_count() const noexcept {
+    return text_count_;
+  }
+
+  void set_text_runs(std::uint32_t begin, std::uint32_t count) noexcept {
+    text_begin_ = begin;
+    text_count_ = count;
+  }
+
   void set_sub_tree_size(std::uint32_t size) noexcept {
     sub_tree_size_ = size;
   }
@@ -69,7 +82,7 @@ class TagNode final : public BaseNode {
     return sub_tree_size_;
   }
 
-  void AddChild(std::shared_ptr<BaseNode> child) {
+  void AddChild(std::shared_ptr<TagNode> child) {
     ARBORIS_ASSERT(child != nullptr, "child must not be nullptr.");
     children_.emplace_back(std::move(child));
   }
@@ -77,8 +90,10 @@ class TagNode final : public BaseNode {
  private:
   const NodeKey key_;
   std::uint32_t sub_tree_size_{0};
+  std::uint32_t text_begin_{0};
+  std::uint32_t text_count_{0};
   const HtmlToken html_token_;
-  std::vector<std::shared_ptr<BaseNode>> children_;
+  std::vector<std::shared_ptr<TagNode>> children_;
 };
 
 }  // namespace arboris

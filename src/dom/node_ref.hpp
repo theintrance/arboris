@@ -52,6 +52,13 @@ class NodeRef {
     return {store_->class_arena().data() + tag_node.class_begin(), tag_node.class_count()};
   }
 
+  // The text written directly inside this tag, in document order. Text further down sits
+  // on the node that holds it.
+  [[nodiscard]] std::span<const TextRun> text_runs() const noexcept {
+    const auto& tag_node = node();
+    return {store_->text_arena().data() + tag_node.text_begin(), tag_node.text_count()};
+  }
+
   [[nodiscard]] std::span<const Attribute> attributes() const noexcept {
     const auto& tag_node = node();
     return {store_->attr_arena().data() + tag_node.attr_begin(), tag_node.attr_count()};
