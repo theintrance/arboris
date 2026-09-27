@@ -49,7 +49,7 @@ DOMManager::DOMManager(std::string_view html_content) :
 
   // Indexing walks the finished nodes in key order, which is also memory order.
   for (const auto& node : store_.nodes()) {
-    store_.mutable_indexer().AddNode(NodeRef(node->key(), store_));
+    store_.mutable_indexer().AddNode(NodeRef(node.key(), store_));
   }
 
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");

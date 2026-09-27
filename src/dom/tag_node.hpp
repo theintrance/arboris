@@ -11,21 +11,37 @@
 #include <cstdint>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "dom/dom_types.hpp"
-#include "dom/base_node.hpp"
+#include "utils/assertion.hpp"
 #include "utils/html_tokens.hpp"
 
 namespace arboris {
 
-// A node knows where its classes and attributes sit, not what they say: the names and
-// values live in DOMStore's arenas. NodeRef is what reads them back.
-class TagNode final : public BaseNode {
+// A node knows where its classes, attributes and text sit, not what they say: those live
+// in DOMStore's arenas, and NodeRef reads them back.
+//
+// Nodes are values in one array, so this has to move; nothing here owns anything, which is
+// what makes the move trivial.
+class TagNode {
  public:
-  static constexpr NodeType kNodeType = NodeType::kTag;
-
   TagNode(NodeKey key, NodeKey parent_key, HtmlToken&& token)
-      : BaseNode(kNodeType), key_(key), parent_key_(parent_key), html_token_(std::move(token)) {}
+      : key_(key), parent_key_(parent_key), html_token_(std::move(token)) {}
+
+  TagNode(const TagNode&) = delete;
+  TagNode& operator=(const TagNode&) = delete;
+  TagNode(TagNode&&) = default;
+  TagNode& operator=(TagNode&&) = delete;
+  ~TagNode() = default;
+
+  [[nodiscard]] std::string_view text_content() const noexcept {
+    return text_content_;
+  }
+
+  void set_text_content(std::string_view text_content) noexcept {
+    text_content_ = text_content;
+  }
 
   [[nodiscard]] NodeKey key() const noexcept {
     return key_;
@@ -82,13 +98,17 @@ class TagNode final : public BaseNode {
   }
 
  private:
-  const NodeKey key_;
-  const NodeKey parent_key_;
+  NodeKey key_;
+  NodeKey parent_key_;
+  std::string_view text_content_;
   std::uint32_t sub_tree_size_{0};
   std::uint32_t text_begin_{0};
   std::uint32_t text_count_{0};
-  const HtmlToken html_token_;
+  HtmlToken html_token_;
 };
+
+// Nodes live in one array, in DFS order, indexed by key.
+using TagNodeList = std::vector<TagNode>;
 
 }  // namespace arboris
 

@@ -18,7 +18,6 @@ set(ARBORIS_HEADERS
   dom/dom_query.hpp
   dom/token_parser.hpp
   dom/html_token_parser.hpp
-  dom/base_node.hpp
   dom/dom_store.hpp
   dom/node_ref.hpp
   dom/dom_query.hpp

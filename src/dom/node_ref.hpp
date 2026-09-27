@@ -75,7 +75,7 @@ class NodeRef {
     std::vector<NodeRef> out;
     const auto& tag_node = node();
     const NodeKey end = key_ + tag_node.sub_tree_size();
-    for (NodeKey child = key_ + 1; child < end; child += store_->nodes()[child]->sub_tree_size()) {
+    for (NodeKey child = key_ + 1; child < end; child += store_->nodes()[child].sub_tree_size()) {
       out.emplace_back(child, *store_);
     }
     return out;
@@ -83,7 +83,7 @@ class NodeRef {
 
   [[nodiscard]] const TagNode& node() const noexcept {
     ARBORIS_ASSERT(key_ < store_->nodes().size(), "Node key is out of range.");
-    return *store_->nodes()[key_];
+    return store_->nodes()[key_];
   }
 
  private:

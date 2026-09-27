@@ -14,6 +14,7 @@
 
 #include "dom/dom_indexer.hpp"
 #include "dom/dom_types.hpp"
+#include "dom/tag_node.hpp"
 #include "utils/html_tokens.hpp"
 
 namespace arboris {

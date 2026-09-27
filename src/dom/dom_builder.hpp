@@ -21,7 +21,9 @@ namespace arboris {
 
 class DOMBuilder {
  public:
-  DOMBuilder(): dfs_node_list_{std::make_shared<TagNode>(0, 0, HtmlToken{{0, 0}, Tag::kHtml, false})} {}
+  DOMBuilder() {
+    dfs_node_list_.emplace_back(0, 0, HtmlToken{{0, 0}, Tag::kHtml, false});
+  }
   DOMBuilder(const DOMBuilder&) = delete;
   DOMBuilder& operator=(const DOMBuilder&) = delete;
   DOMBuilder(DOMBuilder&&) = delete;
@@ -51,19 +53,25 @@ class DOMBuilder {
   }
 
  private:
-  [[nodiscard]] TagNodePtr root() {
-    ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
+  [[nodiscard]] TagNode& root() {
+    ARBORIS_ASSERT(!dfs_node_list_.empty(), "Node list is empty.");
     return dfs_node_list_.front();
   }
 
+  // The node the open tags currently stand on.
+  [[nodiscard]] TagNode& openNode() {
+    return node_stack_.empty() ? root() : dfs_node_list_[node_stack_.top()];
+  }
+
   bool closeTopNode();
-  void flushPendingRuns(const TagNodePtr& node);
+  void flushPendingRuns(TagNode* node);
 
  private:
   NodeKey next_node_key_{1};
 
   TagNodeList dfs_node_list_;
-  std::stack<TagNodePtr> node_stack_;
+  // Keys, not pointers: the node array reallocates as the document grows.
+  std::stack<NodeKey> node_stack_;
 
   // Text runs land here in document order, a node's own runs ending up side by side: a
   // node closes after every child it contains, so its pending runs are the tail left

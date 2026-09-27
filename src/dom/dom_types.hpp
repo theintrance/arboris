@@ -7,22 +7,15 @@
 #ifndef SRC_DOM_DOM_TYPES_HPP_
 #define SRC_DOM_DOM_TYPES_HPP_
 
-#include <memory>
 #include <vector>
 #include <span>
 
 namespace arboris {
 
-class TagNode;
-class BaseNode;
 
 using NodeKey = std::uint32_t;
 using NodeKeyList = std::vector<NodeKey>;
 using NodeKeySpan = std::span<const NodeKey>;
-using NodePtr = std::shared_ptr<BaseNode>;
-using NodeList = std::vector<NodePtr>;
-using TagNodePtr = std::shared_ptr<TagNode>;
-using TagNodeList = std::vector<TagNodePtr>;
 
 }  // namespace arboris
 
