@@ -32,9 +32,11 @@ DOMManager::DOMManager(std::string_view html_content) :
   builder.SetNodeCreationCallback(
       std::bind(&DOMIndexer::AddNode, &dom_indexer_, std::placeholders::_1));
 
-  html_token_parser.Parse();
+  bool success = html_token_parser.Parse();
+  ARBORIS_ASSERT(success, "Failed to parse HTML content.");
 
   dfs_node_list_ = std::move(builder.GetNodeList());
+  dfs_node_list_.front()->set_sub_tree_size(dfs_node_list_.size());
 
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");
 }
