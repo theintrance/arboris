@@ -8,14 +8,19 @@
 #define SRC_DOM_DOM_INDEXER_HPP_
 
 #include <optional>
-#include <string>
+#include <string_view>
 #include <unordered_map>
 
 #include "dom/dom_types.hpp"
-#include "dom/tag_node.hpp"
+#include "utils/tag.hpp"
 
 namespace arboris {
 
+// Forward declaration: NodeRef resolves against the store that owns this indexer.
+class NodeRef;
+
+// Keys are string_views into the document buffer, which outlives the indexer, so indexing
+// a class name and looking one up both stay free of allocation.
 class DOMIndexer {
  public:
   DOMIndexer() = default;
@@ -25,8 +30,7 @@ class DOMIndexer {
   DOMIndexer& operator=(DOMIndexer&&) = delete;
   virtual ~DOMIndexer() = default;
 
-  // TODO(team): avoid using const reference for NodePtr
-  void AddNode(const TagNodePtr& node);
+  void AddNode(const NodeRef& node);
 
   [[nodiscard]] std::optional<NodeKey> GetNodeKeyById(std::string_view id) const;
   [[nodiscard]] NodeKeySpan GetNodeKeyListByTag(Tag tag) const;
@@ -35,12 +39,12 @@ class DOMIndexer {
 
  private:
   // TODO(team): consider using std::list instead of std::vector for indexes
-  std::unordered_map<std::string, NodeKey> id_index_;
+  std::unordered_map<std::string_view, NodeKey> id_index_;
   std::unordered_map<Tag, NodeKeyList> tag_index_;
-  std::unordered_map<std::string, NodeKeyList> class_index_;
+  std::unordered_map<std::string_view, NodeKeyList> class_index_;
 
   // TODO(team): consider indexing by value instead of name
-  std::unordered_map<std::string, NodeKeyList> attr_index_;
+  std::unordered_map<std::string_view, NodeKeyList> attr_index_;
 };
 
 }  // namespace arboris

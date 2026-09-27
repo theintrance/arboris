@@ -33,10 +33,6 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
 
   node->set_text_content({text_begin, 0});  // NOTLINT(bugprone-string-constructor)
 
-  if (node_creation_callback_) {
-    node_creation_callback_(node);
-  }
-
   dfs_node_list_.emplace_back(std::move(node));
 
   if (is_void_tag) {

@@ -8,20 +8,23 @@
 #define SRC_DOM_DOM_MANAGER_HPP_
 
 #include <memory>
-#include <string>
+#include <optional>
 #include <string_view>
-#include <utility>
 #include <vector>
 
-#include "dom/dom_builder.hpp"
-#include "dom/dom_indexer.hpp"
 #include "dom/dom_query.hpp"
-#include "dom/html_token_parser.hpp"
-#include "utils/string_pool.hpp"
+#include "dom/dom_store.hpp"
+#include "dom/node_ref.hpp"
+#include "utils/assertion.hpp"
 #include "utils/query_options.hpp"
+#include "utils/string_pool.hpp"
 
 namespace arboris {
 
+// Parses one document and owns everything that came out of it.
+//
+// The HTML is copied once into the store, and node ids, class names and attributes are
+// views into that copy, so the caller's buffer does not have to outlive the DOM.
 class DOMManager {
  public:
   explicit DOMManager(std::string_view html_content);
@@ -31,19 +34,17 @@ class DOMManager {
   DOMManager& operator=(DOMManager&&) = delete;
   virtual ~DOMManager() = default;
 
-  [[nodiscard]] const TagNode& GetRoot() const {
-    ARBORIS_ASSERT(!dfs_node_list_.empty(), "Root node is nullptr.");
-    return *dfs_node_list_.front();
+  [[nodiscard]] NodeRef GetRoot() const {
+    ARBORIS_ASSERT(!store_.nodes().empty(), "Root node is nullptr.");
+    return NodeRef(store_.nodes().front()->key(), store_);
   }
 
   [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
  private:
-  // Nodes list ordered by DFS in-order
-  TagNodeList dfs_node_list_;
+  DOMStore store_;
   std::shared_ptr<StringPool> string_pool_;
-  DOMIndexer dom_indexer_;
 };
 
 }  // namespace arboris

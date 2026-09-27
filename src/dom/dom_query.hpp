@@ -7,26 +7,25 @@
 #ifndef SRC_DOM_DOM_QUERY_HPP_
 #define SRC_DOM_DOM_QUERY_HPP_
 
-#include <memory>
+#include <optional>
 #include <string>
-#include <string_view>
-#include <utility>
 #include <vector>
 
-#include "dom/dom_builder.hpp"
-#include "dom/dom_indexer.hpp"
 #include "dom/dom_subtree.hpp"
-#include "dom/tag_node.hpp"
-#include "dom/html_token_parser.hpp"
-#include "utils/string_pool.hpp"
+#include "dom/dom_types.hpp"
+#include "dom/node_ref.hpp"
 #include "utils/query_options.hpp"
 
 namespace arboris {
 
+// One result of a query, and the subtree the next query runs over.
+//
+// Get() hands back a NodeRef rather than the node itself, so how nodes are stored stays
+// an implementation detail of DOMStore.
 class DOMQuery {
  public:
-  explicit DOMQuery(const TagNode& subtree_root, const DOMSubtree& subtree) :
-    subtree_root_(subtree_root), subtree_(subtree, subtree_root) {}
+  explicit DOMQuery(const NodeRef& subtree_root, const DOMSubtree& subtree) :
+    subtree_root_(subtree_root), subtree_(subtree, subtree_root.node()) {}
 
   DOMQuery(const DOMQuery&) = default;
   DOMQuery& operator=(const DOMQuery&) = delete;
@@ -34,7 +33,7 @@ class DOMQuery {
   DOMQuery& operator=(DOMQuery&&) = delete;
   virtual ~DOMQuery() = default;
 
-  [[nodiscard]] const TagNode& Get() const noexcept {
+  [[nodiscard]] NodeRef Get() const noexcept {
     return subtree_root_;
   }
 
@@ -44,9 +43,9 @@ class DOMQuery {
 
  private:
   [[nodiscard]] NodeKeySpan searchCandidatesFromSubtree(const QueryOptions& options) const;
-  [[nodiscard]] bool matchAllConditions(const TagNode& node, const QueryOptions& options) const;
+  [[nodiscard]] bool matchAllConditions(const NodeRef& node, const QueryOptions& options) const;
 
-  const TagNode& subtree_root_;
+  NodeRef subtree_root_;
   DOMSubtree subtree_;
 };
 
