@@ -7,7 +7,9 @@
 #ifndef SRC_UTILS_STRING_POOL_HPP_
 #define SRC_UTILS_STRING_POOL_HPP_
 
+#include <cstddef>
 #include <string>
+#include <string_view>
 
 namespace arboris {
 

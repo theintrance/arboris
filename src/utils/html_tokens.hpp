@@ -36,6 +36,13 @@ struct Attribute {
   }
 };
 
+// One run of text directly inside a tag, pointing into the string pool. Keeping the
+// source position lets a reader put the run back in order against the tag's children.
+struct TextRun {
+  std::string_view text;
+  std::uint32_t begin_pos = 0;
+};
+
 struct BaseHtmlToken : public BaseToken {};
 
 struct HtmlToken : public BaseHtmlToken {

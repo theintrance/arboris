@@ -8,6 +8,7 @@
 #define SRC_STRING_STRING_HPP_
 
 #include <cctype>
+#include <cstddef>
 #include <string_view>
 
 namespace arboris {

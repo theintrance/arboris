@@ -7,6 +7,7 @@
 #ifndef SRC_DOM_HTML_TOKEN_PARSER_HPP_
 #define SRC_DOM_HTML_TOKEN_PARSER_HPP_
 
+#include <cstddef>
 #include <memory>
 #include <functional>
 #include <string_view>

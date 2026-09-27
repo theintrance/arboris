@@ -36,7 +36,7 @@ class DOMManager {
 
   [[nodiscard]] NodeRef GetRoot() const {
     ARBORIS_ASSERT(!store_.nodes().empty(), "Root node is nullptr.");
-    return NodeRef(store_.nodes().front()->key(), store_);
+    return NodeRef(store_.nodes().front().key(), store_);
   }
 
   [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
