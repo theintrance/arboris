@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "dom/dom_store.hpp"
+#include "dom/node_ref.hpp"
 #include "dom/dom_types.hpp"
 #include "dom/tag_node.hpp"
 #include "utils/query_options.hpp"
@@ -33,7 +34,10 @@ class DOMSubtree {
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByTag(Tag tag) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByClass(std::string_view class_name) const;
   [[nodiscard]] std::optional<NodeKeySpan> GetNodesByAttribute(std::string_view attribute_name) const;
-  [[nodiscard]] const TagNode& GetNodeByKey(NodeKey node_key) const;
+  [[nodiscard]] NodeRef GetNodeByKey(NodeKey node_key) const {
+    ARBORIS_ASSERT(isInSubtree(node_key), "Node key must be in subtree.");
+    return NodeRef(node_key, *store_);
+  }
 
  private:
   [[nodiscard]] bool isInSubtree(NodeKey key) const noexcept {

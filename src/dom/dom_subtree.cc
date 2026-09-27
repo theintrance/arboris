@@ -51,9 +51,4 @@ std::optional<NodeKeySpan> DOMSubtree::GetNodesByAttribute(std::string_view attr
   return sliceSubtreeRange(node_keys);
 }
 
-const TagNode& DOMSubtree::GetNodeByKey(NodeKey node_key) const {
-  ARBORIS_ASSERT(isInSubtree(node_key), "Node key must be in subtree.");
-  return *store_->nodes()[node_key];
-}
-
 }  // namespace arboris

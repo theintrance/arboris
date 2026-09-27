@@ -24,10 +24,9 @@ std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
   }
 
   for (const auto& candidate_key : candidate_keys) {
-    const auto& candidate = subtree_.GetNodeByKey(candidate_key);
+    const auto candidate = subtree_.GetNodeByKey(candidate_key);
     if (matchAllConditions(candidate, options)) {
-      const auto& node = subtree_.GetNodeByKey(candidate_key);
-      return DOMQuery(node, subtree_);
+      return DOMQuery(candidate, subtree_);
     }
   }
 
@@ -39,8 +38,7 @@ std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
   if (!node_key) {
     return std::nullopt;
   }
-  const auto& node = subtree_.GetNodeByKey(node_key.value());
-  return DOMQuery(node, subtree_);
+  return DOMQuery(subtree_.GetNodeByKey(node_key.value()), subtree_);
 }
 
 
@@ -49,7 +47,7 @@ std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
 
   auto candidate_keys = searchCandidatesFromSubtree(options);
   for (const auto& candidate_key : candidate_keys) {
-    const auto& candidate = subtree_.GetNodeByKey(candidate_key);
+    const auto candidate = subtree_.GetNodeByKey(candidate_key);
     if (matchAllConditions(candidate, options)) {
       ret.push_back(DOMQuery(candidate, subtree_));
     }
@@ -98,7 +96,7 @@ NodeKeySpan DOMQuery::searchCandidatesFromSubtree(const QueryOptions& options) c
   return min_candidates;
 }
 
-bool DOMQuery::matchAllConditions(const TagNode& node, const QueryOptions& options) const {
+bool DOMQuery::matchAllConditions(const NodeRef& node, const QueryOptions& options) const {
   if (options.tag && node.tag() != options.tag.value()) {
     return false;
   }

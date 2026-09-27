@@ -12,9 +12,12 @@
 #include <unordered_map>
 
 #include "dom/dom_types.hpp"
-#include "dom/tag_node.hpp"
+#include "utils/tag.hpp"
 
 namespace arboris {
+
+// Forward declaration: NodeRef resolves against the store that owns this indexer.
+class NodeRef;
 
 class DOMIndexer {
  public:
@@ -25,8 +28,7 @@ class DOMIndexer {
   DOMIndexer& operator=(DOMIndexer&&) = delete;
   virtual ~DOMIndexer() = default;
 
-  // TODO(team): avoid using const reference for NodePtr
-  void AddNode(const TagNodePtr& node);
+  void AddNode(const NodeRef& node);
 
   [[nodiscard]] std::optional<NodeKey> GetNodeKeyById(std::string_view id) const;
   [[nodiscard]] NodeKeySpan GetNodeKeyListByTag(Tag tag) const;

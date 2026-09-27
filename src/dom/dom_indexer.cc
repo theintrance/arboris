@@ -12,13 +12,17 @@
 #include <unordered_map>
 
 #include "dom/dom_types.hpp"
+#include "dom/node_ref.hpp"
 
 namespace arboris {
 
-void DOMIndexer::AddNode(const TagNodePtr& node) {
-  tag_index_[node->tag()].emplace_back(node->key());
-  for (const auto& class_name : node->classes()) {
-    class_index_[class_name].emplace_back(node->key());
+void DOMIndexer::AddNode(const NodeRef& node) {
+  const NodeKey node_key = node.key();
+
+  tag_index_[node.tag()].emplace_back(node_key);
+
+  for (const auto& class_name : node.classes()) {
+    class_index_[class_name].emplace_back(node_key);
   }
   // TODO(team): add id index
 }

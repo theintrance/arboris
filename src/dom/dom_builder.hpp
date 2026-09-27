@@ -10,7 +10,6 @@
 #include <memory>
 #include <stack>
 #include <string>
-#include <functional>
 #include <utility>
 #include <cstdint>
 #include <vector>
@@ -21,8 +20,6 @@
 namespace arboris {
 
 class DOMBuilder {
-  using NodeCreationCallback = std::function<void(const std::shared_ptr<TagNode>&)>;
-
  public:
   DOMBuilder(): dfs_node_list_{std::make_shared<TagNode>(0, HtmlToken{{0, 0}, Tag::kHtml, false}, nullptr)} {}
   DOMBuilder(const DOMBuilder&) = delete;
@@ -35,10 +32,6 @@ class DOMBuilder {
   bool FeedOpenToken(HtmlToken&& token, const char* text_begin);
   bool FeedTextToken(HtmlTextToken&& token);
   bool FeedCloseToken(HtmlCloseToken&& token, const char* text_end);
-
-  void SetNodeCreationCallback(NodeCreationCallback&& callback) {
-    node_creation_callback_ = std::move(callback);
-  }
 
   [[nodiscard]] const TagNodeList& GetNodeList() const {
     return dfs_node_list_;
@@ -62,8 +55,6 @@ class DOMBuilder {
 
   TagNodeList dfs_node_list_;
   std::stack<TagNodePtr> node_stack_;
-
-  NodeCreationCallback node_creation_callback_;
 };
 
 }  // namespace arboris

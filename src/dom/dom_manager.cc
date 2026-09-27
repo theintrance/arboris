@@ -30,10 +30,6 @@ DOMManager::DOMManager(std::string_view html_content) :
   html_token_parser.set_feed_close_token_callback(
       std::bind(&DOMBuilder::FeedCloseToken, &builder, std::placeholders::_1, std::placeholders::_2));
 
-  // Set up node creation callback for DOMBuilder to index nodes
-  builder.SetNodeCreationCallback(
-      std::bind(&DOMIndexer::AddNode, &store_.mutable_indexer(), std::placeholders::_1));
-
   bool success = html_token_parser.Parse();
   ARBORIS_ASSERT(success, "Failed to parse HTML content.");
 
@@ -41,20 +37,26 @@ DOMManager::DOMManager(std::string_view html_content) :
   nodes.front()->set_sub_tree_size(static_cast<std::uint32_t>(nodes.size()));
   store_.set_nodes(std::move(nodes));
 
+  // Indexing walks the finished nodes in key order, which is also memory order. Done from
+  // a creation callback it could not see the root, which the builder makes on its own.
+  for (const auto& node : store_.nodes()) {
+    store_.mutable_indexer().AddNode(NodeRef(node->key(), store_));
+  }
+
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");
 }
 
 
 std::optional<DOMQuery> DOMManager::Find(const QueryOptions& options) const {
-  const auto& root = GetRoot();
-  DOMSubtree root_subtree(store_, root);
+  const auto root = GetRoot();
+  DOMSubtree root_subtree(store_, root.node());
   DOMQuery root_query(root, root_subtree);
   return root_query.Find(options);
 }
 
 std::vector<DOMQuery> DOMManager::FindAll(const QueryOptions& options) const {
-  const auto& root = GetRoot();
-  DOMSubtree root_subtree(store_, root);
+  const auto root = GetRoot();
+  DOMSubtree root_subtree(store_, root.node());
   DOMQuery root_query(root, root_subtree);
   return root_query.FindAll(options);
 }
