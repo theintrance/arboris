@@ -8,6 +8,7 @@
 #define SRC_DOM_NODE_REF_HPP_
 
 #include <algorithm>
+#include <cstdint>
 #include <span>
 #include <string_view>
 #include <vector>

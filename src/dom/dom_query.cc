@@ -7,6 +7,7 @@
 #include "dom/dom_query.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <optional>
 #include <span>

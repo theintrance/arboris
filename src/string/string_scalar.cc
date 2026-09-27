@@ -4,6 +4,7 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
+#include <cstddef>
 #include <algorithm>
 #include <cctype>
 #include <string>

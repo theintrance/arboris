@@ -7,8 +7,9 @@
 #ifndef SRC_DOM_DOM_TYPES_HPP_
 #define SRC_DOM_DOM_TYPES_HPP_
 
-#include <vector>
+#include <cstdint>
 #include <span>
+#include <vector>
 
 namespace arboris {
 
