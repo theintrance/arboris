@@ -23,9 +23,20 @@ endif()
 
 FetchContent_MakeAvailable(googletest)
 
+# html5lib-tests (https://github.com/html5lib/html5lib-tests), used by the tokenizer
+# conformance test and the benchmark. Declared here so both use the same commit.
+FetchContent_Declare(
+  html5lib_tests
+  URL https://github.com/html5lib/html5lib-tests/archive/224991ec10db04f056a89eed8b0bd8695fd2950e.zip
+)
+
 # Add subdirectories
 add_subdirectory(src)
 
 if (NOT NO_TESTS)
   add_subdirectory(tests)
+endif()
+
+if (NOT NO_BENCHMARK)
+  add_subdirectory(benchmark)
 endif()
