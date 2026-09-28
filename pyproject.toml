@@ -44,3 +44,7 @@ dev = [
 test = [
     "pytest>=8",
 ]
+bench = [
+    "numpy>=1.25",
+    "scipy>=1.10",
+]

@@ -25,7 +25,7 @@ jobs:
         with:
           enable-cache: true
 
-      # FetchContent pulls googletest, benchmark and html5lib-tests on every build.
+      # FetchContent pulls googletest and html5lib-tests on every build.
       - name: Cache FetchContent downloads
         uses: actions/cache@v4
         with:

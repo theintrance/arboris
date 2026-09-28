@@ -1,0 +1,162 @@
+name: benchmark
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DATA_DIR: build/benchmark/data
+
+jobs:
+  compare:
+    name: compare with ${{ github.base_ref }}
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+
+      - name: Checkout ${{ github.base_ref }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Cache FetchContent downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps
+            base/build/_deps
+          key: bench-deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'benchmark/CMakeLists.txt') }}
+          restore-keys: bench-deps-${{ runner.os }}-
+
+      - name: Cache corpus
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DATA_DIR }}/corpus
+          key: bench-corpus-${{ hashFiles('benchmark/corpus.cmake') }}
+
+      - name: Build pull request
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON
+          cmake --build build -j"$(nproc)" --target arboris_bench
+
+      # The base branch is measured with THIS pull request's benchmark, so both runs time
+      # the same code on the same inputs and only the library differs. When the pull
+      # request changes an API that benchmark/arboris_tokenizer.cc calls, base no longer
+      # builds against it; the pull request's numbers are then reported alone.
+      - name: Build ${{ github.base_ref }}
+        id: base
+        continue-on-error: true
+        run: |
+          cmake -S base -B base/build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON -DNO_BENCHMARK=ON
+          cmake --build base/build -j"$(nproc)" --target arboris
+          c++ -std=c++20 -O3 -DNDEBUG -DBENCHMARK_STATIC_DEFINE \
+            -I base/src -I . -I build/_deps/googlebenchmark-src/include \
+            -o base/arboris_bench benchmark/bench_main.cc benchmark/arboris_tokenizer.cc \
+            base/build/src/libarboris.a build/_deps/googlebenchmark-build/src/libbenchmark.a -lpthread
+
+      - name: Run
+        env:
+          RUN: >-
+            --data_dir=${{ env.DATA_DIR }} --benchmark_repetitions=10
+            --benchmark_enable_random_interleaving=true --benchmark_out_format=json
+        run: |
+          build/benchmark/arboris_bench $RUN --benchmark_out=head.json | tee head.txt
+          if [ "${{ steps.base.outcome }}" = success ]; then
+            base/arboris_bench $RUN --benchmark_out=base.json
+          fi
+
+      - name: Compare
+        shell: bash
+        run: |
+          {
+            echo "## Benchmark: ${{ github.base_ref }} → pull request"
+            echo
+            if [ "${{ steps.base.outcome }}" = success ]; then
+              echo "Time change per benchmark; negative is faster. Only arboris is timed."
+              echo
+              echo '```'
+              uv run --group bench python build/_deps/googlebenchmark-src/tools/compare.py \
+                --no-color -a benchmarks base.json head.json
+              echo '```'
+            else
+              echo "> ${{ github.base_ref }} does not build against this pull request's benchmark,"
+              echo "> so there is nothing to compare with. The pull request's numbers:"
+              echo
+              echo '```'
+              cat head.txt
+              echo '```'
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  libraries:
+    name: arboris vs lexbor
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Cache FetchContent downloads
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: bench-lexbor-deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'benchmark/CMakeLists.txt') }}
+          restore-keys: bench-lexbor-deps-${{ runner.os }}-
+
+      - name: Cache corpus
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DATA_DIR }}/corpus
+          key: bench-corpus-${{ hashFiles('benchmark/corpus.cmake') }}
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON -DARBORIS_BENCH_LEXBOR=ON
+          cmake --build build -j"$(nproc)" --target arboris_bench
+
+      # One case at a time is thousands of benchmarks, so it gets a single short run.
+      - name: Run
+        run: |
+          build/benchmark/arboris_bench --data_dir=$DATA_DIR --benchmark_repetitions=10 \
+            --benchmark_enable_random_interleaving=true \
+            --benchmark_out=libraries.json --benchmark_out_format=json
+          build/benchmark/arboris_bench --data_dir=$DATA_DIR --per_case \
+            --benchmark_filter=html5lib-case/ --benchmark_min_time=0.02s \
+            --benchmark_out=per_case.json --benchmark_out_format=json > /dev/null
+
+      - name: Compare
+        shell: bash
+        run: |
+          {
+            echo "## Benchmark: lexbor → arboris"
+            echo
+            echo "Time change per benchmark; negative means arboris is faster than lexbor."
+            echo
+            echo '```'
+            uv run --group bench python build/_deps/googlebenchmark-src/tools/compare.py \
+              --no-color -a filters libraries.json lexbor arboris
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ github.sha }}
+          path: |
+            libraries.json
+            per_case.json
