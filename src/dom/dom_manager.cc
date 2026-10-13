@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <optional>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -28,7 +29,7 @@ DOMManager::DOMManager(std::string_view html_content) :
   HtmlTokenParser html_token_parser(store_.document(), string_pool_);
 
   html_token_parser.set_feed_open_token_callback(
-      [&builder](HtmlToken&& token, const char* text_begin) {
+      [&builder](HtmlToken&& token, std::span<const Attribute>, const char* text_begin) {
         return builder.FeedOpenToken(std::move(token), text_begin);
       });
 
