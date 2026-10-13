@@ -21,9 +21,14 @@ namespace arboris {
 
 namespace {
 
-// `<!-- -->`, `<!DOCTYPE>` and `<?xml?>` open like a tag but carry no attributes. Read as
-// attributes, a comment's contents would hand the ids and classes of commented-out markup to
-// the DOM, so until the parser reads these for what they are, they end at the first '>'.
+// `<!-- -->`, `<!DOCTYPE>` and `<?xml?>` open like a tag but are not one. The HTML tokenizer
+// decides on the character after '<' alone: '!' opens a comment, a DOCTYPE, CDATA or else a
+// bogus comment, and '?' always a bogus comment. So the first character is the whole rule;
+// matching `<!--` or `<!DOCTYPE` in full would let bogus comments like `<![endif]>` through.
+//
+// Read as attributes, a comment's contents would hand the ids and classes of commented-out
+// markup to the DOM, so until the parser reads these for what they are, they end at the
+// first '>'.
 bool IsCommentOrDeclaration(std::string_view tag_name) {
   return tag_name.front() == '!' || tag_name.front() == '?';
 }
@@ -167,22 +172,12 @@ std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, std::string
 // Names and values point into the content. A name given twice keeps its first value, as the
 // HTML tokenizer does. Returns false when the content ends before the tag does.
 bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes) const {
-  std::size_t pos = *begin;
+  std::size_t pos = SkipHtmlWhitespace(content_, *begin);
 
-  while (true) {
-    pos = SkipHtmlWhitespace(content_, pos);
-    if (pos >= content_.length()) {
-      return false;
-    }
-
-    if (content_[pos] == '>') {
-      *begin = pos + 1;
-      return true;
-    }
-
+  while (pos < content_.length() && content_[pos] != '>') {
     // The '/' of `<br/>`, or a stray one: either way not part of an attribute.
     if (content_[pos] == '/') {
-      ++pos;
+      pos = SkipHtmlWhitespace(content_, pos + 1);
       continue;
     }
 
@@ -226,7 +221,16 @@ bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>
     if (std::ranges::find(*attributes, name, &Attribute::name) == attributes->end()) {
       attributes->push_back({name, value});
     }
+    pos = SkipHtmlWhitespace(content_, pos);
   }
+
+  // The content ran out before the tag closed.
+  if (pos >= content_.length()) {
+    return false;
+  }
+
+  *begin = pos + 1;  // Skip '>'
+  return true;
 }
 
 bool HtmlTokenParser::skipToTagEnd(std::size_t* begin) const {
