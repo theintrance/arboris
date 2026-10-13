@@ -4,12 +4,17 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <span>
+#include <string_view>
 #include <utility>
 
 #include "dom/dom_builder.hpp"
 #include "dom/tag_node.hpp"
+#include "string/string.hpp"
 
 namespace arboris {
 
@@ -17,7 +22,9 @@ bool DOMBuilder::Validate() const {
   return node_stack_.empty();
 }
 
-bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
+bool DOMBuilder::FeedOpenToken(HtmlToken&& token, std::span<const Attribute> attributes, const char* text_begin) {
+  storeAttributes(&token, attributes);
+
   const bool is_void_tag = token.is_void_tag;
   const NodeKey parent_key = node_stack_.empty() ? root().key() : node_stack_.top();
   const NodeKey key = next_node_key_++;
@@ -32,6 +39,42 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, const char* text_begin) {
     return closeTopNode();
   }
   return true;
+}
+
+// Copies the attributes out of the parser's array, which the next tag reuses, and reads the
+// two the DOM gives a meaning: the id, and the class names. Both stay among the attributes
+// too, so a query for [id] or [class] still finds them.
+void DOMBuilder::storeAttributes(HtmlToken* token, std::span<const Attribute> attributes) {
+  token->attr_begin = static_cast<std::uint32_t>(attr_arena_.size());
+  token->attr_count = static_cast<std::uint32_t>(attributes.size());
+  attr_arena_.insert(attr_arena_.end(), attributes.begin(), attributes.end());
+
+  token->class_begin = static_cast<std::uint32_t>(class_arena_.size());
+  for (const auto& attribute : attributes) {
+    if (attribute.name == "id") {
+      token->id = attribute.value;
+    } else if (attribute.name == "class") {
+      appendClasses(attribute.value, token->class_begin);
+    }
+  }
+  token->class_count = static_cast<std::uint32_t>(class_arena_.size()) - token->class_begin;
+}
+
+// Splits a class attribute on whitespace, as classList does, and keeps each name once: a
+// repeated name would list the node twice in the class index, and FindAll would return it
+// twice.
+void DOMBuilder::appendClasses(std::string_view class_list, std::uint32_t run_begin) {
+  std::size_t pos = SkipHtmlWhitespace(class_list, 0);
+  while (pos < class_list.length()) {
+    const std::size_t end = std::min(FindNextAnyChar(class_list, pos, kHtmlWhitespace), class_list.length());
+    const std::string_view class_name = class_list.substr(pos, end - pos);
+
+    const auto run = std::span(class_arena_).subspan(run_begin);
+    if (std::ranges::find(run, class_name) == run.end()) {
+      class_arena_.push_back(class_name);
+    }
+    pos = SkipHtmlWhitespace(class_list, end);
+  }
 }
 
 bool DOMBuilder::FeedTextToken(HtmlTextToken&& token) {

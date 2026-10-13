@@ -27,6 +27,13 @@ std::size_t SkipWhitespace(std::string_view content, std::size_t begin) {
   return begin;
 }
 
+std::size_t SkipHtmlWhitespace(std::string_view content, std::size_t begin) {
+  while (IsValidPosition(content, begin) && kHtmlWhitespace.find(content[begin]) != std::string_view::npos) {
+    ++begin;
+  }
+  return begin;
+}
+
 std::string_view ExtractSubstring(std::string_view content, std::size_t start, std::size_t end) {
   if (start >= content.length() || start >= end) {
     return std::string_view{};

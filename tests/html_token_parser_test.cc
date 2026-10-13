@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#include <span>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -54,7 +55,7 @@ class HtmlTagProviderTest : public ::testing::Test {
   // helper function: set callback for collecting tokens
   void SetupTokenCollectors(HtmlTokenParser& parser, std::vector<HtmlToken>& open_tokens,
                             std::vector<HtmlTextToken>& text_tokens, std::vector<HtmlCloseToken>& close_tokens) {
-    parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, const char*) {
+    parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, std::span<const Attribute>, const char*) {
       open_tokens.push_back(std::move(token));
       return true;
     });
@@ -359,7 +360,7 @@ TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseOpenToken) {
   std::vector<HtmlCloseToken> close_tokens;
 
   // Set callback to return false for open token
-  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, const char*) {
+  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, std::span<const Attribute>, const char*) {
     open_tokens.push_back(std::move(token));
     return false;  // parsing stop
   });
@@ -388,7 +389,7 @@ TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseTextToken) {
   std::vector<HtmlTextToken> text_tokens;
   std::vector<HtmlCloseToken> close_tokens;
 
-  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, const char*) {
+  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, std::span<const Attribute>, const char*) {
     open_tokens.push_back(std::move(token));
     return true;
   });
@@ -418,7 +419,7 @@ TEST_F(HtmlTagProviderTest, ParseCallbackReturnsFalseCloseToken) {
   std::vector<HtmlTextToken> text_tokens;
   std::vector<HtmlCloseToken> close_tokens;
 
-  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, const char*) {
+  parser.set_feed_open_token_callback([&open_tokens](HtmlToken&& token, std::span<const Attribute>, const char*) {
     open_tokens.push_back(std::move(token));
     return true;
   });

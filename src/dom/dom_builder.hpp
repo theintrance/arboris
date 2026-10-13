@@ -8,8 +8,10 @@
 #define SRC_DOM_DOM_BUILDER_HPP_
 
 #include <memory>
+#include <span>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <cstdint>
 #include <vector>
@@ -35,7 +37,7 @@ class DOMBuilder {
   // Closes the root, which no end tag ever closes: its own text runs are flushed and its
   // subtree covers every node.
   void Finish();
-  bool FeedOpenToken(HtmlToken&& token, const char* text_begin);
+  bool FeedOpenToken(HtmlToken&& token, std::span<const Attribute> attributes, const char* text_begin);
   bool FeedTextToken(HtmlTextToken&& token);
   bool FeedCloseToken(HtmlCloseToken&& token, const char* text_end);
 
@@ -52,6 +54,14 @@ class DOMBuilder {
     return std::move(text_arena_);
   }
 
+  [[nodiscard]] std::vector<Attribute> ReleaseAttrArena() {
+    return std::move(attr_arena_);
+  }
+
+  [[nodiscard]] std::vector<std::string_view> ReleaseClassArena() {
+    return std::move(class_arena_);
+  }
+
  private:
   [[nodiscard]] TagNode& root() {
     ARBORIS_ASSERT(!dfs_node_list_.empty(), "Node list is empty.");
@@ -65,6 +75,8 @@ class DOMBuilder {
 
   bool closeTopNode();
   void flushPendingRuns(TagNode* node);
+  void storeAttributes(HtmlToken* token, std::span<const Attribute> attributes);
+  void appendClasses(std::string_view class_list, std::uint32_t run_begin);
 
  private:
   NodeKey next_node_key_{1};
@@ -79,6 +91,11 @@ class DOMBuilder {
   std::vector<TextRun> text_arena_;
   std::vector<TextRun> pending_runs_;
   std::vector<std::uint32_t> pending_marks_;
+
+  // A node's attributes and class names are stored the moment it opens, so each node's run
+  // is whole and the runs follow in key order.
+  std::vector<Attribute> attr_arena_;
+  std::vector<std::string_view> class_arena_;
 };
 
 }  // namespace arboris

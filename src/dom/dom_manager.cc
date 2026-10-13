@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <optional>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -28,8 +29,8 @@ DOMManager::DOMManager(std::string_view html_content) :
   HtmlTokenParser html_token_parser(store_.document(), string_pool_);
 
   html_token_parser.set_feed_open_token_callback(
-      [&builder](HtmlToken&& token, const char* text_begin) {
-        return builder.FeedOpenToken(std::move(token), text_begin);
+      [&builder](HtmlToken&& token, std::span<const Attribute> attributes, const char* text_begin) {
+        return builder.FeedOpenToken(std::move(token), attributes, text_begin);
       });
 
   html_token_parser.set_feed_text_token_callback(
@@ -46,6 +47,8 @@ DOMManager::DOMManager(std::string_view html_content) :
   builder.Finish();
   store_.set_nodes(builder.ReleaseNodeList());
   store_.set_text_arena(builder.ReleaseTextArena());
+  store_.set_class_arena(builder.ReleaseClassArena());
+  store_.set_attr_arena(builder.ReleaseAttrArena());
 
   // Indexing walks the finished nodes in key order, which is also memory order.
   for (const auto& node : store_.nodes()) {
