@@ -13,6 +13,10 @@
 
 namespace arboris {
 
+// What HTML counts as whitespace inside a tag and between class names: tab, line feed, form
+// feed, carriage return and space. Unlike std::isspace, no vertical tab.
+inline constexpr std::string_view kHtmlWhitespace = " \t\n\f\r";
+
 /**
  * @brief Skip whitespace characters in a string_view starting from a given position
  * @param content The string content to process
@@ -20,6 +24,14 @@ namespace arboris {
  * @return Position after skipping whitespace
  */
 std::size_t SkipWhitespace(std::string_view content, std::size_t begin);
+
+/**
+ * @brief Skip the characters in kHtmlWhitespace, starting from a given position
+ * @param content The string content to process
+ * @param begin Starting position for skipping whitespace
+ * @return Position after skipping whitespace
+ */
+std::size_t SkipHtmlWhitespace(std::string_view content, std::size_t begin);
 
 /**
  * @brief Extract substring from content using start and end positions

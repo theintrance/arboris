@@ -10,8 +10,10 @@
 #include <cstddef>
 #include <memory>
 #include <functional>
+#include <span>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "dom/token_parser.hpp"
 #include "utils/html_tokens.hpp"
@@ -23,7 +25,9 @@ class StringPool;
 
 class HtmlTokenParser : public TokenParser {
  public:
-  using FeedOpenTokenCallback = std::function<bool(HtmlToken&&, const char*)>;
+  // An open tag comes with its attributes. They point into the content, but the array that
+  // holds them is reused for the next tag, so a callback that keeps them copies them out.
+  using FeedOpenTokenCallback = std::function<bool(HtmlToken&&, std::span<const Attribute>, const char*)>;
   using FeedTextTokenCallback = std::function<bool(HtmlTextToken&&)>;
   using FeedCloseTokenCallback = std::function<bool(HtmlCloseToken&&, const char*)>;
 
@@ -53,14 +57,20 @@ class HtmlTokenParser : public TokenParser {
 
  private:
   // Delimiter constants for tag parsing
-  static constexpr std::string_view kOpenTagDelimiters = " />\t\n\r>";
-  static constexpr std::string_view kCloseTagDelimiters = "> \t\n\r";
+  static constexpr std::string_view kOpenTagDelimiters = " />\t\n\f\r>";
+  static constexpr std::string_view kCloseTagDelimiters = "> \t\n\f\r";
 
-  [[nodiscard]] std::size_t parseOpenTag(std::size_t begin) const;
+  // An attribute name runs up to whitespace, '/', '>' or '='. An unquoted value runs up to
+  // whitespace or '>' only, so a '/' inside it is part of the value.
+  static constexpr std::string_view kAttributeNameDelimiters = " \t\n\f\r/>=";
+  static constexpr std::string_view kUnquotedValueDelimiters = " \t\n\f\r>";
+
+  [[nodiscard]] std::size_t parseOpenTag(std::size_t begin, std::vector<Attribute>* attributes) const;
   [[nodiscard]] std::size_t parseCloseTag(std::size_t begin) const;
   [[nodiscard]] std::size_t parseTextContent(std::size_t begin) const;
 
   [[nodiscard]] std::string_view extractTagName(std::size_t* begin, std::string_view delimiters) const;
+  [[nodiscard]] bool parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes) const;
   [[nodiscard]] bool skipToTagEnd(std::size_t* begin) const;
 
   std::shared_ptr<StringPool> string_pool_;

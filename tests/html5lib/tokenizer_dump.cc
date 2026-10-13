@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -26,7 +28,18 @@ namespace {
 // Mirrors the delimiters in HtmlTokenParser. HtmlToken carries only the Tag enum, so the
 // raw name is recovered from the token's source span.
 // TODO(team): drop this once tokens carry their own tag name.
-constexpr std::string_view kTagNameDelimiters = " />\t\n\r>";
+constexpr std::string_view kTagNameDelimiters = " />\t\n\f\r>";
+
+// The open-tag callback hands over the tag's attributes. CI also builds this file against
+// the base branch, whose callback may not pass them yet, so either shape is taken.
+// TODO(team): drop the second overload once develop's callback passes attributes.
+std::span<const Attribute> AttributesOf(std::span<const Attribute> attributes, const char*) {
+  return attributes;
+}
+
+std::span<const Attribute> AttributesOf(const char*) {
+  return {};
+}
 
 std::string_view RawTagName(std::string_view content, const BaseToken& token, std::size_t prefix_len) {
   std::string_view span = content.substr(token.begin_pos, token.end_pos - token.begin_pos);
@@ -62,9 +75,24 @@ void AppendJsonString(std::string* out, std::string_view str) {
   out->push_back('"');
 }
 
+// No name repeats within a tag: the parser keeps the first of a repeated one.
+void AppendJsonObject(std::string* out, std::span<const Attribute> attributes) {
+  out->push_back('{');
+  for (std::size_t i = 0; i < attributes.size(); ++i) {
+    if (i > 0) {
+      out->push_back(',');
+    }
+    AppendJsonString(out, attributes[i].name);
+    out->push_back(':');
+    AppendJsonString(out, attributes[i].value);
+  }
+  out->push_back('}');
+}
+
 std::string Tokenize(std::string_view content) {
   std::string tokens;
-  auto append_token = [&tokens](std::string_view kind, std::string_view value, bool with_attrs) {
+  auto append_token = [&tokens](std::string_view kind, std::string_view value,
+                                std::optional<std::span<const Attribute>> attributes) {
     if (!tokens.empty()) {
       tokens.push_back(',');
     }
@@ -72,24 +100,25 @@ std::string Tokenize(std::string_view content) {
     tokens += kind;
     tokens += "\",";
     AppendJsonString(&tokens, value);
-    if (with_attrs) {
-      tokens += ",{}";  // HtmlTokenParser does not parse attributes yet.
+    if (attributes) {
+      tokens.push_back(',');
+      AppendJsonObject(&tokens, *attributes);
     }
     tokens.push_back(']');
   };
 
   auto string_pool = std::make_shared<StringPool>(content.size());
   HtmlTokenParser parser(content, string_pool);
-  parser.set_feed_open_token_callback([&](HtmlToken&& token, const char*) {
-    append_token("StartTag", RawTagName(content, token, 1), true);
+  parser.set_feed_open_token_callback([&](HtmlToken&& token, auto... rest) {
+    append_token("StartTag", RawTagName(content, token, 1), AttributesOf(rest...));
     return true;
   });
   parser.set_feed_text_token_callback([&](HtmlTextToken&& token) {
-    append_token("Character", token.text_content, false);
+    append_token("Character", token.text_content, std::nullopt);
     return true;
   });
   parser.set_feed_close_token_callback([&](HtmlCloseToken&& token, const char*) {
-    append_token("EndTag", RawTagName(content, token, 2), false);
+    append_token("EndTag", RawTagName(content, token, 2), std::nullopt);
     return true;
   });
 

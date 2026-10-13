@@ -67,6 +67,14 @@ class DOMStore {
     text_arena_ = std::move(text_arena);
   }
 
+  void set_class_arena(std::vector<std::string_view>&& class_arena) {
+    class_arena_ = std::move(class_arena);
+  }
+
+  void set_attr_arena(std::vector<Attribute>&& attr_arena) {
+    attr_arena_ = std::move(attr_arena);
+  }
+
   DOMIndexer& mutable_indexer() noexcept {
     return indexer_;
   }
