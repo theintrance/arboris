@@ -99,13 +99,12 @@ void DOMBuilder::storeAttributes(HtmlToken* token, std::span<const Attribute> at
 // repeated name would list the node twice in the class index, and FindAll would return it
 // twice.
 void DOMBuilder::appendClasses(std::string_view class_list, std::uint32_t run_begin) {
+  class_names_.Clear();
   std::size_t pos = SkipHtmlWhitespace(class_list, 0);
   while (pos < class_list.length()) {
     const std::size_t end = std::min(FindNextOf(class_list, pos, kHtmlWhitespaceSet), class_list.length());
     const std::string_view class_name = class_list.substr(pos, end - pos);
-
-    const auto run = std::span(class_arena_).subspan(run_begin);
-    if (std::ranges::find(run, class_name) == run.end()) {
+    if (class_names_.Insert(class_name, std::span(class_arena_).subspan(run_begin))) {
       class_arena_.push_back(class_name);
     }
     pos = SkipHtmlWhitespace(class_list, end);

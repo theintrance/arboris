@@ -19,6 +19,7 @@
 #include "dom/token_parser.hpp"
 #include "string/string.hpp"
 #include "utils/html_tokens.hpp"
+#include "utils/name_set.hpp"
 #include "utils/string_arena.hpp"
 
 namespace arboris {
@@ -115,6 +116,7 @@ class HtmlTokenParser : public TokenParser {
 
   std::shared_ptr<StringPool> string_pool_;
   StringArena names_;
+  NameSet attribute_names_;
   std::size_t error_pos_ = 0;
 
   FeedOpenTokenCallback feed_open_token_callback_;
