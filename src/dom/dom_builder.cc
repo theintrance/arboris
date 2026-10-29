@@ -101,7 +101,7 @@ void DOMBuilder::storeAttributes(HtmlToken* token, std::span<const Attribute> at
 void DOMBuilder::appendClasses(std::string_view class_list, std::uint32_t run_begin) {
   std::size_t pos = SkipHtmlWhitespace(class_list, 0);
   while (pos < class_list.length()) {
-    const std::size_t end = std::min(FindNextAnyChar(class_list, pos, kHtmlWhitespace), class_list.length());
+    const std::size_t end = std::min(FindNextOf(class_list, pos, kHtmlWhitespaceSet), class_list.length());
     const std::string_view class_name = class_list.substr(pos, end - pos);
 
     const auto run = std::span(class_arena_).subspan(run_begin);

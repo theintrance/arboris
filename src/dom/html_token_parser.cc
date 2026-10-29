@@ -24,11 +24,11 @@ namespace arboris {
 
 namespace {
 
-constexpr std::string_view kRawTextEndTagNameEnd = " \t\n\f\r/>";
+constexpr CharSet kRawTextEndTagNameEnd{" \t\n\f\r/>"};
 
 constexpr std::string_view kCommentOpen = "<!--";
 constexpr std::string_view kDoctypeOpen = "<!doctype";
-constexpr std::string_view kDoctypeNameDelimiters = " \t\n\f\r>";
+constexpr CharSet kDoctypeNameDelimiters{" \t\n\f\r>"};
 
 bool IsAsciiUpper(char c) {
   return c >= 'A' && c <= 'Z';
@@ -197,7 +197,7 @@ std::size_t HtmlTokenParser::findRawTextEnd(std::size_t begin, std::string_view 
        pos = content_.find("</", pos + 1)) {
     const std::size_t name_end = pos + 2 + tag_name.size();
     if (name_end < content_.length() && EqualsIgnoringCase(content_.substr(pos + 2, tag_name.size()), tag_name) &&
-        kRawTextEndTagNameEnd.find(content_[name_end]) != std::string_view::npos) {
+        kRawTextEndTagNameEnd.Contains(content_[name_end])) {
       return pos;
     }
   }
@@ -266,7 +266,7 @@ std::size_t HtmlTokenParser::parseDoctype(std::size_t begin) {
   HtmlDoctypeToken token;
 
   std::size_t pos = SkipHtmlWhitespace(content_, begin + kDoctypeOpen.size());
-  const std::size_t name_end = std::min(FindNextAnyChar(content_, pos, kDoctypeNameDelimiters), content_.length());
+  const std::size_t name_end = std::min(FindNextOf(content_, pos, kDoctypeNameDelimiters), content_.length());
   token.name = lowerCased(content_.substr(pos, name_end - pos));
   pos = SkipHtmlWhitespace(content_, name_end);
 
@@ -321,13 +321,13 @@ std::optional<std::string_view> HtmlTokenParser::readDoctypeId(std::size_t* begi
   return content_.substr(id_begin, id_end - id_begin);
 }
 
-std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, std::string_view delimiters) const {
+std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, const CharSet& delimiters) const {
   // Find start of tag name
   *begin = SkipWhitespace(content_, *begin);
   std::size_t tag_name_start = *begin;
 
   // Find end of tag name (until specified delimiters)
-  *begin = FindNextAnyChar(content_, *begin, delimiters);
+  *begin = FindNextOf(content_, *begin, delimiters);
 
   if (*begin == tag_name_start) {
     return std::string_view{};
@@ -365,7 +365,7 @@ bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>
 
     // The first character belongs to the name whatever it is, even '='.
     const std::size_t name_begin = pos;
-    pos = FindNextAnyChar(content_, pos + 1, kAttributeNameDelimiters);
+    pos = FindNextOf(content_, pos + 1, kAttributeNameDelimiters);
     if (pos == std::string::npos) {
       return false;
     }
@@ -391,7 +391,7 @@ bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>
         value = content_.substr(pos + 1, value_end - pos - 1);
         pos = value_end + 1;
       } else {
-        const std::size_t value_end = FindNextAnyChar(content_, pos, kUnquotedValueDelimiters);
+        const std::size_t value_end = FindNextOf(content_, pos, kUnquotedValueDelimiters);
         if (value_end == std::string::npos) {
           return false;
         }

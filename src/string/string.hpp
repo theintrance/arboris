@@ -7,8 +7,8 @@
 #ifndef SRC_STRING_STRING_HPP_
 #define SRC_STRING_STRING_HPP_
 
-#include <cctype>
 #include <cstddef>
+#include <cstdint>
 #include <string_view>
 
 namespace arboris {
@@ -17,56 +17,49 @@ namespace arboris {
 // feed, carriage return and space. Unlike std::isspace, no vertical tab.
 inline constexpr std::string_view kHtmlWhitespace = " \t\n\f\r";
 
-/**
- * @brief Skip whitespace characters in a string_view starting from a given position
- * @param content The string content to process
- * @param begin Starting position for skipping whitespace
- * @return Position after skipping whitespace
- */
+// A set of byte values, one bit each, so a scan tests a byte against the whole set at once.
+class CharSet {
+ public:
+  constexpr CharSet() = default;
+
+  constexpr explicit CharSet(std::string_view chars) {
+    for (const char c : chars) {
+      const auto byte = static_cast<unsigned char>(c);
+      bits_[byte >> 6] |= std::uint64_t{1} << (byte & 63);
+    }
+  }
+
+  [[nodiscard]] constexpr bool Contains(char c) const noexcept {
+    const auto byte = static_cast<unsigned char>(c);
+    return ((bits_[byte >> 6] >> (byte & 63)) & 1) != 0;
+  }
+
+ private:
+  std::uint64_t bits_[4] = {};
+};
+
+inline constexpr CharSet kHtmlWhitespaceSet{kHtmlWhitespace};
+
+// Position of the first byte at or after begin that is in the set, or npos.
+std::size_t FindNextOf(std::string_view content, std::size_t begin, const CharSet& set);
+
+// Position of the first byte at or after begin that is not in the set, or content.length().
+std::size_t SkipAll(std::string_view content, std::size_t begin, const CharSet& set);
+
+// Skips std::isspace characters.
 std::size_t SkipWhitespace(std::string_view content, std::size_t begin);
 
-/**
- * @brief Skip the characters in kHtmlWhitespace, starting from a given position
- * @param content The string content to process
- * @param begin Starting position for skipping whitespace
- * @return Position after skipping whitespace
- */
 std::size_t SkipHtmlWhitespace(std::string_view content, std::size_t begin);
 
-/**
- * @brief Extract substring from content using start and end positions
- * @param content The string content to extract from
- * @param start Starting position (inclusive)
- * @param end Ending position (exclusive)
- * @return Extracted string_view
- */
+// content[start, end), clipped to the content; empty when start is past end or the content.
 std::string_view ExtractSubstring(std::string_view content, std::size_t start, std::size_t end);
 
-/**
- * @brief Find next occurrence of character starting from given position
- * @param content The string content to search in
- * @param begin Starting position for search
- * @param target_char Character to find
- * @return Position of found character, or std::string::npos if not found
- */
+// Position of the first target_char at or after begin, or npos.
 std::size_t FindNextChar(std::string_view content, std::size_t begin, char target_char);
 
-/**
- * @brief Find next occurrence of any character in a set, starting from given position
- * @param content The string content to search in
- * @param begin Starting position for search
- * @param target_chars Set of characters to find
- * @return Position of found character, or std::string::npos if not found
- */
+// Position of the first byte at or after begin that is one of target_chars, or npos.
 std::size_t FindNextAnyChar(std::string_view content, std::size_t begin, std::string_view target_chars);
 
-/**
- * @brief Skip characters until a specific character is found
- * @param content The string content to process
- * @param begin Starting position for search
- * @param target_char Character to stop at
- * @return Position of found character, or std::string::npos if not found
- */
 std::size_t SkipUntilChar(std::string_view content, std::size_t begin, char target_char);
 
 }  // namespace arboris
