@@ -34,6 +34,9 @@ class DOMManager {
   DOMManager& operator=(DOMManager&&) = delete;
   virtual ~DOMManager() = default;
 
+  // The synthetic root that holds the document: key 0, Tag::kDocument, no attributes, and
+  // the parent of the top-level elements, <html> among them. It is not an element, so no
+  // query returns it; the queries here search everything under it.
   [[nodiscard]] NodeRef GetRoot() const {
     ARBORIS_ASSERT(!store_.nodes().empty(), "Root node is nullptr.");
     return NodeRef(store_.nodes().front().key(), store_);
