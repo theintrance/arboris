@@ -71,5 +71,42 @@ TEST(DOMQueryTest, FindByIdSearchesDescendantsOnly) {
   EXPECT_EQ(inner->Get().id(), "b");
 }
 
+TEST(DOMQueryTest, TextConditionIsChecked) {
+  const DOMManager dom("<p id=a>hello</p><p id=b>wor<b>ld</b></p><div id=c>world</div>");
+  EXPECT_EQ(Ids(dom.FindAll({.tag = Tag::kP, .text = TextQueryCondition("world")})),
+            std::vector<std::string_view>{"b"});
+  EXPECT_EQ(Ids(dom.FindAll({.text = TextQueryCondition("world")})), (std::vector<std::string_view>{"b", "c"}));
+  EXPECT_EQ(Ids(dom.FindAll({.text = TextQueryCondition([](std::string_view text) { return text.starts_with("h"); })})),
+            std::vector<std::string_view>{"a"});
+  EXPECT_FALSE(dom.Find({.tag = Tag::kP, .text = TextQueryCondition("nowhere")}).has_value());
+}
+
+TEST(DOMQueryTest, NoConditionMatchesEveryElement) {
+  const DOMManager dom("<div id=a><p id=b></p></div><span id=c></span>");
+  EXPECT_EQ(Ids(dom.FindAll({})), (std::vector<std::string_view>{"a", "b", "c"}));
+
+  const auto outer = dom.Find({.tag = Tag::kDiv});
+  ASSERT_TRUE(outer.has_value());
+  EXPECT_EQ(Ids(outer->FindAll({})), std::vector<std::string_view>{"b"});
+}
+
+TEST(DOMQueryTest, ConditionNothingHasReturnsNothing) {
+  const DOMManager dom("<div class=x id=a><div class=y id=b></div></div>");
+  EXPECT_TRUE(dom.FindAll({.tag = Tag::kDiv, .classes = ClassSet{"no-such-class"}}).empty());
+  EXPECT_TRUE(dom.FindAll({.tag = Tag::kDiv, .attributes = AttributeMap{{"no-such-attr", {}}}}).empty());
+
+  const auto outer = dom.Find({.tag = Tag::kDiv});
+  ASSERT_TRUE(outer.has_value());
+  EXPECT_TRUE(outer->FindAll({.tag = Tag::kDiv, .classes = ClassSet{"x"}}).empty());
+}
+
+TEST(DOMQueryTest, ManagerFindsById) {
+  const DOMManager dom("<div id=a><p id=b></p></div>");
+  const auto found = dom.Find(std::string("b"));
+  ASSERT_TRUE(found.has_value());
+  EXPECT_EQ(found->Get().tag(), Tag::kP);
+  EXPECT_FALSE(dom.Find(std::string("c")).has_value());
+}
+
 }  // anonymous namespace
 }  // namespace arboris

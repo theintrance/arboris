@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -59,16 +60,21 @@ DOMManager::DOMManager(std::string_view html_content) :
   ARBORIS_ASSERT(builder.Validate(), "DOM structure is invalid after parsing.");
 }
 
-std::optional<DOMQuery> DOMManager::Find(const QueryOptions& options) const {
+DOMQuery DOMManager::rootQuery() const {
   const auto root = GetRoot();
-  DOMSubtree root_subtree(store_, root.node());
-  return DOMQuery(root, root_subtree).Find(options);
+  return DOMQuery(root, DOMSubtree(store_, root.node()));
+}
+
+std::optional<DOMQuery> DOMManager::Find(const QueryOptions& options) const {
+  return rootQuery().Find(options);
+}
+
+std::optional<DOMQuery> DOMManager::Find(const std::string& id) const {
+  return rootQuery().Find(id);
 }
 
 std::vector<DOMQuery> DOMManager::FindAll(const QueryOptions& options) const {
-  const auto root = GetRoot();
-  DOMSubtree root_subtree(store_, root.node());
-  return DOMQuery(root, root_subtree).FindAll(options);
+  return rootQuery().FindAll(options);
 }
 
 }  // namespace arboris

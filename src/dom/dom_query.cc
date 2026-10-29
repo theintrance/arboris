@@ -8,10 +8,10 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <limits>
 #include <optional>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "utils/html_tokens.hpp"
@@ -40,13 +40,12 @@ bool MatchesAttributes(const AttributeMap& wanted, std::span<const Attribute> at
 }  // anonymous namespace
 
 std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
-  for (const auto& candidate_key : searchCandidatesFromSubtree(options)) {
-    const auto candidate = subtree_.GetNodeByKey(candidate_key);
-    if (matchAllConditions(candidate, options)) {
-      return DOMQuery(candidate, subtree_);
-    }
-  }
-  return std::nullopt;
+  std::optional<DOMQuery> found;
+  forEachMatch(options, [&](const NodeRef& node) {
+    found.emplace(node, subtree_);
+    return false;
+  });
+  return found;
 }
 
 std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
@@ -58,62 +57,67 @@ std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
 }
 
 std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
-  std::vector<DOMQuery> ret;
-
-  for (const auto& candidate_key : searchCandidatesFromSubtree(options)) {
-    const auto candidate = subtree_.GetNodeByKey(candidate_key);
-    if (matchAllConditions(candidate, options)) {
-      ret.push_back(DOMQuery(candidate, subtree_));
-    }
-  }
-  return ret;
+  std::vector<DOMQuery> found;
+  forEachMatch(options, [&](const NodeRef& node) {
+    found.emplace_back(node, subtree_);
+    return true;
+  });
+  return found;
 }
 
-// The cheapest index wins: every candidate is checked against all conditions anyway, so
-// the shortest list is the one worth walking.
-NodeKeySpan DOMQuery::searchCandidatesFromSubtree(const QueryOptions& options) const {
-  std::size_t min_size = std::numeric_limits<std::size_t>::max();
-  NodeKeySpan min_candidates;
+template <typename Visit>
+void DOMQuery::forEachMatch(const QueryOptions& options, Visit&& visit) const {
+  const auto check = [&](NodeKey key) {
+    const auto node = subtree_.GetNodeByKey(key);
+    return !matchAllConditions(node, options) || visit(node);
+  };
 
-  const auto consider = [&min_size, &min_candidates](NodeKeySpan keys) {
-    if (!keys.empty() && keys.size() < min_size) {
-      min_size = keys.size();
-      min_candidates = keys;
+  if (const auto candidates = indexedCandidates(options)) {
+    std::ranges::all_of(*candidates, check);
+  } else {
+    std::ranges::all_of(subtree_.Descendants(), check);
+  }
+}
+
+// The shortest index list among the conditions that have one, or nullopt when no condition
+// has an index and every descendant is a candidate. An empty list settles the query.
+std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const QueryOptions& options) const {
+  std::optional<NodeKeySpan> shortest;
+  const auto consider = [&shortest](NodeKeySpan keys) {
+    if (!shortest || keys.size() < shortest->size()) {
+      shortest = keys;
     }
   };
 
-  if (options.tag.has_value()) {
-    consider(subtree_.GetNodesByTag(options.tag.value()));
+  if (options.tag) {
+    consider(subtree_.GetNodesByTag(*options.tag));
   }
-
-  if (options.classes.has_value()) {
+  if (options.classes) {
     for (const auto& class_name : *options.classes) {
       consider(subtree_.GetNodesByClass(class_name));
     }
   }
-
-  if (options.attributes.has_value()) {
-    for (const auto& [attribute_name, _] : options.attributes.value()) {
+  if (options.attributes) {
+    for (const auto& [attribute_name, _] : *options.attributes) {
       consider(subtree_.GetNodesByAttribute(attribute_name));
     }
   }
-
-  return min_candidates;
+  return shortest;
 }
 
 bool DOMQuery::matchAllConditions(const NodeRef& node, const QueryOptions& options) const {
-  if (options.tag && node.tag() != options.tag.value()) {
+  if (options.tag && node.tag() != *options.tag) {
     return false;
   }
-
-  if (options.classes && !IsSubset(options.classes.value(), node.classes())) {
+  if (options.classes && !IsSubset(*options.classes, node.classes())) {
     return false;
   }
-
-  if (options.attributes && !MatchesAttributes(options.attributes.value(), node.attributes())) {
+  if (options.attributes && !MatchesAttributes(*options.attributes, node.attributes())) {
     return false;
   }
-  // TODO(team): Implement text condition matching
+  if (options.text && !options.text->Matches(node.text_content())) {
+    return false;
+  }
   return true;
 }
 
