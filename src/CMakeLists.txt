@@ -7,6 +7,7 @@ set(ARBORIS_SOURCES
   dom/dom_query.cc
   dom/html_token_parser.cc
   encoding/encoding.cc
+  selector/selector.cc
   string/decode.cc
   string/string_scalar.cc
   utils/tag.cc
@@ -29,6 +30,7 @@ set(ARBORIS_HEADERS
   dom/dom_types.hpp
   dom/tag_node.hpp
   encoding/encoding.hpp
+  selector/selector.hpp
   string/decode.hpp
   string/named_references.inc
   string/string.hpp
