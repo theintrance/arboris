@@ -11,6 +11,7 @@
 #include <cctype>
 #include <cstdint>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -24,11 +25,11 @@ namespace arboris {
 
 namespace {
 
-constexpr std::string_view kRawTextEndTagNameEnd = " \t\n\f\r/>";
+constexpr CharSet kRawTextEndTagNameEnd{" \t\n\f\r/>"};
 
 constexpr std::string_view kCommentOpen = "<!--";
 constexpr std::string_view kDoctypeOpen = "<!doctype";
-constexpr std::string_view kDoctypeNameDelimiters = " \t\n\f\r>";
+constexpr CharSet kDoctypeNameDelimiters{" \t\n\f\r>"};
 
 bool IsAsciiUpper(char c) {
   return c >= 'A' && c <= 'Z';
@@ -64,7 +65,7 @@ bool HtmlTokenParser::Parse() {
       // Text and end tag are separate steps so that error_pos_ points at the one that failed.
       const std::size_t text_end = findRawTextEnd(pos, raw_text->name);
       if (text_end > pos) {
-        pos = feedText(pos, text_end);
+        pos = feedText(pos, text_end, raw_text->mode);
       } else {
         // The name was matched ignoring case, so `</SCRIPT>` closes a <script> too.
         pos = feedCloseTag(pos, pos + 2 + raw_text->name.size(), raw_text->tag, raw_text->name);
@@ -121,9 +122,10 @@ std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin, std::vector<Attribu
 
   // Decided here rather than in the tree builder as the standard does, so a <style> inside
   // <svg> is raw text too. A self-closing <script/> or <title/> is an SVG element with no
-  // contents. RCDATA character references are not decoded yet.
+  // contents.
   if (IsRawTextTag(tag) && !self_closing) {
-    *raw_text = RawTextElement{.tag = tag, .name = tag_name};
+    *raw_text = RawTextElement{
+        .tag = tag, .name = tag_name, .mode = IsRcdataTag(tag) ? TextMode::kText : TextMode::kRawText};
   }
 
   return current_pos;
@@ -168,17 +170,17 @@ std::size_t HtmlTokenParser::parseTextContent(std::size_t begin) const {
     end = content_.length();
   }
 
-  return feedText(begin, end);
+  return feedText(begin, end, TextMode::kText);
 }
 
-std::size_t HtmlTokenParser::feedText(std::size_t begin, std::size_t end) const {
+std::size_t HtmlTokenParser::feedText(std::size_t begin, std::size_t end, TextMode mode) const {
   if (end == begin) {
     return end;
   }
 
   // Extract text content
   std::string_view text_content = ExtractSubstring(content_, begin, end);
-  auto pooled_text = string_pool_->Append(text_content);
+  auto pooled_text = string_pool_->AppendDecoded(text_content, mode);
 
   // Create HtmlTextToken and call callback
   HtmlTextToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(end)}, pooled_text};
@@ -197,7 +199,7 @@ std::size_t HtmlTokenParser::findRawTextEnd(std::size_t begin, std::string_view 
        pos = content_.find("</", pos + 1)) {
     const std::size_t name_end = pos + 2 + tag_name.size();
     if (name_end < content_.length() && EqualsIgnoringCase(content_.substr(pos + 2, tag_name.size()), tag_name) &&
-        kRawTextEndTagNameEnd.find(content_[name_end]) != std::string_view::npos) {
+        kRawTextEndTagNameEnd.Contains(content_[name_end])) {
       return pos;
     }
   }
@@ -266,7 +268,7 @@ std::size_t HtmlTokenParser::parseDoctype(std::size_t begin) {
   HtmlDoctypeToken token;
 
   std::size_t pos = SkipHtmlWhitespace(content_, begin + kDoctypeOpen.size());
-  const std::size_t name_end = std::min(FindNextAnyChar(content_, pos, kDoctypeNameDelimiters), content_.length());
+  const std::size_t name_end = std::min(FindNextOf(content_, pos, kDoctypeNameDelimiters), content_.length());
   token.name = lowerCased(content_.substr(pos, name_end - pos));
   pos = SkipHtmlWhitespace(content_, name_end);
 
@@ -321,13 +323,13 @@ std::optional<std::string_view> HtmlTokenParser::readDoctypeId(std::size_t* begi
   return content_.substr(id_begin, id_end - id_begin);
 }
 
-std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, std::string_view delimiters) const {
+std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, const CharSet& delimiters) const {
   // Find start of tag name
   *begin = SkipWhitespace(content_, *begin);
   std::size_t tag_name_start = *begin;
 
   // Find end of tag name (until specified delimiters)
-  *begin = FindNextAnyChar(content_, *begin, delimiters);
+  *begin = FindNextOf(content_, *begin, delimiters);
 
   if (*begin == tag_name_start) {
     return std::string_view{};
@@ -341,19 +343,29 @@ std::string_view HtmlTokenParser::lowerCased(std::string_view name) {
   if (std::ranges::none_of(name, IsAsciiUpper)) {
     return name;
   }
-  char* out = names_.Allocate(name.size());
+  char* out = strings_.Allocate(name.size());
   std::ranges::transform(name, out, ToAsciiLower);
   return {out, name.size()};
+}
+
+std::string_view HtmlTokenParser::decodedValue(std::string_view value) {
+  const std::size_t bound = DecodedSizeBound(value.size());
+  char* out = strings_.Allocate(bound);
+  const std::size_t size = DecodeInto(value, TextMode::kAttributeValue, out);
+  strings_.Shrink(bound - size);
+  return {out, size};
 }
 
 // Reads the attributes between the tag name and the '>' that ends the tag, and leaves *begin
 // just past that '>'. They have to be read to find it at all: a '>' inside a quoted value
 // does not end the tag.
 //
-// Values point into the content, names are lower-cased. A name given twice keeps its first
-// value, as the HTML tokenizer does. Returns false when the content ends before the tag does.
+// Names are lower-cased and values decoded; both stay views into the content when that
+// changes nothing. A name given twice keeps its first value, as the HTML tokenizer does.
+// Returns false when the content ends before the tag does.
 bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes, bool* self_closing) {
   std::size_t pos = SkipHtmlWhitespace(content_, *begin);
+  attribute_names_.Clear();
 
   while (pos < content_.length() && content_[pos] != '>') {
     // The '/' of `<br/>`, or a stray one: either way not part of an attribute.
@@ -365,7 +377,7 @@ bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>
 
     // The first character belongs to the name whatever it is, even '='.
     const std::size_t name_begin = pos;
-    pos = FindNextAnyChar(content_, pos + 1, kAttributeNameDelimiters);
+    pos = FindNextOf(content_, pos + 1, kAttributeNameDelimiters);
     if (pos == std::string::npos) {
       return false;
     }
@@ -384,23 +396,38 @@ bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>
       // value still has to point into the content, so has_value() tells `a=""` from `a`.
       const char quote = content_[pos];
       if (quote == '"' || quote == '\'') {
-        const std::size_t value_end = FindNextChar(content_, pos + 1, quote);
+        const CharSet& stops = quote == '"' ? kDoubleQuotedValueStops : kSingleQuotedValueStops;
+        std::size_t value_end = FindNextOf(content_, pos + 1, stops);
+        const bool decode = value_end != std::string::npos && content_[value_end] != quote;
+        if (decode) {
+          value_end = FindNextChar(content_, value_end, quote);
+        }
         if (value_end == std::string::npos) {
           return false;
         }
         value = content_.substr(pos + 1, value_end - pos - 1);
         pos = value_end + 1;
+        if (decode) {
+          value = decodedValue(value);
+        }
       } else {
-        const std::size_t value_end = FindNextAnyChar(content_, pos, kUnquotedValueDelimiters);
+        std::size_t value_end = FindNextOf(content_, pos, kUnquotedValueStops);
+        const bool decode = value_end != std::string::npos && content_[value_end] == '&';
+        if (decode) {
+          value_end = FindNextOf(content_, value_end, kUnquotedValueDelimiters);
+        }
         if (value_end == std::string::npos) {
           return false;
         }
         value = content_.substr(pos, value_end - pos);
         pos = value_end;
+        if (decode) {
+          value = decodedValue(value);
+        }
       }
     }
 
-    if (std::ranges::find(*attributes, name, &Attribute::name) == attributes->end()) {
+    if (attribute_names_.Insert(name, std::views::transform(*attributes, &Attribute::name))) {
       attributes->push_back({name, value});
     }
     pos = SkipHtmlWhitespace(content_, pos);

@@ -23,7 +23,9 @@ namespace arboris {
 using AttributeMap = std::unordered_map<std::string, std::unordered_set<std::string>>;
 using ClassSet = std::unordered_set<std::string>;
 
-// One attribute of an open tag, pointing into the document buffer DOMStore owns.
+// One attribute of an open tag. The name is lower-cased and the value decoded; each points
+// into the document buffer DOMStore owns when the source already read that way, and into
+// the store's string arena otherwise.
 //
 // An attribute written without a value has an empty value, as the HTML standard says.
 // has_value() tells the two spellings apart for anything that has to write the document
@@ -53,8 +55,8 @@ struct HtmlToken : public BaseHtmlToken {
   // Ends in "/>". Only an element inside <svg> or <math> closes on it; HTML ignores it.
   bool is_self_closing = false;
 
-  // Lower-case. Points into the document buffer, or into the parser's name arena when the
-  // source spelt it with capitals. Tag names and attribute names are both folded this way.
+  // Lower-case. Points into the document buffer, or into the string arena when the source
+  // spelt it with capitals.
   std::string_view name;
 
   // Into the document buffer.

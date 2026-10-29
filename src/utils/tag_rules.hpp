@@ -37,6 +37,11 @@ inline bool IsRawTextTag(Tag tag) {
   return ContainsTag(kRawTextTags, tag);
 }
 
+// The raw text elements whose contents still decode character references.
+inline bool IsRcdataTag(Tag tag) {
+  return tag == Tag::kTextarea || tag == Tag::kTitle;
+}
+
 inline bool IsForeignRoot(Tag tag) {
   return tag == Tag::kSvg || tag == Tag::kMath;
 }

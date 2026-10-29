@@ -22,13 +22,15 @@ namespace arboris {
 
 // Everything one parsed document owns.
 //
-// The document buffer is the single source of truth: node ids, class names and attribute
-// names and values are all string_views into it, so nothing copies the bytes that are
-// already there. That only holds while this store is alive and the buffer is never
-// touched again after parsing, so the buffer is private and handed out by view alone.
+// The document buffer is the source of truth: node ids, class names and attribute names
+// and values are string_views into it, so nothing copies the bytes that are already there.
+// Only a name or value that reads differently from the source (a capital letter, a
+// character reference) is copied, into strings_. That only holds while this store is alive
+// and the buffer is never touched again after parsing, so the buffer is private and
+// handed out by view alone.
 class DOMStore {
  public:
-  explicit DOMStore(std::string_view html_content) : document_(html_content) {}
+  explicit DOMStore(std::string&& document) : document_(std::move(document)) {}
 
   DOMStore(const DOMStore&) = delete;
   DOMStore& operator=(const DOMStore&) = delete;
@@ -76,8 +78,8 @@ class DOMStore {
     attr_arena_ = std::move(attr_arena);
   }
 
-  void set_names(StringArena&& names) {
-    names_ = std::move(names);
+  void set_strings(StringArena&& strings) {
+    strings_ = std::move(strings);
   }
 
   DOMIndexer& mutable_indexer() noexcept {
@@ -95,8 +97,8 @@ class DOMStore {
   std::vector<Attribute> attr_arena_;
   std::vector<TextRun> text_arena_;
 
-  // Tag and attribute names that could not stay a view into the document: see HtmlToken::name.
-  StringArena names_;
+  // Names and attribute values that could not stay a view into the document: see Attribute.
+  StringArena strings_;
 
   DOMIndexer indexer_;
 };

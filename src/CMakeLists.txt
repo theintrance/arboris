@@ -6,6 +6,8 @@ set(ARBORIS_SOURCES
   dom/dom_subtree.cc
   dom/dom_query.cc
   dom/html_token_parser.cc
+  encoding/encoding.cc
+  string/decode.cc
   string/string_scalar.cc
   utils/tag.cc
   utils/tag_rules.cc
@@ -26,8 +28,12 @@ set(ARBORIS_HEADERS
   dom/dom_indexer.hpp
   dom/dom_types.hpp
   dom/tag_node.hpp
+  encoding/encoding.hpp
+  string/decode.hpp
+  string/named_references.inc
   string/string.hpp
   utils/html_tokens.hpp
+  utils/name_set.hpp
   utils/string_arena.hpp
   utils/tag.hpp
   utils/tag_rules.hpp
@@ -45,6 +51,19 @@ target_include_directories(arboris PUBLIC
 
 # Set compile features
 target_compile_features(arboris PUBLIC cxx_std_20)
+
+# Encodings other than UTF-8 and UTF-16 are converted through iconv. Without it, a page in
+# one of them is read as UTF-8 and DOMManager::unsupported_encoding() says so.
+option(ARBORIS_ICONV "Convert legacy encodings through iconv" ON)
+if (ARBORIS_ICONV)
+  find_package(Iconv)
+  if (Iconv_FOUND)
+    target_link_libraries(arboris PRIVATE Iconv::Iconv)
+    target_compile_definitions(arboris PRIVATE ARBORIS_HAVE_ICONV)
+  else()
+    message(STATUS "iconv not found; only UTF-8 and UTF-16 input will be converted")
+  endif()
+endif()
 
 # Install targets
 install(TARGETS arboris

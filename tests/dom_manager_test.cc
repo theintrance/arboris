@@ -171,5 +171,44 @@ TEST(DOMManagerParseTest, ReportsATagTheInputEndsIn) {
   EXPECT_EQ(FindAllByTag(dom, Tag::kDiv).size(), 1U);
 }
 
+TEST(DOMManagerParseTest, TextAndAttributeValuesAreDecoded) {
+  const DOMManager dom(
+      "<p id=t title=\"a &amp; b\" href=\"?x=1&copy=2\">x &amp; y&#33;</p>"
+      "<textarea>&lt;b&gt;</textarea><script>a &amp;&amp; b</script>");
+  EXPECT_EQ(dom.parse_error_offset(), std::nullopt);
+
+  const auto p = dom.Find(std::string("t"));
+  ASSERT_TRUE(p.has_value());
+  EXPECT_EQ(p->Get().text_content(), "x & y!");
+  EXPECT_EQ(p->Get().attributes()[1].value, "a & b");
+  EXPECT_EQ(p->Get().attributes()[2].value, "?x=1&copy=2");
+  EXPECT_EQ(dom.FindAll({.attributes = AttributeMap{{"title", {"a & b"}}}}).size(), 1U);
+
+  EXPECT_EQ(FindAllByTag(dom, Tag::kTextarea)[0].text_content(), "<b>");
+  EXPECT_EQ(FindAllByTag(dom, Tag::kScript)[0].text_content(), "a &amp;&amp; b");
+}
+
+TEST(DOMManagerParseTest, NewlinesAreNormalised) {
+  const DOMManager dom("<p id=t title=\"a\r\nb\">1\r\n2\r3</p><script>x\r\ny</script>");
+  const auto p = dom.Find(std::string("t"));
+  ASSERT_TRUE(p.has_value());
+  EXPECT_EQ(p->Get().text_content(), "1\n2\n3");
+  EXPECT_EQ(p->Get().attributes()[1].value, "a\nb");
+  EXPECT_EQ(FindAllByTag(dom, Tag::kScript)[0].text_content(), "x\ny");
+}
+
+TEST(DOMManagerParseTest, DecodedTextThatGrowsKeepsEveryView) {
+  std::string html;
+  for (int i = 0; i < 2000; ++i) {
+    html += "<p>&nGt;</p>";
+  }
+  const DOMManager dom(html);
+  const auto paragraphs = FindAllByTag(dom, Tag::kP);
+  ASSERT_EQ(paragraphs.size(), 2000U);
+  for (const auto& p : paragraphs) {
+    EXPECT_EQ(p.text_content(), "\xe2\x89\xab\xe2\x83\x92");
+  }
+}
+
 }  // anonymous namespace
 }  // namespace arboris
