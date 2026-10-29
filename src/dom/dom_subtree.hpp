@@ -20,7 +20,8 @@
 namespace arboris {
 
 // A key range of the document: nodes are numbered in DFS order, so one subtree is
-// [root_key_, root_key_ + sub_tree_size_). Index hits are sliced down to that range.
+// [root_key_, root_key_ + sub_tree_size_). Lookups search the descendants only, as
+// querySelectorAll does, so index hits are sliced to (root_key_, root_key_ + sub_tree_size_).
 class DOMSubtree {
  public:
   // Constructor for subtree of a parent subtree
@@ -51,11 +52,15 @@ class DOMSubtree {
     return key >= root_key_ && key < root_key_ + sub_tree_size_;
   }
 
-  [[nodiscard]] NodeKeySpan sliceSubtreeRange(NodeKeySpan keys) const noexcept {
-    const auto subtree_begin = root_key_;
-    const auto subtree_end = root_key_ + sub_tree_size_;
-    const auto first = std::lower_bound(keys.begin(), keys.end(), subtree_begin);
-    const auto last = std::lower_bound(first, keys.end(), subtree_end);
+  [[nodiscard]] bool isDescendant(NodeKey key) const noexcept {
+    return key > root_key_ && key < root_key_ + sub_tree_size_;
+  }
+
+  [[nodiscard]] NodeKeySpan sliceDescendants(NodeKeySpan keys) const noexcept {
+    const auto descendants_begin = root_key_ + 1;
+    const auto descendants_end = root_key_ + sub_tree_size_;
+    const auto first = std::lower_bound(keys.begin(), keys.end(), descendants_begin);
+    const auto last = std::lower_bound(first, keys.end(), descendants_end);
     return {first, static_cast<std::size_t>(last - first)};
   }
 

@@ -24,22 +24,22 @@ DOMSubtree::DOMSubtree(const DOMSubtree& parent, const TagNode& subtree_root)
 
 std::optional<NodeKey> DOMSubtree::GetNodeById(std::string_view id) const {
   auto node_key = store_->indexer().GetNodeKeyById(id);
-  if (!node_key || !isInSubtree(*node_key)) {
+  if (!node_key || !isDescendant(*node_key)) {
     return std::nullopt;
   }
   return node_key.value();
 }
 
 NodeKeySpan DOMSubtree::GetNodesByTag(Tag tag) const {
-  return sliceSubtreeRange(store_->indexer().GetNodeKeyListByTag(tag));
+  return sliceDescendants(store_->indexer().GetNodeKeyListByTag(tag));
 }
 
 NodeKeySpan DOMSubtree::GetNodesByClass(std::string_view class_name) const {
-  return sliceSubtreeRange(store_->indexer().GetNodeKeyListByClass(class_name));
+  return sliceDescendants(store_->indexer().GetNodeKeyListByClass(class_name));
 }
 
 NodeKeySpan DOMSubtree::GetNodesByAttribute(std::string_view attribute_name) const {
-  return sliceSubtreeRange(store_->indexer().GetNodeKeyListByAttribute(attribute_name));
+  return sliceDescendants(store_->indexer().GetNodeKeyListByAttribute(attribute_name));
 }
 
 }  // namespace arboris
