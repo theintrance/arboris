@@ -34,8 +34,8 @@ class DOMBuilder {
 
   [[nodiscard]] bool Validate() const;
 
-  // Closes what is still open at text_end, the end of the text, and then the root, which no
-  // end tag ever closes: its own text runs are flushed and its subtree covers every node.
+  // Closes the root, which no end tag ever closes: its own text runs are flushed and its
+  // subtree covers every node.
   void Finish(const char* text_end);
   bool FeedOpenToken(HtmlToken&& token, std::span<const Attribute> attributes, const char* text_begin);
   bool FeedTextToken(HtmlTextToken&& token);
@@ -73,7 +73,6 @@ class DOMBuilder {
     return node_stack_.empty() ? root() : dfs_node_list_[node_stack_.back()];
   }
 
-  // The tag of the open element at depth, 0 being the outermost.
   [[nodiscard]] Tag tagAt(std::size_t depth) const {
     return dfs_node_list_[node_stack_[depth]].tag();
   }
@@ -89,11 +88,8 @@ class DOMBuilder {
   NodeKey next_node_key_{1};
 
   TagNodeList dfs_node_list_;
-  // The open elements, outermost first. Keys, not pointers: the node array reallocates as
-  // the document grows.
+  // Keys, not pointers: the node array reallocates as the document grows.
   std::vector<NodeKey> node_stack_;
-
-  // How many <svg> and <math> elements are open. Inside one, "/>" closes an element.
   std::uint32_t foreign_depth_{0};
 
   // Text runs land here in document order, a node's own runs ending up side by side: a

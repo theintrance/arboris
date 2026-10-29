@@ -20,8 +20,6 @@
 namespace arboris {
 namespace {
 
-// Every case below is well-formed HTML followed by this, which a parse that stopped early
-// never reaches.
 constexpr std::string_view kTail = "<span>y</span>";
 
 std::vector<NodeRef> FindAllByTag(const DOMManager& dom, Tag tag) {
@@ -40,8 +38,6 @@ std::vector<Tag> ChildTags(const NodeRef& node) {
   return out;
 }
 
-// The whole document is read, and the tail sits at the top level, not inside anything the
-// parse left open.
 void ExpectReadsToTheEnd(std::string_view html) {
   SCOPED_TRACE(html);
   const DOMManager dom(std::string(html) + std::string(kTail));
@@ -61,7 +57,6 @@ TEST(DOMManagerParseTest, CommentsAndDoctypeMakeNoElement) {
   const DOMManager dom("<!DOCTYPE html><html><body><!-- a > b --><p id=x>t</p></body></html>");
   EXPECT_EQ(ChildTags(dom.GetRoot()), std::vector<Tag>{Tag::kHtml});
 
-  // The comment ends at `-->`, not at the '>' inside it, so no text is left over.
   const auto body = FindAllByTag(dom, Tag::kBody);
   ASSERT_EQ(body.size(), 1U);
   EXPECT_TRUE(body[0].text_runs().empty());
@@ -116,7 +111,6 @@ TEST(DOMManagerParseTest, OmittedEndTagsAreImplied) {
   EXPECT_EQ(ChildTags(lists[0]), (std::vector<Tag>{Tag::kLi, Tag::kLi, Tag::kLi}));
   EXPECT_EQ(ChildTags(lists[1]), std::vector<Tag>{Tag::kLi});
 
-  // Each cell and row is a sibling of the one before it.
   const DOMManager table("<table><tr><td>a<td>b<tr><td>c</table>");
   const auto rows = FindAllByTag(table, Tag::kTr);
   ASSERT_EQ(rows.size(), 2U);
@@ -125,7 +119,6 @@ TEST(DOMManagerParseTest, OmittedEndTagsAreImplied) {
   EXPECT_EQ(ChildTags(rows[0]), (std::vector<Tag>{Tag::kTd, Tag::kTd}));
   EXPECT_EQ(rows[0].children()[1].text_content(), "b");
 
-  // <body> ends the <head> whose end tag was left out.
   const DOMManager page("<html><head><title>t</title><body><p>x</body></html>");
   const auto body = FindAllByTag(page, Tag::kBody);
   ASSERT_EQ(body.size(), 1U);
@@ -134,7 +127,6 @@ TEST(DOMManagerParseTest, OmittedEndTagsAreImplied) {
 }
 
 TEST(DOMManagerParseTest, EndTagForElementNotOpenIsDropped) {
-  // The <div> ends the <p>, so the `</p>` has nothing left to close.
   ExpectReadsToTheEnd("<p><div>x</div></p>");
   ExpectReadsToTheEnd("<div><img src=a></img><br></br></div>");
 }
@@ -152,7 +144,6 @@ TEST(DOMManagerParseTest, SelfClosingClosesInsideSvgAndMath) {
 }
 
 TEST(DOMManagerParseTest, SelfClosingHtmlElementStaysOpen) {
-  // The '/' of `<div/>` means nothing in HTML, so the <span> lands inside the <div>.
   const DOMManager dom("<div/><span>y</span></div>");
   EXPECT_EQ(dom.parse_error_offset(), std::nullopt);
   const auto spans = FindAllByTag(dom, Tag::kSpan);
@@ -166,7 +157,6 @@ TEST(DOMManagerParseTest, ReportsWhereMisnestedMarkupStopsTheParse) {
   ASSERT_TRUE(dom.parse_error_offset().has_value());
   EXPECT_EQ(*dom.parse_error_offset(), kHtml.find("</div>"));
 
-  // What came before is kept, and what was open is closed.
   EXPECT_EQ(FindAllByTag(dom, Tag::kSpan).size(), 1U);
   EXPECT_TRUE(FindAllByTag(dom, Tag::kP).empty());
   for (const auto& node : FindAllByTag(dom, Tag::kDiv)) {

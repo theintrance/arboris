@@ -43,12 +43,8 @@ class DOMManager {
   [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
-  // Where parsing stopped, as a byte offset into the HTML, when it could not read the whole
-  // document: at an end tag that would close an element left open, as `</div>` does in
-  // `<div><span></div>`, or at a tag the input ends in the middle of. The DOM then holds
-  // everything before that offset, with the elements still open closed there.
-  //
-  // nullopt when the whole document was read.
+  // The byte offset where parsing stopped, or nullopt if the whole document was read. The
+  // DOM holds everything before it.
   [[nodiscard]] std::optional<std::size_t> parse_error_offset() const noexcept {
     return parse_error_offset_;
   }

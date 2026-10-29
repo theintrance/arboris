@@ -31,8 +31,6 @@ class HtmlTokenParser : public TokenParser {
   using FeedOpenTokenCallback = std::function<bool(HtmlToken&&, std::span<const Attribute>, const char*)>;
   using FeedTextTokenCallback = std::function<bool(HtmlTextToken&&)>;
   using FeedCloseTokenCallback = std::function<bool(HtmlCloseToken&&, const char*)>;
-
-  // The DOM keeps neither, so nothing has to listen: unset, they are read and dropped.
   using FeedCommentTokenCallback = std::function<bool(HtmlCommentToken&&)>;
   using FeedDoctypeTokenCallback = std::function<bool(HtmlDoctypeToken&&)>;
 
@@ -48,8 +46,7 @@ class HtmlTokenParser : public TokenParser {
 
   [[nodiscard]] bool Parse() override;
 
-  // Where the last Parse() stopped when it returned false: the start of the token it could
-  // not read to its end, or whose callback refused it.
+  // After Parse() returns false: the start of the token it stopped at.
   [[nodiscard]] std::size_t error_pos() const noexcept {
     return error_pos_;
   }
@@ -84,8 +81,6 @@ class HtmlTokenParser : public TokenParser {
   static constexpr std::string_view kAttributeNameDelimiters = " \t\n\f\r/>=";
   static constexpr std::string_view kUnquotedValueDelimiters = " \t\n\f\r>";
 
-  // An element whose contents are text up to its own end tag, once its start tag is read:
-  // <script> and <style> (raw text), <textarea> and <title> (RCDATA).
   struct RawTextElement {
     Tag tag;
     std::string_view name;

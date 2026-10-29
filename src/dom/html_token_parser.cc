@@ -23,16 +23,10 @@ namespace arboris {
 
 namespace {
 
-// <script> and <style> hold raw text, <textarea> and <title> RCDATA: either way their contents
-// are text up to the element's own end tag, and a '<' in them is just a character. RCDATA
-// also decodes character references, which nothing here does yet.
-//
-// The HTML standard switches to these states from the tree builder, and only for an HTML
-// element: a <style> inside <svg> is ordinary markup. Deciding here comes to the same for
-// contents without a '<', which is what an SVG <style> or <title> holds in practice.
+// Raw text and RCDATA, decided here rather than in the tree builder as the standard does, so
+// a <style> inside <svg> is raw text too. RCDATA character references are not decoded yet.
 constexpr TagSet kRawTextTags = CreateTagSet({Tag::kScript, Tag::kStyle, Tag::kTextarea, Tag::kTitle});
 
-// What may follow the name in the end tag that closes a raw text element.
 constexpr std::string_view kRawTextEndTagNameEnd = " \t\n\f\r/>";
 
 constexpr std::string_view kCommentOpen = "<!--";
@@ -59,7 +53,6 @@ bool HtmlTokenParser::Parse() {
   // One open tag's attributes at a time, so a tag costs no allocation once this has grown.
   std::vector<Attribute> attributes;
 
-  // Set from a raw text element's start tag until its end tag is read.
   std::optional<RawTextElement> raw_text;
 
   while (pos < content_.length()) {
@@ -67,15 +60,12 @@ bool HtmlTokenParser::Parse() {
     const char next = pos + 1 < content_.length() ? content_[pos + 1] : '\0';
 
     if (raw_text) {
-      // The contents, then the end tag that closes them, as two steps so that a failure is
-      // reported at the one that failed. With no end tag to come, the text runs to the end
-      // and the element is left open.
+      // Text and end tag are separate steps so that error_pos_ points at the one that failed.
       const std::size_t text_end = findRawTextEnd(pos, raw_text->name);
       if (text_end > pos) {
         pos = feedText(pos, text_end);
       } else {
-        // The end tag carries the element's own tag: its name was matched ignoring case,
-        // so `</SCRIPT>` closes a <script> too.
+        // The name was matched ignoring case, so `</SCRIPT>` closes a <script> too.
         pos = feedCloseTag(pos, pos + 2 + raw_text->name.size(), raw_text->tag);
         raw_text.reset();
       }
@@ -128,8 +118,7 @@ std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin, std::vector<Attribu
     }
   }
 
-  // A self-closing <script/> or <title/> belongs to <svg>, which closes it on the spot. An
-  // HTML one would still run to its end tag, but no well-formed page writes one.
+  // A self-closing <script/> or <title/> is an SVG element with no contents.
   if (ContainsTag(kRawTextTags, tag) && !self_closing) {
     *raw_text = RawTextElement{.tag = tag, .name = tag_name};
   }
@@ -151,7 +140,6 @@ std::size_t HtmlTokenParser::parseCloseTag(std::size_t begin) const {
   return feedCloseTag(begin, current_pos, FromString(tag_name));
 }
 
-// Finds and skips the '>' after an end tag's name, then hands the end tag over.
 std::size_t HtmlTokenParser::feedCloseTag(std::size_t begin, std::size_t name_end, Tag tag) const {
   std::size_t current_pos = name_end;
   if (!skipToTagEnd(&current_pos)) {
@@ -200,9 +188,6 @@ std::size_t HtmlTokenParser::feedText(std::size_t begin, std::size_t end) const 
   return end;
 }
 
-// Where the end tag that closes a raw text element starts: "</", the element's name in any
-// case, then whitespace, '/' or '>'. Anything else, `</scripts>` or `</p>`, is text. The end
-// of the content when no such tag follows.
 std::size_t HtmlTokenParser::findRawTextEnd(std::size_t begin, std::string_view tag_name) const {
   for (std::size_t pos = content_.find("</", begin); pos != std::string_view::npos;
        pos = content_.find("</", pos + 1)) {
@@ -215,12 +200,7 @@ std::size_t HtmlTokenParser::findRawTextEnd(std::size_t begin, std::string_view 
   return content_.length();
 }
 
-// `<!` and `<?` open a comment, a DOCTYPE or a bogus comment, never an element. Read as a
-// tag, a comment's contents would hand the ids and classes of commented-out markup to the
-// DOM, and the comment would stay open as an element named `!--`.
-//
-// Inside <svg> and <math>, `<![CDATA[...]]>` is text; it is read as a bogus comment here,
-// as it is in HTML.
+// `<![CDATA[...]]>` is a bogus comment here even inside <svg> and <math>, where it is text.
 std::size_t HtmlTokenParser::parseMarkupDeclaration(std::size_t begin) const {
   const std::string_view rest = content_.substr(begin);
 
@@ -235,9 +215,7 @@ std::size_t HtmlTokenParser::parseMarkupDeclaration(std::size_t begin) const {
   return parseBogusComment(begin, begin + (rest[1] == '?' ? 1 : 2));
 }
 
-// `<!--` up to the first `-->`. The HTML tokenizer also ends a comment at `--!>`, and reads
-// `<!-->` and `<!--->` as empty ones. All three are errors, but reading them any other way
-// would turn the page after them into comment. A comment left open runs to the end.
+// As in the HTML tokenizer, `--!>` also ends a comment, and `<!-->` and `<!--->` are empty.
 std::size_t HtmlTokenParser::parseComment(std::size_t begin) const {
   const std::size_t data_begin = begin + kCommentOpen.size();
   const std::string_view rest = content_.substr(data_begin);
@@ -262,7 +240,6 @@ std::size_t HtmlTokenParser::parseComment(std::size_t begin) const {
   return feedComment(begin, content_.length(), rest);
 }
 
-// A bogus comment runs to the first '>', or to the end.
 std::size_t HtmlTokenParser::parseBogusComment(std::size_t begin, std::size_t data_begin) const {
   const std::size_t data_end = std::min(FindNextChar(content_, data_begin, '>'), content_.length());
   const std::size_t end = data_end < content_.length() ? data_end + 1 : data_end;
@@ -281,9 +258,6 @@ std::size_t HtmlTokenParser::feedComment(std::size_t begin, std::size_t end, std
   return end;
 }
 
-// `<!DOCTYPE html>`, or an older one with a public id, a system id or both. The keywords
-// are read in any case. Anything else before the '>' makes it not well-formed, and it then
-// ends at the first '>' outside an id.
 std::size_t HtmlTokenParser::parseDoctype(std::size_t begin) const {
   HtmlDoctypeToken token;
 
@@ -299,7 +273,6 @@ std::size_t HtmlTokenParser::parseDoctype(std::size_t begin) const {
     token.public_id = readDoctypeId(&pos, &well_formed);
     well_formed = well_formed && token.public_id.has_value();
 
-    // The system id is optional after a public id.
     pos = SkipHtmlWhitespace(content_, pos);
     token.system_id = readDoctypeId(&pos, &well_formed);
   } else if (StartsWithIgnoringCase(rest, "system")) {
@@ -324,9 +297,7 @@ std::size_t HtmlTokenParser::parseDoctype(std::size_t begin) const {
   return end;
 }
 
-// A quoted public or system id at *begin, or nullopt when no quote is there. A '>' before
-// the closing quote ends the DOCTYPE, as it does in the HTML tokenizer, so a lost quote
-// cannot run on into the page.
+// A '>' before the closing quote ends the DOCTYPE, as in the HTML tokenizer.
 std::optional<std::string_view> HtmlTokenParser::readDoctypeId(std::size_t* begin, bool* well_formed) const {
   if (*begin >= content_.length() || (content_[*begin] != '"' && content_[*begin] != '\'')) {
     return std::nullopt;
@@ -341,7 +312,7 @@ std::optional<std::string_view> HtmlTokenParser::readDoctypeId(std::size_t* begi
     *well_formed = false;
     *begin = id_end;
   } else {
-    *begin = id_end + 1;  // Skip the closing quote
+    *begin = id_end + 1;
   }
   return content_.substr(id_begin, id_end - id_begin);
 }
@@ -364,7 +335,7 @@ std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, std::string
 
 // Reads the attributes between the tag name and the '>' that ends the tag, and leaves *begin
 // just past that '>'. They have to be read to find it at all: a '>' inside a quoted value
-// does not end the tag. *self_closing says whether the tag ended in "/>".
+// does not end the tag.
 //
 // Names and values point into the content. A name given twice keeps its first value, as the
 // HTML tokenizer does. Returns false when the content ends before the tag does.
@@ -373,8 +344,7 @@ bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>
   std::size_t pos = SkipHtmlWhitespace(content_, *begin);
 
   while (pos < content_.length() && content_[pos] != '>') {
-    // The '/' of `<br/>`, or a stray one: either way not part of an attribute. Only one
-    // right before the '>' makes the tag self-closing.
+    // The '/' of `<br/>`, or a stray one: either way not part of an attribute.
     if (content_[pos] == '/') {
       *self_closing = pos + 1 < content_.length() && content_[pos + 1] == '>';
       pos = SkipHtmlWhitespace(content_, pos + 1);

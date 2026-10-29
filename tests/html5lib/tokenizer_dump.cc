@@ -42,8 +42,7 @@ std::span<const Attribute> AttributesOf(const char*) {
   return {};
 }
 
-// The self-closing flag and the comment and DOCTYPE callbacks are newer than develop as
-// well, so each is used only where the parser has it.
+// Likewise for the self-closing flag and the comment and DOCTYPE callbacks.
 // TODO(team): use them directly once develop has them.
 template <typename Token>
 bool IsSelfClosing(const Token& token) {
@@ -167,7 +166,6 @@ std::string Tokenize(std::string_view content) {
     append_token("Comment", token.data, std::nullopt);
     return true;
   });
-  // The name as written: html5lib folds it to lower case, which waits for case folding.
   SetDoctypeCallback(&parser, [&](auto&& token) {
     begin_token("DOCTYPE");
     tokens.push_back(',');

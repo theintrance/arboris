@@ -20,16 +20,14 @@ namespace arboris {
 
 namespace {
 
-// Elements whose end tag the HTML standard lets an author leave out. A tag that implies one
-// of these ends closes only them on its way down the open elements, so an element the
-// author had to close is never closed for them.
+// Elements whose end tag may be left out. Implied closes pass through these only, so an
+// element the author had to close is never closed for them.
 constexpr TagSet kOptionalEndTags = CreateTagSet({
     Tag::kHtml, Tag::kHead, Tag::kBody, Tag::kP, Tag::kLi, Tag::kDt, Tag::kDd, Tag::kRt, Tag::kRp,
     Tag::kOptgroup, Tag::kOption, Tag::kColgroup, Tag::kCaption, Tag::kThead, Tag::kTbody,
     Tag::kTfoot, Tag::kTr, Tag::kTd, Tag::kTh,
 });
 
-// The start tags that end an open <p>: blocks a paragraph cannot hold.
 constexpr TagSet kEndsP = CreateTagSet({
     Tag::kAddress, Tag::kArticle, Tag::kAside, Tag::kBlockquote, Tag::kDd, Tag::kDetails,
     Tag::kDialog, Tag::kDiv, Tag::kDl, Tag::kDt, Tag::kFieldset, Tag::kFigcaption, Tag::kFigure,
@@ -38,7 +36,6 @@ constexpr TagSet kEndsP = CreateTagSet({
     Tag::kP, Tag::kPre, Tag::kSearch, Tag::kSection, Tag::kSummary, Tag::kTable, Tag::kUl,
 });
 
-// What <head> may hold. Any other start tag ends it, <body> among them.
 constexpr TagSet kHeadContent = CreateTagSet({
     Tag::kBase, Tag::kLink, Tag::kMeta, Tag::kNoscript, Tag::kScript, Tag::kStyle, Tag::kTemplate,
     Tag::kTitle,
@@ -47,9 +44,6 @@ constexpr TagSet kHeadContent = CreateTagSet({
 constexpr TagSet kTableSections = CreateTagSet({Tag::kThead, Tag::kTbody, Tag::kTfoot});
 constexpr TagSet kTableRows = CreateTagSet({Tag::kTr, Tag::kThead, Tag::kTbody, Tag::kTfoot});
 
-// Whether a start tag ends an open element whose end tag was left out: a <li> the <li>
-// before it, a <div> the <p> it cannot sit in, a <tr> the cell and the row before it.
-// These are the omissions the HTML standard allows, read the way its tree builder reads them.
 bool StartTagEnds(Tag open_tag, Tag start_tag) {
   switch (open_tag) {
     case Tag::kP:
@@ -101,8 +95,6 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, std::span<const Attribute> att
   closeElementsEndedBy(token.tag, text_begin);
   storeAttributes(&token, attributes);
 
-  // In <svg> and <math>, "/>" closes an element as it does in XML. In HTML only a void
-  // element closes on its own, and the '/' of `<div/>` means nothing.
   const Tag tag = token.tag;
   const bool closes_at_once =
       token.is_void_tag || (token.is_self_closing && (foreign_depth_ > 0 || IsForeignRoot(tag)));
@@ -125,14 +117,9 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, std::span<const Attribute> att
   return true;
 }
 
-// Closes the open elements a start tag implies the end of, as a <li> does a <li> whose
-// `</li>` was left out. The search runs down from the top through elements whose end tag
-// may be left out, and starts over from the new top after each close: a <tr> ends the cell
-// and then the row it was in.
+// Starts over from the new top after each close: a <tr> ends the cell, then the row.
 void DOMBuilder::closeElementsEndedBy(Tag start_tag, const char* text_end) {
   for (std::size_t depth = node_stack_.size(); depth > 0;) {
-    // Checked first because it settles most start tags at once: only an element whose end
-    // tag may be left out is ever ended by one.
     const Tag open_tag = tagAt(depth - 1);
     if (!ContainsTag(kOptionalEndTags, open_tag)) {
       return;
@@ -203,22 +190,17 @@ void DOMBuilder::flushPendingRuns(TagNode* node) {
 }
 
 void DOMBuilder::Finish(const char* text_end) {
-  // Elements whose end tag was left out, `</body>` and `</html>` among them, end with the
-  // document. So do those a parse that stopped early left open: their subtree size would
-  // stay 0, and a walk that steps by subtree size would never move on.
+  // Parsing can stop early on markup the tokenizer cannot follow, leaving tags open. Their
+  // subtree size would stay 0, and a walk that steps by subtree size would never move on.
   closeDownTo(0, text_end);
 
   flushPendingRuns(&root());
   root().set_sub_tree_size(static_cast<std::uint32_t>(dfs_node_list_.size()));
 }
 
-// Closes the element an end tag names, and on the way the open elements whose end tags
-// were left out: `</ul>` closes the last <li>, `</div>` a <p> inside it.
-//
-// An end tag for an element that is not open at all is dropped, as the HTML tree builder
-// drops it: the `</p>` of `<p><div></div></p>`, whose <p> the <div> already ended, or a
-// void element's, as in `<br></br>`. One that would have to close an element the author
-// left open, as `</div>` does in `<div><span></div>`, is misnested and fails the parse.
+// An end tag for an element that is not open is dropped, as the HTML tree builder does
+// (`<p><div></div></p>`, `<br></br>`). One that would close an element the author left
+// open (`<div><span></div>`) fails the parse.
 bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token, const char* text_end) {
   for (std::size_t depth = node_stack_.size(); depth > 0; --depth) {
     const Tag open_tag = tagAt(depth - 1);
@@ -234,14 +216,12 @@ bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token, const char* text_end) {
   return true;
 }
 
-// Closes open elements until depth of them are left.
 void DOMBuilder::closeDownTo(std::size_t depth, const char* text_end) {
   while (node_stack_.size() > depth) {
     closeTopNode(text_end);
   }
 }
 
-// Closes the innermost open element where its text ends, at text_end.
 bool DOMBuilder::closeTopNode(const char* text_end) {
   ARBORIS_ASSERT(!node_stack_.empty(), "Node stack is empty");
 
