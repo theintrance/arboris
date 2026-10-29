@@ -42,6 +42,10 @@ class TextQueryCondition {
 // Every condition given has to hold. With none given, every element matches.
 struct QueryOptions {
   std::optional<Tag> tag;
+
+  // Lower-case. The way to ask for a tag FromString does not know, such as a custom
+  // element or an SVG child.
+  std::optional<std::string> name;
   std::optional<ClassSet> classes;
   std::optional<AttributeMap> attributes;
   std::optional<TextQueryCondition> text;

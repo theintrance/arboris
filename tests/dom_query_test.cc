@@ -108,5 +108,44 @@ TEST(DOMQueryTest, ManagerFindsById) {
   EXPECT_FALSE(dom.Find(std::string("c")).has_value());
 }
 
+TEST(DOMQueryTest, TagAndAttributeNamesIgnoreCase) {
+  const DOMManager dom("<DIV id=a><A HREF=\"/x\" id=b>x</A></DIV><Div id=c></dIV>");
+  EXPECT_EQ(dom.parse_error_offset(), std::nullopt);
+  EXPECT_EQ(Ids(dom.FindAll({.tag = Tag::kDiv})), (std::vector<std::string_view>{"a", "c"}));
+  EXPECT_EQ(Ids(dom.FindAll({.attributes = AttributeMap{{"href", {"/x"}}}})), std::vector<std::string_view>{"b"});
+
+  const auto link = dom.Find({.tag = Tag::kA});
+  ASSERT_TRUE(link.has_value());
+  EXPECT_EQ(link->Get().name(), "a");
+  EXPECT_EQ(link->Get().attributes()[0].name, "href");
+  EXPECT_EQ(link->Get().attributes()[0].value, "/x");
+}
+
+TEST(DOMQueryTest, UnknownTagsKeepTheirName) {
+  const DOMManager dom("<my-card id=a><svg id=s><Path id=b /></svg><my-card id=c></my-card></my-card>");
+  EXPECT_EQ(dom.parse_error_offset(), std::nullopt);
+
+  const auto cards = dom.FindAll({.name = "my-card"});
+  EXPECT_EQ(Ids(cards), (std::vector<std::string_view>{"a", "c"}));
+  EXPECT_EQ(cards[0].Get().tag(), Tag::kUnknown);
+  EXPECT_EQ(cards[0].Get().name(), "my-card");
+  EXPECT_EQ(Ids(cards[0].FindAll({.name = "my-card"})), std::vector<std::string_view>{"c"});
+
+  EXPECT_EQ(Ids(dom.FindAll({.name = "path"})), std::vector<std::string_view>{"b"});
+  EXPECT_EQ(Ids(dom.FindAll({.name = "svg"})), std::vector<std::string_view>{"s"});
+  EXPECT_TRUE(dom.FindAll({.name = "no-such"}).empty());
+}
+
+TEST(DOMQueryTest, UnknownEndTagsMatchByName) {
+  const DOMManager dom("<x-a id=a></x-b><span id=b>y</span></x-a>");
+  EXPECT_EQ(dom.parse_error_offset(), std::nullopt);
+  const auto span = dom.Find({.tag = Tag::kSpan});
+  ASSERT_TRUE(span.has_value());
+  EXPECT_EQ(span->Get().parent().name(), "x-a");
+
+  const DOMManager misnested("<x-a><x-b></x-a>");
+  EXPECT_TRUE(misnested.parse_error_offset().has_value());
+}
+
 }  // anonymous namespace
 }  // namespace arboris

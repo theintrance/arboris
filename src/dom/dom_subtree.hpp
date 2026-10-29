@@ -36,6 +36,7 @@ class DOMSubtree {
 
   [[nodiscard]] std::optional<NodeKey> GetNodeById(std::string_view id) const;
   [[nodiscard]] NodeKeySpan GetNodesByTag(Tag tag) const;
+  [[nodiscard]] NodeKeySpan GetNodesByName(std::string_view name) const;
   [[nodiscard]] NodeKeySpan GetNodesByClass(std::string_view class_name) const;
   [[nodiscard]] NodeKeySpan GetNodesByAttribute(std::string_view attribute_name) const;
 

@@ -34,6 +34,10 @@ NodeKeySpan DOMSubtree::GetNodesByTag(Tag tag) const {
   return sliceDescendants(store_->indexer().GetNodeKeyListByTag(tag));
 }
 
+NodeKeySpan DOMSubtree::GetNodesByName(std::string_view name) const {
+  return sliceDescendants(store_->indexer().GetNodeKeyListByName(name));
+}
+
 NodeKeySpan DOMSubtree::GetNodesByClass(std::string_view class_name) const {
   return sliceDescendants(store_->indexer().GetNodeKeyListByClass(class_name));
 }

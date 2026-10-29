@@ -73,9 +73,17 @@ void DOMQuery::forEachMatch(const QueryOptions& options, Visit&& visit) const {
   };
 
   if (const auto candidates = indexedCandidates(options)) {
-    std::ranges::all_of(*candidates, check);
+    for (const NodeKey key : *candidates) {
+      if (!check(key)) {
+        return;
+      }
+    }
   } else {
-    std::ranges::all_of(subtree_.Descendants(), check);
+    for (const NodeKey key : subtree_.Descendants()) {
+      if (!check(key)) {
+        return;
+      }
+    }
   }
 }
 
@@ -92,6 +100,9 @@ std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const QueryOptions& optio
   if (options.tag) {
     consider(subtree_.GetNodesByTag(*options.tag));
   }
+  if (options.name) {
+    consider(subtree_.GetNodesByName(*options.name));
+  }
   if (options.classes) {
     for (const auto& class_name : *options.classes) {
       consider(subtree_.GetNodesByClass(class_name));
@@ -107,6 +118,9 @@ std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const QueryOptions& optio
 
 bool DOMQuery::matchAllConditions(const NodeRef& node, const QueryOptions& options) const {
   if (options.tag && node.tag() != *options.tag) {
+    return false;
+  }
+  if (options.name && node.name() != *options.name) {
     return false;
   }
   if (options.classes && !IsSubset(*options.classes, node.classes())) {

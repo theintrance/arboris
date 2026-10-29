@@ -19,6 +19,14 @@
 
 namespace arboris {
 
+namespace {
+
+bool IsEndTagOf(const HtmlCloseToken& token, const TagNode& node) {
+  return node.tag() == token.tag && (token.tag != Tag::kUnknown || node.name() == token.name);
+}
+
+}  // anonymous namespace
+
 bool DOMBuilder::Validate() const {
   return node_stack_.empty();
 }
@@ -137,14 +145,14 @@ void DOMBuilder::Finish(const char* text_end) {
 // open (`<div><span></div>`) fails the parse.
 bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token, const char* text_end) {
   for (std::size_t depth = node_stack_.size(); depth > 0; --depth) {
-    const Tag open_tag = tagAt(depth - 1);
-    if (open_tag == token.tag) {
+    const TagNode& open_node = dfs_node_list_[node_stack_[depth - 1]];
+    if (IsEndTagOf(token, open_node)) {
       closeDownTo(depth - 1, text_end);
       return true;
     }
-    if (!HasOptionalEndTag(open_tag)) {
+    if (!HasOptionalEndTag(open_node.tag())) {
       const auto below = std::span(node_stack_).first(depth - 1);
-      return std::ranges::none_of(below, [&](NodeKey key) { return dfs_node_list_[key].tag() == token.tag; });
+      return std::ranges::none_of(below, [&](NodeKey key) { return IsEndTagOf(token, dfs_node_list_[key]); });
     }
   }
   return true;

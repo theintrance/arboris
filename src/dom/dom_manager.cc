@@ -51,6 +51,7 @@ DOMManager::DOMManager(std::string_view html_content) :
   store_.set_text_arena(builder.ReleaseTextArena());
   store_.set_class_arena(builder.ReleaseClassArena());
   store_.set_attr_arena(builder.ReleaseAttrArena());
+  store_.set_names(html_token_parser.ReleaseNames());
 
   // Indexing walks the finished nodes in key order, which is also memory order.
   for (const auto& node : store_.nodes()) {

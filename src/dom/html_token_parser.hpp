@@ -18,6 +18,7 @@
 
 #include "dom/token_parser.hpp"
 #include "utils/html_tokens.hpp"
+#include "utils/string_arena.hpp"
 
 namespace arboris {
 
@@ -45,6 +46,12 @@ class HtmlTokenParser : public TokenParser {
   ~HtmlTokenParser() override = default;
 
   [[nodiscard]] bool Parse() override;
+
+  // Where the lower-cased spellings of tag and attribute names live. Token views into it
+  // outlive the parser only if the caller takes it.
+  [[nodiscard]] StringArena ReleaseNames() {
+    return std::move(names_);
+  }
 
   // After Parse() returns false: the start of the token it stopped at.
   [[nodiscard]] std::size_t error_pos() const noexcept {
@@ -87,26 +94,27 @@ class HtmlTokenParser : public TokenParser {
   };
 
   [[nodiscard]] std::size_t parseOpenTag(std::size_t begin, std::vector<Attribute>* attributes,
-                                         std::optional<RawTextElement>* raw_text) const;
-  [[nodiscard]] std::size_t parseCloseTag(std::size_t begin) const;
+                                         std::optional<RawTextElement>* raw_text);
+  [[nodiscard]] std::size_t parseCloseTag(std::size_t begin);
   [[nodiscard]] std::size_t parseTextContent(std::size_t begin) const;
-  [[nodiscard]] std::size_t parseMarkupDeclaration(std::size_t begin) const;
+  [[nodiscard]] std::size_t parseMarkupDeclaration(std::size_t begin);
   [[nodiscard]] std::size_t parseComment(std::size_t begin) const;
   [[nodiscard]] std::size_t parseBogusComment(std::size_t begin, std::size_t data_begin) const;
-  [[nodiscard]] std::size_t parseDoctype(std::size_t begin) const;
+  [[nodiscard]] std::size_t parseDoctype(std::size_t begin);
 
-  [[nodiscard]] std::size_t feedCloseTag(std::size_t begin, std::size_t name_end, Tag tag) const;
+  [[nodiscard]] std::size_t feedCloseTag(std::size_t begin, std::size_t name_end, Tag tag, std::string_view name) const;
   [[nodiscard]] std::size_t feedText(std::size_t begin, std::size_t end) const;
   [[nodiscard]] std::size_t feedComment(std::size_t begin, std::size_t end, std::string_view data) const;
 
   [[nodiscard]] std::string_view extractTagName(std::size_t* begin, std::string_view delimiters) const;
-  [[nodiscard]] bool parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes,
-                                     bool* self_closing) const;
+  [[nodiscard]] std::string_view lowerCased(std::string_view name);
+  [[nodiscard]] bool parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes, bool* self_closing);
   [[nodiscard]] bool skipToTagEnd(std::size_t* begin) const;
   [[nodiscard]] std::size_t findRawTextEnd(std::size_t begin, std::string_view tag_name) const;
   [[nodiscard]] std::optional<std::string_view> readDoctypeId(std::size_t* begin, bool* well_formed) const;
 
   std::shared_ptr<StringPool> string_pool_;
+  StringArena names_;
   std::size_t error_pos_ = 0;
 
   FeedOpenTokenCallback feed_open_token_callback_;

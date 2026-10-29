@@ -30,8 +30,12 @@ constexpr std::string_view kCommentOpen = "<!--";
 constexpr std::string_view kDoctypeOpen = "<!doctype";
 constexpr std::string_view kDoctypeNameDelimiters = " \t\n\f\r>";
 
+bool IsAsciiUpper(char c) {
+  return c >= 'A' && c <= 'Z';
+}
+
 char ToAsciiLower(char c) {
-  return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c;
+  return IsAsciiUpper(c) ? static_cast<char>(c - 'A' + 'a') : c;
 }
 
 bool EqualsIgnoringCase(std::string_view lhs, std::string_view rhs) {
@@ -63,7 +67,7 @@ bool HtmlTokenParser::Parse() {
         pos = feedText(pos, text_end);
       } else {
         // The name was matched ignoring case, so `</SCRIPT>` closes a <script> too.
-        pos = feedCloseTag(pos, pos + 2 + raw_text->name.size(), raw_text->tag);
+        pos = feedCloseTag(pos, pos + 2 + raw_text->name.size(), raw_text->tag, raw_text->name);
         raw_text.reset();
       }
     } else if (content_[pos] != '<') {
@@ -86,12 +90,12 @@ bool HtmlTokenParser::Parse() {
 }
 
 std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin, std::vector<Attribute>* attributes,
-                                          std::optional<RawTextElement>* raw_text) const {
+                                          std::optional<RawTextElement>* raw_text) {
   std::size_t current_pos = begin;
   ++current_pos;  // Skip '<'
 
   // Extract tag name
-  std::string_view tag_name = extractTagName(&current_pos, kOpenTagDelimiters);
+  const std::string_view tag_name = lowerCased(extractTagName(&current_pos, kOpenTagDelimiters));
   if (tag_name.empty()) {
     return std::string::npos;
   }
@@ -107,7 +111,7 @@ std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin, std::vector<Attribu
 
   // Create HtmlToken and call callback
   HtmlToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)},
-                  tag, IsVoidTag(tag), self_closing};
+                  tag, IsVoidTag(tag), self_closing, tag_name};
 
   if (feed_open_token_callback_) {
     if (!feed_open_token_callback_(std::move(token), *attributes, string_pool_->GetCursor())) {
@@ -125,27 +129,28 @@ std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin, std::vector<Attribu
   return current_pos;
 }
 
-std::size_t HtmlTokenParser::parseCloseTag(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseCloseTag(std::size_t begin) {
   std::size_t current_pos = begin;
 
   current_pos += 2;  // Skip '</'
 
   // Extract tag name
-  std::string_view tag_name = extractTagName(&current_pos, kCloseTagDelimiters);
+  const std::string_view tag_name = lowerCased(extractTagName(&current_pos, kCloseTagDelimiters));
   if (tag_name.empty()) {
     return std::string::npos;
   }
 
-  return feedCloseTag(begin, current_pos, FromString(tag_name));
+  return feedCloseTag(begin, current_pos, FromString(tag_name), tag_name);
 }
 
-std::size_t HtmlTokenParser::feedCloseTag(std::size_t begin, std::size_t name_end, Tag tag) const {
+std::size_t HtmlTokenParser::feedCloseTag(std::size_t begin, std::size_t name_end, Tag tag,
+                                          std::string_view name) const {
   std::size_t current_pos = name_end;
   if (!skipToTagEnd(&current_pos)) {
     return std::string::npos;
   }
 
-  HtmlCloseToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag};
+  HtmlCloseToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag, name};
 
   if (feed_close_token_callback_) {
     if (!feed_close_token_callback_(std::move(token), string_pool_->GetCursor())) {
@@ -200,7 +205,7 @@ std::size_t HtmlTokenParser::findRawTextEnd(std::size_t begin, std::string_view 
 }
 
 // `<![CDATA[...]]>` is a bogus comment here even inside <svg> and <math>, where it is text.
-std::size_t HtmlTokenParser::parseMarkupDeclaration(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseMarkupDeclaration(std::size_t begin) {
   const std::string_view rest = content_.substr(begin);
 
   if (rest.starts_with(kCommentOpen)) {
@@ -257,12 +262,12 @@ std::size_t HtmlTokenParser::feedComment(std::size_t begin, std::size_t end, std
   return end;
 }
 
-std::size_t HtmlTokenParser::parseDoctype(std::size_t begin) const {
+std::size_t HtmlTokenParser::parseDoctype(std::size_t begin) {
   HtmlDoctypeToken token;
 
   std::size_t pos = SkipHtmlWhitespace(content_, begin + kDoctypeOpen.size());
   const std::size_t name_end = std::min(FindNextAnyChar(content_, pos, kDoctypeNameDelimiters), content_.length());
-  token.name = content_.substr(pos, name_end - pos);
+  token.name = lowerCased(content_.substr(pos, name_end - pos));
   pos = SkipHtmlWhitespace(content_, name_end);
 
   bool well_formed = !token.name.empty();
@@ -332,14 +337,22 @@ std::string_view HtmlTokenParser::extractTagName(std::size_t* begin, std::string
   return result;
 }
 
+std::string_view HtmlTokenParser::lowerCased(std::string_view name) {
+  if (std::ranges::none_of(name, IsAsciiUpper)) {
+    return name;
+  }
+  char* out = names_.Allocate(name.size());
+  std::ranges::transform(name, out, ToAsciiLower);
+  return {out, name.size()};
+}
+
 // Reads the attributes between the tag name and the '>' that ends the tag, and leaves *begin
 // just past that '>'. They have to be read to find it at all: a '>' inside a quoted value
 // does not end the tag.
 //
-// Names and values point into the content. A name given twice keeps its first value, as the
-// HTML tokenizer does. Returns false when the content ends before the tag does.
-bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes,
-                                      bool* self_closing) const {
+// Values point into the content, names are lower-cased. A name given twice keeps its first
+// value, as the HTML tokenizer does. Returns false when the content ends before the tag does.
+bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes, bool* self_closing) {
   std::size_t pos = SkipHtmlWhitespace(content_, *begin);
 
   while (pos < content_.length() && content_[pos] != '>') {
@@ -356,7 +369,7 @@ bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>
     if (pos == std::string::npos) {
       return false;
     }
-    const std::string_view name = content_.substr(name_begin, pos - name_begin);
+    const std::string_view name = lowerCased(content_.substr(name_begin, pos - name_begin));
 
     // Without '=' the attribute has no value at all, and value keeps no data.
     std::string_view value;
