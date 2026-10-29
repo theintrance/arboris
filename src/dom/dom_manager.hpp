@@ -17,6 +17,7 @@
 #include "dom/dom_query.hpp"
 #include "dom/dom_store.hpp"
 #include "encoding/encoding.hpp"
+#include "selector/selector.hpp"
 #include "dom/node_ref.hpp"
 #include "utils/assertion.hpp"
 #include "utils/query_options.hpp"
@@ -52,6 +53,12 @@ class DOMManager {
   [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
   [[nodiscard]] std::optional<DOMQuery> Find(const std::string& id) const;
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
+
+  // The elements a CSS selector matches, in document order; see DOMQuery::Select.
+  [[nodiscard]] std::optional<DOMQuery> Select(const Selector& selector) const;
+  [[nodiscard]] std::optional<DOMQuery> Select(std::string_view selector) const;
+  [[nodiscard]] std::vector<DOMQuery> SelectAll(const Selector& selector) const;
+  [[nodiscard]] std::vector<DOMQuery> SelectAll(std::string_view selector) const;
 
   // The byte offset where parsing stopped, or nullopt if the whole document was read. The
   // DOM holds everything before it.

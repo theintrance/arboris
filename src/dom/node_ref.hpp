@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -74,6 +75,37 @@ class NodeRef {
 
   [[nodiscard]] NodeRef parent() const noexcept {
     return NodeRef(node().parent_key(), *store_);
+  }
+
+  // The element after this one under the same parent, if any. The root has no siblings.
+  [[nodiscard]] std::optional<NodeRef> next_sibling() const noexcept {
+    const auto& tag_node = node();
+    if (tag_node.parent_key() == key_) {
+      return std::nullopt;
+    }
+    const auto& parent_node = store_->nodes()[tag_node.parent_key()];
+    const NodeKey next = key_ + std::max(1U, tag_node.sub_tree_size());
+    if (next >= parent_node.key() + parent_node.sub_tree_size()) {
+      return std::nullopt;
+    }
+    return NodeRef(next, *store_);
+  }
+
+  // The element before this one under the same parent, if any: the parent's children are
+  // walked from the first, since a node does not know how far back the one before it starts.
+  [[nodiscard]] std::optional<NodeRef> previous_sibling() const noexcept {
+    const auto& tag_node = node();
+    if (tag_node.parent_key() == key_) {
+      return std::nullopt;
+    }
+    for (NodeKey child = tag_node.parent_key() + 1; child < key_;) {
+      const NodeKey next = child + std::max(1U, store_->nodes()[child].sub_tree_size());
+      if (next == key_) {
+        return NodeRef(child, *store_);
+      }
+      child = next;
+    }
+    return std::nullopt;
   }
 
   // Children are found by walking keys, not by keeping a list: the first child is the next
