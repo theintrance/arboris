@@ -54,7 +54,6 @@ TEST(DOMQueryTest, SubqueryFindsDescendantsOnly) {
   EXPECT_EQ(Ids(outer->FindAll({.classes = ClassSet{"box"}})), std::vector<std::string_view>{"b"});
   EXPECT_EQ(Ids(outer->FindAll({.attributes = AttributeMap{{"id", {}}}})), std::vector<std::string_view>{"b"});
 
-  // Find steps into the nested <div> instead of returning the one it was run from.
   const auto inner = outer->Find({.tag = Tag::kDiv});
   ASSERT_TRUE(inner.has_value());
   EXPECT_EQ(inner->Get().id(), "b");

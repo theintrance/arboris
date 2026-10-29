@@ -16,8 +16,7 @@ namespace arboris {
 
 enum class Tag : std::uint8_t {
   kUnknown,
-  // The synthetic root that holds the whole document. No element is ever read as this,
-  // so a query by tag never returns the root.
+  // The synthetic root. FromString never returns it.
   kDocument,
   kA,
   kAbbr,

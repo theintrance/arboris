@@ -20,12 +20,8 @@
 namespace arboris {
 
 // A key range of the document: nodes are numbered in DFS order, so one subtree is
-// [root_key_, root_key_ + sub_tree_size_), and the root's descendants are the same range
-// without root_key_.
-//
-// Lookups search the descendants, as find_all and querySelectorAll do: a query run from a
-// <div> for divs returns the ones inside it, never the <div> itself. Index hits are sliced
-// down to that range.
+// [root_key_, root_key_ + sub_tree_size_). Lookups search the descendants only, as
+// querySelectorAll does, so index hits are sliced to (root_key_, root_key_ + sub_tree_size_).
 class DOMSubtree {
  public:
   // Constructor for subtree of a parent subtree
