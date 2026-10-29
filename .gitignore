@@ -65,13 +65,6 @@ wheels/
 .installed.cfg
 *.egg
 
-# Benchmark specific
-benchmark/__pycache__/
-benchmark/*/__pycache__/
-benchmark/*/*/__pycache__/
-benchmark/results/
-benchmark/*.log
-
 # Testing
 .pytest_cache/
 .coverage

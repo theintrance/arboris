@@ -23,12 +23,12 @@ endif()
 
 FetchContent_MakeAvailable(googletest)
 
+# html5lib-tests (https://github.com/html5lib/html5lib-tests), used by the tokenizer
+# conformance test and the benchmark. Declared here so both use the same commit.
 FetchContent_Declare(
-  googlebenchmark
-  URL https://github.com/google/benchmark/archive/refs/tags/v1.8.3.zip
+  html5lib_tests
+  URL https://github.com/html5lib/html5lib-tests/archive/224991ec10db04f056a89eed8b0bd8695fd2950e.zip
 )
-set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googlebenchmark)
 
 # Add subdirectories
 add_subdirectory(src)
@@ -37,6 +37,8 @@ if (NOT NO_TESTS)
   add_subdirectory(tests)
 endif()
 
-if (NOT NO_BENCHMARK)
+# The benchmark needs uv and downloads its corpus, so it stays out of the default build.
+option(ARBORIS_BENCHMARK "Build the tokenizer benchmark (benchmark/)" OFF)
+if (ARBORIS_BENCHMARK)
   add_subdirectory(benchmark)
 endif()
