@@ -18,14 +18,11 @@
 
 #include "string/string.hpp"
 #include "utils/string_pool.hpp"
+#include "utils/tag_rules.hpp"
 
 namespace arboris {
 
 namespace {
-
-// Raw text and RCDATA, decided here rather than in the tree builder as the standard does, so
-// a <style> inside <svg> is raw text too. RCDATA character references are not decoded yet.
-constexpr TagSet kRawTextTags = CreateTagSet({Tag::kScript, Tag::kStyle, Tag::kTextarea, Tag::kTitle});
 
 constexpr std::string_view kRawTextEndTagNameEnd = " \t\n\f\r/>";
 
@@ -118,8 +115,10 @@ std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin, std::vector<Attribu
     }
   }
 
-  // A self-closing <script/> or <title/> is an SVG element with no contents.
-  if (ContainsTag(kRawTextTags, tag) && !self_closing) {
+  // Decided here rather than in the tree builder as the standard does, so a <style> inside
+  // <svg> is raw text too. A self-closing <script/> or <title/> is an SVG element with no
+  // contents. RCDATA character references are not decoded yet.
+  if (IsRawTextTag(tag) && !self_closing) {
     *raw_text = RawTextElement{.tag = tag, .name = tag_name};
   }
 

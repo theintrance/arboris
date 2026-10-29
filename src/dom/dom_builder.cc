@@ -15,77 +15,9 @@
 #include "dom/dom_builder.hpp"
 #include "dom/tag_node.hpp"
 #include "string/string.hpp"
+#include "utils/tag_rules.hpp"
 
 namespace arboris {
-
-namespace {
-
-// Elements whose end tag may be left out. Implied closes pass through these only, so an
-// element the author had to close is never closed for them.
-constexpr TagSet kOptionalEndTags = CreateTagSet({
-    Tag::kHtml, Tag::kHead, Tag::kBody, Tag::kP, Tag::kLi, Tag::kDt, Tag::kDd, Tag::kRt, Tag::kRp,
-    Tag::kOptgroup, Tag::kOption, Tag::kColgroup, Tag::kCaption, Tag::kThead, Tag::kTbody,
-    Tag::kTfoot, Tag::kTr, Tag::kTd, Tag::kTh,
-});
-
-constexpr TagSet kEndsP = CreateTagSet({
-    Tag::kAddress, Tag::kArticle, Tag::kAside, Tag::kBlockquote, Tag::kDd, Tag::kDetails,
-    Tag::kDialog, Tag::kDiv, Tag::kDl, Tag::kDt, Tag::kFieldset, Tag::kFigcaption, Tag::kFigure,
-    Tag::kFooter, Tag::kForm, Tag::kH1, Tag::kH2, Tag::kH3, Tag::kH4, Tag::kH5, Tag::kH6,
-    Tag::kHeader, Tag::kHgroup, Tag::kHr, Tag::kLi, Tag::kMain, Tag::kMenu, Tag::kNav, Tag::kOl,
-    Tag::kP, Tag::kPre, Tag::kSearch, Tag::kSection, Tag::kSummary, Tag::kTable, Tag::kUl,
-});
-
-constexpr TagSet kHeadContent = CreateTagSet({
-    Tag::kBase, Tag::kLink, Tag::kMeta, Tag::kNoscript, Tag::kScript, Tag::kStyle, Tag::kTemplate,
-    Tag::kTitle,
-});
-
-constexpr TagSet kTableSections = CreateTagSet({Tag::kThead, Tag::kTbody, Tag::kTfoot});
-constexpr TagSet kTableRows = CreateTagSet({Tag::kTr, Tag::kThead, Tag::kTbody, Tag::kTfoot});
-
-bool StartTagEnds(Tag open_tag, Tag start_tag) {
-  switch (open_tag) {
-    case Tag::kP:
-      return ContainsTag(kEndsP, start_tag);
-    case Tag::kLi:
-      return start_tag == Tag::kLi;
-    case Tag::kDt:
-    case Tag::kDd:
-      return start_tag == Tag::kDt || start_tag == Tag::kDd;
-    case Tag::kRt:
-    case Tag::kRp:
-      return start_tag == Tag::kRt || start_tag == Tag::kRp;
-    case Tag::kOption:
-      return start_tag == Tag::kOption || start_tag == Tag::kOptgroup;
-    case Tag::kOptgroup:
-      return start_tag == Tag::kOptgroup;
-    case Tag::kTd:
-    case Tag::kTh:
-      return start_tag == Tag::kTd || start_tag == Tag::kTh || ContainsTag(kTableRows, start_tag);
-    case Tag::kTr:
-      return ContainsTag(kTableRows, start_tag);
-    case Tag::kThead:
-    case Tag::kTbody:
-    case Tag::kTfoot:
-      return ContainsTag(kTableSections, start_tag);
-    case Tag::kCaption:
-      return StartTagEnds(Tag::kTd, start_tag) || start_tag == Tag::kCaption || start_tag == Tag::kColgroup ||
-             start_tag == Tag::kCol;
-    case Tag::kColgroup:
-      return start_tag != Tag::kCol;
-    case Tag::kHead:
-      return !ContainsTag(kHeadContent, start_tag);
-    default:
-      return false;
-  }
-}
-
-bool IsForeignRoot(Tag tag) {
-  return tag == Tag::kSvg || tag == Tag::kMath;
-}
-
-}  // anonymous namespace
 
 bool DOMBuilder::Validate() const {
   return node_stack_.empty();
@@ -117,11 +49,13 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, std::span<const Attribute> att
   return true;
 }
 
-// Starts over from the new top after each close: a <tr> ends the cell, then the row.
+// Passes only through elements whose end tag may be left out, so an element the author had
+// to close is never closed for them. Starts over from the new top after each close: a <tr>
+// ends the cell, then the row.
 void DOMBuilder::closeElementsEndedBy(Tag start_tag, const char* text_end) {
   for (std::size_t depth = node_stack_.size(); depth > 0;) {
     const Tag open_tag = tagAt(depth - 1);
-    if (!ContainsTag(kOptionalEndTags, open_tag)) {
+    if (!HasOptionalEndTag(open_tag)) {
       return;
     }
 
@@ -208,7 +142,7 @@ bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token, const char* text_end) {
       closeDownTo(depth - 1, text_end);
       return true;
     }
-    if (!ContainsTag(kOptionalEndTags, open_tag)) {
+    if (!HasOptionalEndTag(open_tag)) {
       const auto below = std::span(node_stack_).first(depth - 1);
       return std::ranges::none_of(below, [&](NodeKey key) { return dfs_node_list_[key].tag() == token.tag; });
     }
