@@ -25,10 +25,6 @@ add_gtest(html_token_parser_test html_token_parser_test.cc)
 option(ARBORIS_HTML5LIB_TESTS "Download html5lib-tests and register the tokenizer conformance test" OFF)
 
 if (ARBORIS_HTML5LIB_TESTS)
-  FetchContent_Declare(
-    html5lib_tests
-    URL https://github.com/html5lib/html5lib-tests/archive/224991ec10db04f056a89eed8b0bd8695fd2950e.zip
-  )
   FetchContent_MakeAvailable(html5lib_tests)
   find_program(UV_EXECUTABLE uv REQUIRED)
 
