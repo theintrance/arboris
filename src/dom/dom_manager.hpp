@@ -7,6 +7,7 @@
 #ifndef SRC_DOM_DOM_MANAGER_HPP_
 #define SRC_DOM_DOM_MANAGER_HPP_
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -42,9 +43,16 @@ class DOMManager {
   [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
+  // The byte offset where parsing stopped, or nullopt if the whole document was read. The
+  // DOM holds everything before it.
+  [[nodiscard]] std::optional<std::size_t> parse_error_offset() const noexcept {
+    return parse_error_offset_;
+  }
+
  private:
   DOMStore store_;
   std::shared_ptr<StringPool> string_pool_;
+  std::optional<std::size_t> parse_error_offset_;
 };
 
 }  // namespace arboris

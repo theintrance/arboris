@@ -22,7 +22,7 @@ class TokenParser {
 
   virtual ~TokenParser() = default;
 
-  [[nodiscard]] virtual bool Parse() const = 0;
+  [[nodiscard]] virtual bool Parse() = 0;
 
  protected:
   std::string_view content_;
