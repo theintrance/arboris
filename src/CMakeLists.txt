@@ -6,6 +6,7 @@ set(ARBORIS_SOURCES
   dom/dom_subtree.cc
   dom/dom_query.cc
   dom/html_token_parser.cc
+  string/decode.cc
   string/string_scalar.cc
   utils/tag.cc
   utils/tag_rules.cc
@@ -26,6 +27,8 @@ set(ARBORIS_HEADERS
   dom/dom_indexer.hpp
   dom/dom_types.hpp
   dom/tag_node.hpp
+  string/decode.hpp
+  string/named_references.inc
   string/string.hpp
   utils/html_tokens.hpp
   utils/name_set.hpp

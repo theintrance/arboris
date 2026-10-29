@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "dom/token_parser.hpp"
+#include "string/decode.hpp"
 #include "string/string.hpp"
 #include "utils/html_tokens.hpp"
 #include "utils/name_set.hpp"
@@ -49,10 +50,11 @@ class HtmlTokenParser : public TokenParser {
 
   [[nodiscard]] bool Parse() override;
 
-  // Where the lower-cased spellings of tag and attribute names live. Token views into it
-  // outlive the parser only if the caller takes it.
-  [[nodiscard]] StringArena ReleaseNames() {
-    return std::move(names_);
+  // Where the strings that could not stay a view into the source live: lower-cased names
+  // and decoded attribute values. Token views into it outlive the parser only if the
+  // caller takes it.
+  [[nodiscard]] StringArena ReleaseStrings() {
+    return std::move(strings_);
   }
 
   // After Parse() returns false: the start of the token it stopped at.
@@ -89,9 +91,16 @@ class HtmlTokenParser : public TokenParser {
   static constexpr CharSet kAttributeNameDelimiters{" \t\n\f\r/>="};
   static constexpr CharSet kUnquotedValueDelimiters{" \t\n\f\r>"};
 
+  // A value is scanned once for its end and for the two bytes that would make it read
+  // differently from the source; only a value that holds one of those is decoded.
+  static constexpr CharSet kUnquotedValueStops{" \t\n\f\r>&"};
+  static constexpr CharSet kDoubleQuotedValueStops{"\"&\r"};
+  static constexpr CharSet kSingleQuotedValueStops{"'&\r"};
+
   struct RawTextElement {
     Tag tag;
     std::string_view name;
+    TextMode mode;
   };
 
   [[nodiscard]] std::size_t parseOpenTag(std::size_t begin, std::vector<Attribute>* attributes,
@@ -104,18 +113,19 @@ class HtmlTokenParser : public TokenParser {
   [[nodiscard]] std::size_t parseDoctype(std::size_t begin);
 
   [[nodiscard]] std::size_t feedCloseTag(std::size_t begin, std::size_t name_end, Tag tag, std::string_view name) const;
-  [[nodiscard]] std::size_t feedText(std::size_t begin, std::size_t end) const;
+  [[nodiscard]] std::size_t feedText(std::size_t begin, std::size_t end, TextMode mode) const;
   [[nodiscard]] std::size_t feedComment(std::size_t begin, std::size_t end, std::string_view data) const;
 
   [[nodiscard]] std::string_view extractTagName(std::size_t* begin, const CharSet& delimiters) const;
   [[nodiscard]] std::string_view lowerCased(std::string_view name);
+  [[nodiscard]] std::string_view decodedValue(std::string_view value);
   [[nodiscard]] bool parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes, bool* self_closing);
   [[nodiscard]] bool skipToTagEnd(std::size_t* begin) const;
   [[nodiscard]] std::size_t findRawTextEnd(std::size_t begin, std::string_view tag_name) const;
   [[nodiscard]] std::optional<std::string_view> readDoctypeId(std::size_t* begin, bool* well_formed) const;
 
   std::shared_ptr<StringPool> string_pool_;
-  StringArena names_;
+  StringArena strings_;
   NameSet attribute_names_;
   std::size_t error_pos_ = 0;
 

@@ -40,6 +40,12 @@ class StringArena {
     return out;
   }
 
+  // Returns the unused tail of the last Allocate, for a caller that had to size it by a bound.
+  void Shrink(std::size_t unused) {
+    cursor_ -= unused;
+    free_ += unused;
+  }
+
   [[nodiscard]] std::string_view Append(std::string_view str) {
     char* out = Allocate(str.size());
     std::ranges::copy(str, out);
