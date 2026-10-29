@@ -41,10 +41,11 @@ DOMManager::DOMManager(std::string_view html_content) :
         return builder.FeedCloseToken(std::move(token), text_end);
       });
 
-  const bool success = html_token_parser.Parse();
-  ARBORIS_ASSERT(success, "Failed to parse HTML content.");
+  if (!html_token_parser.Parse()) {
+    parse_error_offset_ = html_token_parser.error_pos();
+  }
 
-  builder.Finish();
+  builder.Finish(string_pool_->GetCursor());
   store_.set_nodes(builder.ReleaseNodeList());
   store_.set_text_arena(builder.ReleaseTextArena());
   store_.set_class_arena(builder.ReleaseClassArena());

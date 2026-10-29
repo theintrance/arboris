@@ -8,7 +8,7 @@
 //
 // Reads length-prefixed inputs from stdin ("<byte length>\n<bytes>") and writes one
 // JSON line per input: {"ok": bool, "tokens": [...]}, where tokens use the
-// html5lib-tests tokenizer format (StartTag / EndTag / Character).
+// html5lib-tests tokenizer format (StartTag / EndTag / Character / Comment / DOCTYPE).
 
 #include <cstdio>
 #include <iostream>
@@ -17,6 +17,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "dom/html_token_parser.hpp"
 #include "utils/html_tokens.hpp"
@@ -39,6 +40,31 @@ std::span<const Attribute> AttributesOf(std::span<const Attribute> attributes, c
 
 std::span<const Attribute> AttributesOf(const char*) {
   return {};
+}
+
+// Likewise for the self-closing flag and the comment and DOCTYPE callbacks.
+// TODO(team): use them directly once develop has them.
+template <typename Token>
+bool IsSelfClosing(const Token& token) {
+  if constexpr (requires { token.is_self_closing; }) {
+    return token.is_self_closing;
+  } else {
+    return false;
+  }
+}
+
+template <typename Parser, typename Callback>
+void SetCommentCallback(Parser* parser, Callback&& callback) {
+  if constexpr (requires { parser->set_feed_comment_token_callback(callback); }) {
+    parser->set_feed_comment_token_callback(std::forward<Callback>(callback));
+  }
+}
+
+template <typename Parser, typename Callback>
+void SetDoctypeCallback(Parser* parser, Callback&& callback) {
+  if constexpr (requires { parser->set_feed_doctype_token_callback(callback); }) {
+    parser->set_feed_doctype_token_callback(std::forward<Callback>(callback));
+  }
 }
 
 std::string_view RawTagName(std::string_view content, const BaseToken& token, std::size_t prefix_len) {
@@ -89,20 +115,35 @@ void AppendJsonObject(std::string* out, std::span<const Attribute> attributes) {
   out->push_back('}');
 }
 
+void AppendJsonStringOrNull(std::string* out, std::optional<std::string_view> str) {
+  if (str) {
+    AppendJsonString(out, *str);
+  } else {
+    *out += "null";
+  }
+}
+
 std::string Tokenize(std::string_view content) {
   std::string tokens;
-  auto append_token = [&tokens](std::string_view kind, std::string_view value,
-                                std::optional<std::span<const Attribute>> attributes) {
+  auto begin_token = [&tokens](std::string_view kind) {
     if (!tokens.empty()) {
       tokens.push_back(',');
     }
     tokens += "[\"";
     tokens += kind;
-    tokens += "\",";
+    tokens += "\"";
+  };
+  auto append_token = [&](std::string_view kind, std::string_view value,
+                          std::optional<std::span<const Attribute>> attributes, bool self_closing = false) {
+    begin_token(kind);
+    tokens.push_back(',');
     AppendJsonString(&tokens, value);
     if (attributes) {
       tokens.push_back(',');
       AppendJsonObject(&tokens, *attributes);
+    }
+    if (self_closing) {
+      tokens += ",true";
     }
     tokens.push_back(']');
   };
@@ -110,7 +151,7 @@ std::string Tokenize(std::string_view content) {
   auto string_pool = std::make_shared<StringPool>(content.size());
   HtmlTokenParser parser(content, string_pool);
   parser.set_feed_open_token_callback([&](HtmlToken&& token, auto... rest) {
-    append_token("StartTag", RawTagName(content, token, 1), AttributesOf(rest...));
+    append_token("StartTag", RawTagName(content, token, 1), AttributesOf(rest...), IsSelfClosing(token));
     return true;
   });
   parser.set_feed_text_token_callback([&](HtmlTextToken&& token) {
@@ -119,6 +160,21 @@ std::string Tokenize(std::string_view content) {
   });
   parser.set_feed_close_token_callback([&](HtmlCloseToken&& token, const char*) {
     append_token("EndTag", RawTagName(content, token, 2), std::nullopt);
+    return true;
+  });
+  SetCommentCallback(&parser, [&](auto&& token) {
+    append_token("Comment", token.data, std::nullopt);
+    return true;
+  });
+  SetDoctypeCallback(&parser, [&](auto&& token) {
+    begin_token("DOCTYPE");
+    tokens.push_back(',');
+    AppendJsonStringOrNull(&tokens, token.name.empty() ? std::nullopt : std::make_optional(token.name));
+    tokens.push_back(',');
+    AppendJsonStringOrNull(&tokens, token.public_id);
+    tokens.push_back(',');
+    AppendJsonStringOrNull(&tokens, token.system_id);
+    tokens += token.force_quirks ? ",false]" : ",true]";
     return true;
   });
 

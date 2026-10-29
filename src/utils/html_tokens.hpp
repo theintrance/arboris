@@ -8,6 +8,7 @@
 #define SRC_UTILS_HTML_TOKENS_HPP_
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -49,6 +50,9 @@ struct HtmlToken : public BaseHtmlToken {
   Tag tag = Tag::kUnknown;
   bool is_void_tag = false;
 
+  // Ends in "/>". Only an element inside <svg> or <math> closes on it; HTML ignores it.
+  bool is_self_closing = false;
+
   // Into the document buffer.
   std::string_view id;
 
@@ -66,6 +70,18 @@ struct HtmlTextToken : public BaseHtmlToken {
 
 struct HtmlCloseToken : public BaseHtmlToken {
   Tag tag = Tag::kUnknown;
+};
+
+struct HtmlCommentToken : public BaseHtmlToken {
+  std::string_view data;
+};
+
+// The name is as written, not lower-cased.
+struct HtmlDoctypeToken : public BaseHtmlToken {
+  std::string_view name;
+  std::optional<std::string_view> public_id;
+  std::optional<std::string_view> system_id;
+  bool force_quirks = false;
 };
 
 }  // namespace arboris

@@ -8,6 +8,7 @@ set(ARBORIS_SOURCES
   dom/html_token_parser.cc
   string/string_scalar.cc
   utils/tag.cc
+  utils/tag_rules.cc
 )
 
 # Header files
@@ -28,6 +29,7 @@ set(ARBORIS_HEADERS
   string/string.hpp
   utils/html_tokens.hpp
   utils/tag.hpp
+  utils/tag_rules.hpp
   utils/tokens.hpp
 )
 

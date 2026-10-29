@@ -78,6 +78,7 @@ enum class Tag : std::uint8_t {
   kMain,
   kMap,
   kMark,
+  kMath,
   kMenu,
   kMeta,
   kMeter,
@@ -110,6 +111,7 @@ enum class Tag : std::uint8_t {
   kSub,
   kSummary,
   kSup,
+  kSvg,
   kTable,
   kTbody,
   kTd,
@@ -147,26 +149,6 @@ constexpr TagSet CreateTagSet(std::initializer_list<Tag> tags) {
 constexpr bool ContainsTag(TagSet tag_set, Tag tag) {
   std::size_t tag_index = static_cast<std::size_t>(tag);
   return (tag_set.bits[tag_index >> 6] & (1ULL << (tag_index & 63))) != 0;
-}
-
-inline bool IsVoidTag(Tag tag) {
-  static constexpr auto kVoidTags = CreateTagSet({
-    Tag::kArea,
-    Tag::kBase,
-    Tag::kBr,
-    Tag::kCol,
-    Tag::kEmbed,
-    Tag::kHr,
-    Tag::kImg,
-    Tag::kInput,
-    Tag::kLink,
-    Tag::kMeta,
-    Tag::kSource,
-    Tag::kTrack,
-    Tag::kWbr,
-  });
-
-  return ContainsTag(kVoidTags, tag);
 }
 
 }  // namespace arboris
