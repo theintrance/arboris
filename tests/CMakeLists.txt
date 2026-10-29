@@ -12,6 +12,7 @@ endfunction()
 
 add_gtest(example_test example_test.cc)
 add_gtest(string_test string_test.cc)
+add_gtest(decode_test decode_test.cc)
 add_gtest(dom_query_test dom_query_test.cc)
 add_gtest(html_token_parser_test html_token_parser_test.cc)
 add_gtest(dom_manager_test dom_manager_test.cc)
