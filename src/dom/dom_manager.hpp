@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -43,6 +44,7 @@ class DOMManager {
   }
 
   [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
+  [[nodiscard]] std::optional<DOMQuery> Find(const std::string& id) const;
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
   // The byte offset where parsing stopped, or nullopt if the whole document was read. The
@@ -52,6 +54,8 @@ class DOMManager {
   }
 
  private:
+  [[nodiscard]] DOMQuery rootQuery() const;
+
   DOMStore store_;
   std::shared_ptr<StringPool> string_pool_;
   std::optional<std::size_t> parse_error_offset_;

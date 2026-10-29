@@ -16,6 +16,7 @@
 #include "dom/dom_types.hpp"
 #include "dom/tag_node.hpp"
 #include "utils/html_tokens.hpp"
+#include "utils/string_arena.hpp"
 
 namespace arboris {
 
@@ -75,6 +76,10 @@ class DOMStore {
     attr_arena_ = std::move(attr_arena);
   }
 
+  void set_names(StringArena&& names) {
+    names_ = std::move(names);
+  }
+
   DOMIndexer& mutable_indexer() noexcept {
     return indexer_;
   }
@@ -89,6 +94,9 @@ class DOMStore {
   std::vector<std::string_view> class_arena_;
   std::vector<Attribute> attr_arena_;
   std::vector<TextRun> text_arena_;
+
+  // Tag and attribute names that could not stay a view into the document: see HtmlToken::name.
+  StringArena names_;
 
   DOMIndexer indexer_;
 };

@@ -42,7 +42,12 @@ class DOMQuery {
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
  private:
-  [[nodiscard]] NodeKeySpan searchCandidatesFromSubtree(const QueryOptions& options) const;
+  // Calls visit on each descendant that matches, in document order, until visit returns
+  // false.
+  template <typename Visit>
+  void forEachMatch(const QueryOptions& options, Visit&& visit) const;
+
+  [[nodiscard]] std::optional<NodeKeySpan> indexedCandidates(const QueryOptions& options) const;
   [[nodiscard]] bool matchAllConditions(const NodeRef& node, const QueryOptions& options) const;
 
   NodeRef subtree_root_;
