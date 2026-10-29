@@ -37,6 +37,8 @@ if (NOT NO_TESTS)
   add_subdirectory(tests)
 endif()
 
-if (NOT NO_BENCHMARK)
+# The benchmark needs uv and downloads its corpus, so it stays out of the default build.
+option(ARBORIS_BENCHMARK "Build the tokenizer benchmark (benchmark/)" OFF)
+if (ARBORIS_BENCHMARK)
   add_subdirectory(benchmark)
 endif()

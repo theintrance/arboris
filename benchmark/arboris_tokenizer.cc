@@ -7,6 +7,7 @@
 // The only file that calls into arboris, so an internal API change is fixed here alone.
 
 #include <memory>
+#include <span>
 #include <string_view>
 
 #include "benchmark/tokenizers.hpp"
@@ -20,7 +21,7 @@ TokenizeResult TokenizeArboris(std::string_view input) {
   TokenizeResult result;
   auto string_pool = std::make_shared<StringPool>(input.size());
   HtmlTokenParser parser(input, string_pool);
-  parser.set_feed_open_token_callback([&result](HtmlToken&&, const char*) {
+  parser.set_feed_open_token_callback([&result](HtmlToken&&, std::span<const Attribute>, const char*) {
     ++result.tokens;
     return true;
   });

@@ -5,7 +5,10 @@ FetchContent_Declare(
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googlebenchmark html5lib_tests)
 
-find_program(UV_EXECUTABLE uv REQUIRED)
+find_program(UV_EXECUTABLE uv)
+if (NOT UV_EXECUTABLE)
+  message(FATAL_ERROR "uv is required to export the html5lib cases: https://docs.astral.sh/uv/")
+endif()
 
 option(ARBORIS_BENCH_LEXBOR "Also benchmark the lexbor tokenizer (https://github.com/lexbor/lexbor)" OFF)
 
