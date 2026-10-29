@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "dom/token_parser.hpp"
+#include "string/string.hpp"
 #include "utils/html_tokens.hpp"
 #include "utils/string_arena.hpp"
 
@@ -79,14 +80,13 @@ class HtmlTokenParser : public TokenParser {
   }
 
  private:
-  // Delimiter constants for tag parsing
-  static constexpr std::string_view kOpenTagDelimiters = " />\t\n\f\r>";
-  static constexpr std::string_view kCloseTagDelimiters = "> \t\n\f\r";
+  static constexpr CharSet kOpenTagDelimiters{" />\t\n\f\r"};
+  static constexpr CharSet kCloseTagDelimiters{"> \t\n\f\r"};
 
   // An attribute name runs up to whitespace, '/', '>' or '='. An unquoted value runs up to
   // whitespace or '>' only, so a '/' inside it is part of the value.
-  static constexpr std::string_view kAttributeNameDelimiters = " \t\n\f\r/>=";
-  static constexpr std::string_view kUnquotedValueDelimiters = " \t\n\f\r>";
+  static constexpr CharSet kAttributeNameDelimiters{" \t\n\f\r/>="};
+  static constexpr CharSet kUnquotedValueDelimiters{" \t\n\f\r>"};
 
   struct RawTextElement {
     Tag tag;
@@ -106,7 +106,7 @@ class HtmlTokenParser : public TokenParser {
   [[nodiscard]] std::size_t feedText(std::size_t begin, std::size_t end) const;
   [[nodiscard]] std::size_t feedComment(std::size_t begin, std::size_t end, std::string_view data) const;
 
-  [[nodiscard]] std::string_view extractTagName(std::size_t* begin, std::string_view delimiters) const;
+  [[nodiscard]] std::string_view extractTagName(std::size_t* begin, const CharSet& delimiters) const;
   [[nodiscard]] std::string_view lowerCased(std::string_view name);
   [[nodiscard]] bool parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes, bool* self_closing);
   [[nodiscard]] bool skipToTagEnd(std::size_t* begin) const;
