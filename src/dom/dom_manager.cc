@@ -44,7 +44,7 @@ DOMManager::DOMManager(std::string_view html_content) :
   const bool success = html_token_parser.Parse();
   ARBORIS_ASSERT(success, "Failed to parse HTML content.");
 
-  builder.Finish();
+  builder.Finish(string_pool_->GetCursor());
   store_.set_nodes(builder.ReleaseNodeList());
   store_.set_text_arena(builder.ReleaseTextArena());
   store_.set_class_arena(builder.ReleaseClassArena());
