@@ -16,6 +16,8 @@ namespace arboris {
 
 enum class Tag : std::uint8_t {
   kUnknown,
+  // The synthetic root. FromString never returns it.
+  kDocument,
   kA,
   kAbbr,
   kAddress,

@@ -24,7 +24,7 @@ namespace arboris {
 class DOMBuilder {
  public:
   DOMBuilder() {
-    dfs_node_list_.emplace_back(0, 0, HtmlToken{{0, 0}, Tag::kHtml, false});
+    dfs_node_list_.emplace_back(0, 0, HtmlToken{{0, 0}, Tag::kDocument, false});
   }
   DOMBuilder(const DOMBuilder&) = delete;
   DOMBuilder& operator=(const DOMBuilder&) = delete;
