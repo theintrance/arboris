@@ -147,5 +147,22 @@ TEST(DOMQueryTest, UnknownEndTagsMatchByName) {
   EXPECT_TRUE(misnested.parse_error_offset().has_value());
 }
 
+TEST(DOMQueryTest, RepeatedNamesAreKeptOnceHoweverMany) {
+  std::string classes;
+  std::string attributes;
+  for (int i = 0; i < 10000; ++i) {
+    classes += " c" + std::to_string(i % 5000);
+    attributes += " a" + std::to_string(i % 5000) + "=" + std::to_string(i);
+  }
+  const DOMManager dom("<div class=\"" + classes + "\"" + attributes + "></div>");
+  const auto div = dom.Find({.tag = Tag::kDiv});
+  ASSERT_TRUE(div.has_value());
+  EXPECT_EQ(div->Get().classes().size(), 5000U);
+  EXPECT_EQ(div->Get().attributes().size(), 5001U);
+  EXPECT_EQ(dom.FindAll({.classes = ClassSet{"c4999"}}).size(), 1U);
+  EXPECT_EQ(Ids(dom.FindAll({.attributes = AttributeMap{{"a0", {"0"}}}})), std::vector<std::string_view>{""});
+  EXPECT_TRUE(dom.FindAll({.attributes = AttributeMap{{"a0", {"5000"}}}}).empty());
+}
+
 }  // anonymous namespace
 }  // namespace arboris

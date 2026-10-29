@@ -28,6 +28,7 @@ set(ARBORIS_HEADERS
   dom/tag_node.hpp
   string/string.hpp
   utils/html_tokens.hpp
+  utils/name_set.hpp
   utils/string_arena.hpp
   utils/tag.hpp
   utils/tag_rules.hpp

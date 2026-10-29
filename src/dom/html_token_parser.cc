@@ -11,6 +11,7 @@
 #include <cctype>
 #include <cstdint>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -354,6 +355,7 @@ std::string_view HtmlTokenParser::lowerCased(std::string_view name) {
 // value, as the HTML tokenizer does. Returns false when the content ends before the tag does.
 bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes, bool* self_closing) {
   std::size_t pos = SkipHtmlWhitespace(content_, *begin);
+  attribute_names_.Clear();
 
   while (pos < content_.length() && content_[pos] != '>') {
     // The '/' of `<br/>`, or a stray one: either way not part of an attribute.
@@ -400,7 +402,7 @@ bool HtmlTokenParser::parseAttributes(std::size_t* begin, std::vector<Attribute>
       }
     }
 
-    if (std::ranges::find(*attributes, name, &Attribute::name) == attributes->end()) {
+    if (attribute_names_.Insert(name, std::views::transform(*attributes, &Attribute::name))) {
       attributes->push_back({name, value});
     }
     pos = SkipHtmlWhitespace(content_, pos);
