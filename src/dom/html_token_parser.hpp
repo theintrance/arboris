@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <memory>
 #include <functional>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -31,6 +32,10 @@ class HtmlTokenParser : public TokenParser {
   using FeedTextTokenCallback = std::function<bool(HtmlTextToken&&)>;
   using FeedCloseTokenCallback = std::function<bool(HtmlCloseToken&&, const char*)>;
 
+  // The DOM keeps neither, so nothing has to listen: unset, they are read and dropped.
+  using FeedCommentTokenCallback = std::function<bool(HtmlCommentToken&&)>;
+  using FeedDoctypeTokenCallback = std::function<bool(HtmlDoctypeToken&&)>;
+
   explicit HtmlTokenParser(std::string_view content, std::shared_ptr<StringPool> string_pool)
       : TokenParser(content), string_pool_(std::move(string_pool)) {}
 
@@ -41,7 +46,13 @@ class HtmlTokenParser : public TokenParser {
 
   ~HtmlTokenParser() override = default;
 
-  [[nodiscard]] bool Parse() const override;
+  [[nodiscard]] bool Parse() override;
+
+  // Where the last Parse() stopped when it returned false: the start of the token it could
+  // not read to its end, or whose callback refused it.
+  [[nodiscard]] std::size_t error_pos() const noexcept {
+    return error_pos_;
+  }
 
   void set_feed_open_token_callback(FeedOpenTokenCallback&& callback) {
     feed_open_token_callback_ = std::move(callback);
@@ -55,6 +66,14 @@ class HtmlTokenParser : public TokenParser {
     feed_close_token_callback_ = std::move(callback);
   }
 
+  void set_feed_comment_token_callback(FeedCommentTokenCallback&& callback) {
+    feed_comment_token_callback_ = std::move(callback);
+  }
+
+  void set_feed_doctype_token_callback(FeedDoctypeTokenCallback&& callback) {
+    feed_doctype_token_callback_ = std::move(callback);
+  }
+
  private:
   // Delimiter constants for tag parsing
   static constexpr std::string_view kOpenTagDelimiters = " />\t\n\f\r>";
@@ -65,19 +84,41 @@ class HtmlTokenParser : public TokenParser {
   static constexpr std::string_view kAttributeNameDelimiters = " \t\n\f\r/>=";
   static constexpr std::string_view kUnquotedValueDelimiters = " \t\n\f\r>";
 
-  [[nodiscard]] std::size_t parseOpenTag(std::size_t begin, std::vector<Attribute>* attributes) const;
+  // An element whose contents are text up to its own end tag, once its start tag is read:
+  // <script> and <style> (raw text), <textarea> and <title> (RCDATA).
+  struct RawTextElement {
+    Tag tag;
+    std::string_view name;
+  };
+
+  [[nodiscard]] std::size_t parseOpenTag(std::size_t begin, std::vector<Attribute>* attributes,
+                                         std::optional<RawTextElement>* raw_text) const;
   [[nodiscard]] std::size_t parseCloseTag(std::size_t begin) const;
   [[nodiscard]] std::size_t parseTextContent(std::size_t begin) const;
+  [[nodiscard]] std::size_t parseMarkupDeclaration(std::size_t begin) const;
+  [[nodiscard]] std::size_t parseComment(std::size_t begin) const;
+  [[nodiscard]] std::size_t parseBogusComment(std::size_t begin, std::size_t data_begin) const;
+  [[nodiscard]] std::size_t parseDoctype(std::size_t begin) const;
+
+  [[nodiscard]] std::size_t feedCloseTag(std::size_t begin, std::size_t name_end, Tag tag) const;
+  [[nodiscard]] std::size_t feedText(std::size_t begin, std::size_t end) const;
+  [[nodiscard]] std::size_t feedComment(std::size_t begin, std::size_t end, std::string_view data) const;
 
   [[nodiscard]] std::string_view extractTagName(std::size_t* begin, std::string_view delimiters) const;
-  [[nodiscard]] bool parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes) const;
+  [[nodiscard]] bool parseAttributes(std::size_t* begin, std::vector<Attribute>* attributes,
+                                     bool* self_closing) const;
   [[nodiscard]] bool skipToTagEnd(std::size_t* begin) const;
+  [[nodiscard]] std::size_t findRawTextEnd(std::size_t begin, std::string_view tag_name) const;
+  [[nodiscard]] std::optional<std::string_view> readDoctypeId(std::size_t* begin, bool* well_formed) const;
 
   std::shared_ptr<StringPool> string_pool_;
+  std::size_t error_pos_ = 0;
 
   FeedOpenTokenCallback feed_open_token_callback_;
   FeedTextTokenCallback feed_text_token_callback_;
   FeedCloseTokenCallback feed_close_token_callback_;
+  FeedCommentTokenCallback feed_comment_token_callback_;
+  FeedDoctypeTokenCallback feed_doctype_token_callback_;
 };
 
 }  // namespace arboris

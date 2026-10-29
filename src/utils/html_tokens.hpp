@@ -8,6 +8,7 @@
 #define SRC_UTILS_HTML_TOKENS_HPP_
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -49,6 +50,10 @@ struct HtmlToken : public BaseHtmlToken {
   Tag tag = Tag::kUnknown;
   bool is_void_tag = false;
 
+  // The tag ends in "/>". An HTML element ignores it, so only an element inside <svg> or
+  // <math>, where it means what it does in XML, is closed on it.
+  bool is_self_closing = false;
+
   // Into the document buffer.
   std::string_view id;
 
@@ -66,6 +71,24 @@ struct HtmlTextToken : public BaseHtmlToken {
 
 struct HtmlCloseToken : public BaseHtmlToken {
   Tag tag = Tag::kUnknown;
+};
+
+// `<!-- data -->`, or a bogus comment: `<?data>` keeps its '?', `<!data>` drops its '!'.
+// data points into the document buffer.
+struct HtmlCommentToken : public BaseHtmlToken {
+  std::string_view data;
+};
+
+// `<!DOCTYPE name PUBLIC "public id" "system id">`, every part pointing into the document
+// buffer. The name is kept as written; HTML compares it ignoring ASCII case.
+//
+// force_quirks is set on one that is not well-formed. An id written as "" is an empty
+// view, one not written at all is nullopt.
+struct HtmlDoctypeToken : public BaseHtmlToken {
+  std::string_view name;
+  std::optional<std::string_view> public_id;
+  std::optional<std::string_view> system_id;
+  bool force_quirks = false;
 };
 
 }  // namespace arboris
