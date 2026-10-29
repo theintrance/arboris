@@ -20,9 +20,10 @@
 
 namespace arboris {
 
-DOMManager::DOMManager(std::string_view html_content) :
-  store_(html_content),
-  string_pool_(std::make_shared<StringPool>(html_content.size())) {
+DOMManager::DOMManager(std::string_view html_content, std::string_view encoding_label) :
+  input_(DecodeDocument(html_content, encoding_label)),
+  store_(std::move(input_.utf8)),
+  string_pool_(std::make_shared<StringPool>(store_.document().size())) {
   DOMBuilder builder;
 
   // Parsing reads the store's own copy, so every view a token keeps points into a buffer

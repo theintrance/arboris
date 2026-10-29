@@ -30,7 +30,7 @@ namespace arboris {
 // handed out by view alone.
 class DOMStore {
  public:
-  explicit DOMStore(std::string_view html_content) : document_(html_content) {}
+  explicit DOMStore(std::string&& document) : document_(std::move(document)) {}
 
   DOMStore(const DOMStore&) = delete;
   DOMStore& operator=(const DOMStore&) = delete;
