@@ -11,6 +11,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -85,6 +86,92 @@ void DOMQuery::forEachMatch(const QueryOptions& options, Visit&& visit) const {
       }
     }
   }
+}
+
+std::optional<DOMQuery> DOMQuery::Select(const Selector& selector) const {
+  const auto keys = selectKeys(selector, true);
+  if (keys.empty()) {
+    return std::nullopt;
+  }
+  return DOMQuery(subtree_.GetNodeByKey(keys.front()), subtree_);
+}
+
+std::optional<DOMQuery> DOMQuery::Select(std::string_view selector) const {
+  const auto parsed = Selector::Parse(selector);
+  return parsed ? Select(*parsed) : std::nullopt;
+}
+
+std::vector<DOMQuery> DOMQuery::SelectAll(const Selector& selector) const {
+  std::vector<DOMQuery> found;
+  for (const NodeKey key : selectKeys(selector, false)) {
+    found.emplace_back(subtree_.GetNodeByKey(key), subtree_);
+  }
+  return found;
+}
+
+std::vector<DOMQuery> DOMQuery::SelectAll(std::string_view selector) const {
+  const auto parsed = Selector::Parse(selector);
+  return parsed ? SelectAll(*parsed) : std::vector<DOMQuery>{};
+}
+
+// Each alternative is tried from the index its subject compound allows, and the hits are
+// merged into document order. Only the subject needs to be a descendant: the elements the
+// combinators lead to may sit above the subtree, as they do for querySelectorAll.
+std::vector<NodeKey> DOMQuery::selectKeys(const Selector& selector, bool first_only) const {
+  std::vector<NodeKey> keys;
+  for (const auto& complex : selector.alternatives()) {
+    const auto check = [&](NodeKey key) {
+      if (Matches(complex, subtree_.GetNodeByKey(key))) {
+        keys.push_back(key);
+        return !first_only;
+      }
+      return true;
+    };
+
+    if (const auto candidates = indexedCandidates(complex.compounds.front())) {
+      for (const NodeKey key : *candidates) {
+        if (!check(key)) {
+          break;
+        }
+      }
+    } else {
+      for (const NodeKey key : subtree_.Descendants()) {
+        if (!check(key)) {
+          break;
+        }
+      }
+    }
+  }
+
+  std::ranges::sort(keys);
+  const auto [first, last] = std::ranges::unique(keys);
+  keys.erase(first, last);
+  return keys;
+}
+
+std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const CompoundSelector& compound) const {
+  std::optional<NodeKeySpan> shortest;
+  const auto consider = [&shortest](NodeKeySpan keys) {
+    if (!shortest || keys.size() < shortest->size()) {
+      shortest = keys;
+    }
+  };
+
+  if (compound.id) {
+    const auto key = subtree_.GetNodeById(*compound.id);
+    id_hit_ = key.value_or(0);
+    consider(key ? NodeKeySpan{&id_hit_, 1} : NodeKeySpan{});
+  }
+  if (compound.tag) {
+    consider(subtree_.GetNodesByName(*compound.tag));
+  }
+  for (const auto& class_name : compound.classes) {
+    consider(subtree_.GetNodesByClass(class_name));
+  }
+  for (const auto& attribute : compound.attributes) {
+    consider(subtree_.GetNodesByAttribute(attribute.name));
+  }
+  return shortest;
 }
 
 // The shortest index list among the conditions that have one, or nullopt when no condition

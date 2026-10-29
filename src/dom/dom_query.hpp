@@ -9,11 +9,13 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "dom/dom_subtree.hpp"
 #include "dom/dom_types.hpp"
 #include "dom/node_ref.hpp"
+#include "selector/selector.hpp"
 #include "utils/query_options.hpp"
 
 namespace arboris {
@@ -41,7 +43,18 @@ class DOMQuery {
   [[nodiscard]] std::optional<DOMQuery> Find(const std::string& id) const;
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
 
+  // The descendants a CSS selector matches, in document order. The text overloads parse
+  // the selector first; text that is not a selector matches nothing, and Selector::Parse
+  // tells the two apart.
+  [[nodiscard]] std::optional<DOMQuery> Select(const Selector& selector) const;
+  [[nodiscard]] std::optional<DOMQuery> Select(std::string_view selector) const;
+  [[nodiscard]] std::vector<DOMQuery> SelectAll(const Selector& selector) const;
+  [[nodiscard]] std::vector<DOMQuery> SelectAll(std::string_view selector) const;
+
  private:
+  [[nodiscard]] std::vector<NodeKey> selectKeys(const Selector& selector, bool first_only) const;
+  [[nodiscard]] std::optional<NodeKeySpan> indexedCandidates(const CompoundSelector& compound) const;
+
   // Calls visit on each descendant that matches, in document order, until visit returns
   // false.
   template <typename Visit>
@@ -52,6 +65,9 @@ class DOMQuery {
 
   NodeRef subtree_root_;
   DOMSubtree subtree_;
+
+  // Where an id lookup's single key lives while it is handed out as a span.
+  mutable NodeKey id_hit_ = 0;
 };
 
 }  // namespace arboris
