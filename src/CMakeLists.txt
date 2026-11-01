@@ -54,6 +54,10 @@ target_include_directories(arboris PUBLIC
 # Set compile features
 target_compile_features(arboris PUBLIC cxx_std_20)
 
+# ARBORIS_ASSERT checks the library's own invariants and compiles out unless DEBUG is
+# defined. Debug builds, and so the Debug and sanitizer CI jobs, run with it on.
+target_compile_definitions(arboris PUBLIC $<$<CONFIG:Debug>:DEBUG>)
+
 # Encodings other than UTF-8 and UTF-16 are converted through iconv. Without it, a page in
 # one of them is read as UTF-8 and DOMManager::unsupported_encoding() says so.
 option(ARBORIS_ICONV "Convert legacy encodings through iconv" ON)
