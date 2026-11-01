@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <memory>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace arboris {
@@ -23,8 +24,16 @@ class StringArena {
   StringArena() = default;
   StringArena(const StringArena&) = delete;
   StringArena& operator=(const StringArena&) = delete;
-  StringArena(StringArena&&) = default;
-  StringArena& operator=(StringArena&&) = default;
+  StringArena(StringArena&& other) noexcept
+      : blocks_(std::move(other.blocks_)),
+        cursor_(std::exchange(other.cursor_, nullptr)),
+        free_(std::exchange(other.free_, 0)) {}
+  StringArena& operator=(StringArena&& other) noexcept {
+    blocks_ = std::move(other.blocks_);
+    cursor_ = std::exchange(other.cursor_, nullptr);
+    free_ = std::exchange(other.free_, 0);
+    return *this;
+  }
   ~StringArena() = default;
 
   [[nodiscard]] char* Allocate(std::size_t size) {
