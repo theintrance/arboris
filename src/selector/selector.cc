@@ -546,7 +546,7 @@ bool MatchesFromHere(const ComplexSelector& complex, std::size_t index, const No
       return !IsRoot(parent) && MatchesFrom(complex, index + 1, parent, state);
     }
     case Combinator::kDescendant:
-      for (NodeRef ancestor = node.parent(); !IsRoot(ancestor); ancestor = ancestor.parent()) {
+      for (const NodeRef ancestor : node.ancestors()) {
         if (MatchesFrom(complex, index + 1, ancestor, state)) {
           return true;
         }

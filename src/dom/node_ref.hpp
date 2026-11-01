@@ -8,11 +8,12 @@
 #define SRC_DOM_NODE_REF_HPP_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <optional>
 #include <span>
 #include <string_view>
-#include <vector>
 
 #include "dom/dom_store.hpp"
 #include "dom/dom_types.hpp"
@@ -21,6 +22,9 @@
 #include "utils/html_tokens.hpp"
 
 namespace arboris {
+
+class ChildRange;
+class AncestorRange;
 
 // A handle to one node: a key and the store to resolve it against, 16 bytes, no ownership.
 //
@@ -119,19 +123,12 @@ class NodeRef {
     return NodeRef(candidate, *store_);
   }
 
-  // Children are found by walking keys, not by keeping a list: the first child is the next
-  // key, and each sibling sits one whole subtree further on.
-  [[nodiscard]] std::vector<NodeRef> children() const {
-    std::vector<NodeRef> out;
-    const auto& tag_node = node();
-    const NodeKey end = key_ + tag_node.sub_tree_size();
-    for (NodeKey child = key_ + 1; child < end;) {
-      out.emplace_back(child, *store_);
-      // Never step by nothing: a size of 0 would loop here forever.
-      child += std::max(1U, store_->nodes()[child].sub_tree_size());
-    }
-    return out;
-  }
+  // The element children, in document order. A range, not a list: the first child is the
+  // next key, and each sibling sits one whole subtree further on.
+  [[nodiscard]] ChildRange children() const noexcept;
+
+  // The parent, its parent and so on, up to but not including the synthetic root.
+  [[nodiscard]] AncestorRange ancestors() const noexcept;
 
   [[nodiscard]] const TagNode& node() const noexcept {
     ARBORIS_ASSERT(key_ < store_->nodes().size(), "Node key is out of range.");
@@ -142,6 +139,129 @@ class NodeRef {
   NodeKey key_;
   const DOMStore* store_;
 };
+
+// Steps from one child to the next by skipping the child's whole subtree.
+class ChildIterator {
+ public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = NodeRef;
+  using difference_type = std::ptrdiff_t;
+
+  ChildIterator() noexcept = default;
+  ChildIterator(NodeKey key, const DOMStore& store) noexcept : key_(key), store_(&store) {}
+
+  [[nodiscard]] NodeRef operator*() const noexcept {
+    return {key_, *store_};
+  }
+
+  ChildIterator& operator++() noexcept {
+    // Never step by nothing: a size of 0 would stand here forever.
+    key_ += std::max(1U, store_->nodes()[key_].sub_tree_size());
+    return *this;
+  }
+
+  ChildIterator operator++(int) noexcept {
+    const ChildIterator before = *this;
+    ++*this;
+    return before;
+  }
+
+  [[nodiscard]] bool operator==(const ChildIterator& other) const noexcept {
+    return key_ == other.key_;
+  }
+
+ private:
+  NodeKey key_ = 0;
+  const DOMStore* store_ = nullptr;
+};
+
+class ChildRange {
+ public:
+  ChildRange(NodeKey first, NodeKey end, const DOMStore& store) noexcept : first_(first), end_(end), store_(&store) {}
+
+  [[nodiscard]] ChildIterator begin() const noexcept {
+    return {first_, *store_};
+  }
+
+  [[nodiscard]] ChildIterator end() const noexcept {
+    return {end_, *store_};
+  }
+
+  [[nodiscard]] bool empty() const noexcept {
+    return first_ == end_;
+  }
+
+ private:
+  NodeKey first_;
+  NodeKey end_;
+  const DOMStore* store_;
+};
+
+// Steps from a node to its parent. The end is the synthetic root, key 0, which every
+// walk up reaches and none hands out.
+class AncestorIterator {
+ public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = NodeRef;
+  using difference_type = std::ptrdiff_t;
+
+  AncestorIterator() noexcept = default;
+  AncestorIterator(NodeKey key, const DOMStore& store) noexcept : key_(key), store_(&store) {}
+
+  [[nodiscard]] NodeRef operator*() const noexcept {
+    return {key_, *store_};
+  }
+
+  AncestorIterator& operator++() noexcept {
+    key_ = store_->nodes()[key_].parent_key();
+    return *this;
+  }
+
+  AncestorIterator operator++(int) noexcept {
+    const AncestorIterator before = *this;
+    ++*this;
+    return before;
+  }
+
+  [[nodiscard]] bool operator==(const AncestorIterator& other) const noexcept {
+    return key_ == other.key_;
+  }
+
+ private:
+  NodeKey key_ = 0;
+  const DOMStore* store_ = nullptr;
+};
+
+class AncestorRange {
+ public:
+  AncestorRange(NodeKey first, const DOMStore& store) noexcept : first_(first), store_(&store) {}
+
+  [[nodiscard]] AncestorIterator begin() const noexcept {
+    return {first_, *store_};
+  }
+
+  [[nodiscard]] AncestorIterator end() const noexcept {
+    return {kRootKey, *store_};
+  }
+
+  [[nodiscard]] bool empty() const noexcept {
+    return first_ == kRootKey;
+  }
+
+ private:
+  static constexpr NodeKey kRootKey = 0;
+
+  NodeKey first_;
+  const DOMStore* store_;
+};
+
+inline ChildRange NodeRef::children() const noexcept {
+  return {key_ + 1, key_ + node().sub_tree_size(), *store_};
+}
+
+inline AncestorRange NodeRef::ancestors() const noexcept {
+  return {node().parent_key(), *store_};
+}
 
 }  // namespace arboris
 

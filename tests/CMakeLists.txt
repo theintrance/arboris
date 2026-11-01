@@ -19,6 +19,7 @@ add_gtest(dom_query_test dom_query_test.cc)
 add_gtest(html_token_parser_test html_token_parser_test.cc)
 add_gtest(dom_manager_test dom_manager_test.cc)
 add_gtest(dom_builder_test dom_builder_test.cc)
+add_gtest(node_ref_test node_ref_test.cc)
 
 # html5lib-tests tokenizer conformance (https://github.com/html5lib/html5lib-tests)
 # Runs tests/html5lib via pytest (`uv` group "test"). Scope: every well-formed Data-state
