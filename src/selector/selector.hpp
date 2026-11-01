@@ -92,6 +92,12 @@ struct MatchState {
   std::unordered_map<NodeKey, std::pair<NodeRef, int>> sibling_places;
   // Per parent, how many element children it has, for :nth-last-child.
   std::unordered_map<NodeKey, int> child_counts;
+  // Whether compounds[index] and everything left of it held at a node, by (index, key),
+  // so the descendant and sibling combinators never try the same pair twice.
+  std::unordered_map<std::uint64_t, bool> outcomes;
+  // For ~, by (index, parent key): the last node asked about and whether any sibling
+  // before it matched compounds[index] leftwards, so the next node carries on from there.
+  std::unordered_map<std::uint64_t, std::pair<NodeRef, bool>> preceding_matches;
 };
 
 // Matches one complex selector against any number of nodes of one document. Keep one

@@ -412,19 +412,6 @@ bool MatchesAttribute(const AttributeSelector& selector, const NodeRef& node) {
   return false;
 }
 
-// Calls fn on each element sibling before node, first to last, until fn returns false.
-// Siblings are only cheap to walk forwards, so this is one walk from the parent's first
-// child rather than a previous_sibling() walk from every step.
-template <typename Fn>
-void ForEachPrecedingSibling(const NodeRef& node, Fn&& fn) {
-  for (auto sibling = node.parent().first_child(); sibling && sibling->key() < node.key();
-       sibling = sibling->next_sibling()) {
-    if (!fn(*sibling)) {
-      return;
-    }
-  }
-}
-
 int ChildCount(const NodeRef& parent, MatchState* state) {
   if (state) {
     if (const auto found = state->child_counts.find(parent.key()); found != state->child_counts.end()) {
@@ -534,8 +521,40 @@ bool MatchesCompound(const CompoundSelector& compound, const NodeRef& node, Matc
   return true;
 }
 
-// Matches compounds[index] and everything to its left against node.
-bool MatchesFrom(const ComplexSelector& complex, std::size_t index, const NodeRef& node, MatchState* state) {
+bool MatchesFrom(const ComplexSelector& complex, std::size_t index, const NodeRef& node, MatchState* state);
+
+std::uint64_t MemoKey(std::size_t index, NodeKey key) {
+  return (static_cast<std::uint64_t>(index) << 32) | key;
+}
+
+// Whether compounds[index] and everything left of it hold at some element sibling before
+// node. With state, nodes asked for in document order continue the walk from the last one.
+bool AnyPrecedingSiblingMatches(const ComplexSelector& complex, std::size_t index, const NodeRef& node,
+                                MatchState* state) {
+  const NodeRef parent = node.parent();
+  std::optional<NodeRef> sibling = parent.first_child();
+  bool any = false;
+  const std::uint64_t memo_key = MemoKey(index, parent.key());
+  if (state) {
+    const auto found = state->preceding_matches.find(memo_key);
+    if (found != state->preceding_matches.end() && found->second.first.key() <= node.key()) {
+      sibling = found->second.first;
+      any = found->second.second;
+    }
+  }
+  for (; sibling && sibling->key() < node.key(); sibling = sibling->next_sibling()) {
+    any = any || MatchesFrom(complex, index, *sibling, state);
+  }
+  if (state) {
+    state->preceding_matches.insert_or_assign(memo_key, std::pair{node, any});
+  }
+  return any;
+}
+
+// Matches compounds[index] and everything to its left against node, by walking the
+// combinator from node. Backtracking alone is exponential in the number of compounds, so
+// MatchesFrom remembers each (index, node) outcome.
+bool MatchesFromHere(const ComplexSelector& complex, std::size_t index, const NodeRef& node, MatchState* state) {
   if (!MatchesCompound(complex.compounds[index], node, state)) {
     return false;
   }
@@ -559,16 +578,23 @@ bool MatchesFrom(const ComplexSelector& complex, std::size_t index, const NodeRe
       const auto previous = PlaceAmongSiblings(node, state).previous;
       return previous && MatchesFrom(complex, index + 1, *previous, state);
     }
-    case Combinator::kSubsequentSibling: {
-      bool found = false;
-      ForEachPrecedingSibling(node, [&](const NodeRef& sibling) {
-        found = MatchesFrom(complex, index + 1, sibling, state);
-        return !found;
-      });
-      return found;
-    }
+    case Combinator::kSubsequentSibling:
+      return AnyPrecedingSiblingMatches(complex, index + 1, node, state);
   }
   return false;
+}
+
+bool MatchesFrom(const ComplexSelector& complex, std::size_t index, const NodeRef& node, MatchState* state) {
+  if (!state || index == 0) {
+    return MatchesFromHere(complex, index, node, state);
+  }
+  const std::uint64_t memo_key = MemoKey(index, node.key());
+  if (const auto found = state->outcomes.find(memo_key); found != state->outcomes.end()) {
+    return found->second;
+  }
+  const bool matched = MatchesFromHere(complex, index, node, state);
+  state->outcomes.emplace(memo_key, matched);
+  return matched;
 }
 
 }  // anonymous namespace

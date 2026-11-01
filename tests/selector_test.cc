@@ -214,6 +214,22 @@ TEST(SelectorTest, SiblingPseudoClassesScaleToLongLists) {
   EXPECT_EQ(dom.SelectAll("li:only-child").size(), 0U);
   EXPECT_EQ(dom.SelectAll(".a ~ li").size(), 19999U);
   EXPECT_EQ(dom.SelectAll(".a + li").size(), 1U);
+  EXPECT_EQ(dom.SelectAll(".b ~ li").size(), 0U);
+}
+
+TEST(SelectorTest, DescendantCombinatorsDoNotBacktrackExponentially) {
+  std::string html;
+  for (int i = 0; i < 60; ++i) {
+    html += "<div>";
+  }
+  html += "<p></p><p class=x></p>";
+  for (int i = 0; i < 60; ++i) {
+    html += "</div>";
+  }
+  const DOMManager dom(html);
+  EXPECT_TRUE(dom.SelectAll("span div div div div div div div div p").empty());
+  EXPECT_EQ(dom.SelectAll("div div div div div div div div p.x").size(), 1U);
+  EXPECT_EQ(dom.SelectAll("div > div > div p + p").size(), 1U);
 }
 
 }  // anonymous namespace
