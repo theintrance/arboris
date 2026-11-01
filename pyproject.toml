@@ -39,6 +39,21 @@ NO_TESTS = "ON"
 ARBORIS_BENCHMARK = "OFF"
 CMAKE_BUILD_TYPE = "Release"
 
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_* pp*"
+test-requires = "pytest"
+test-command = "pytest {project}/python/tests -q"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+
+[tool.cibuildwheel.macos]
+archs = ["arm64", "x86_64"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+
 # uv installs the package editable; these make it rebuild when the C++ changes.
 [tool.uv]
 cache-keys = [
