@@ -50,23 +50,23 @@ jobs:
           cmake -S base -B base/build -DCMAKE_BUILD_TYPE=Release \
             -DNO_TESTS=ON
           cmake --build base/build -j"$(nproc)" --target arboris
-          c++ -std=c++20 -O2 -I base/src -o base/tokenizer_dump \
+          c++ -std=c++20 -O2 -I base/src -I base/build/src/include -o base/tokenizer_dump \
             tests/html5lib/tokenizer_dump.cc -Lbase/build/src -larboris
 
       - name: Run pull request
         run: |
-          uv run --group test pytest tests/html5lib -q --junitxml=head.xml || true
+          uv run --no-project --with pytest pytest tests/html5lib -q --junitxml=head.xml || true
 
       - name: Run ${{ github.base_ref }}
         run: |
-          uv run --group test pytest tests/html5lib -q --junitxml=base.xml \
+          uv run --no-project --with pytest pytest tests/html5lib -q --junitxml=base.xml \
             --dump base/tokenizer_dump \
             --tests-dir build/_deps/html5lib_tests-src/tokenizer || true
 
       - name: Compare
         shell: bash
         run: |
-          uv run --group test python scripts/compare-html5lib-results.py \
+          uv run --no-project python scripts/compare-html5lib-results.py \
             --base base.xml --head head.xml | tee -a "$GITHUB_STEP_SUMMARY"
 
       # Runs even when Compare failed, so a regression does not hide a stale README and
@@ -74,4 +74,4 @@ jobs:
       - name: Check the README status table
         if: always()
         run: |
-          uv run --group test python scripts/html5lib_status.py --junit head.xml --check
+          uv run --no-project --with pytest python scripts/html5lib_status.py --junit head.xml --check

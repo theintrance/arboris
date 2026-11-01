@@ -63,7 +63,7 @@ jobs:
           cmake -S base -B base/build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON
           cmake --build base/build -j"$(nproc)" --target arboris
           c++ -std=c++20 -O3 -DNDEBUG -DBENCHMARK_STATIC_DEFINE \
-            -I base/src -I . -I build/_deps/googlebenchmark-src/include \
+            -I base/src -I base/build/src/include -I . -I build/_deps/googlebenchmark-src/include \
             -o base/arboris_bench benchmark/bench_main.cc benchmark/arboris_tokenizer.cc \
             base/build/src/libarboris.a build/_deps/googlebenchmark-build/src/libbenchmark.a -lpthread
 
@@ -89,7 +89,7 @@ jobs:
               echo "Time change per benchmark; negative is faster. Only arboris is timed."
               echo
               echo '```'
-              uv run --group bench python build/_deps/googlebenchmark-src/tools/compare.py \
+              uv run --no-project --with numpy --with scipy python build/_deps/googlebenchmark-src/tools/compare.py \
                 --no-color -a benchmarks base.json head.json
               echo '```'
             else
@@ -150,7 +150,7 @@ jobs:
             echo "Time change per benchmark; negative means arboris is faster than lexbor."
             echo
             echo '```'
-            uv run --group bench python build/_deps/googlebenchmark-src/tools/compare.py \
+            uv run --no-project --with numpy --with scipy python build/_deps/googlebenchmark-src/tools/compare.py \
               --no-color -a filters libraries.json lexbor arboris
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"

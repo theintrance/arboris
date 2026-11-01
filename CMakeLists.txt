@@ -45,3 +45,8 @@ option(ARBORIS_BENCHMARK "Build the tokenizer benchmark (benchmark/)" OFF)
 if (ARBORIS_BENCHMARK)
   add_subdirectory(benchmark)
 endif()
+
+option(ARBORIS_PYTHON "Build the Python extension module (python/)" OFF)
+if (ARBORIS_PYTHON)
+  add_subdirectory(python)
+endif()
