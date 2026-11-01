@@ -34,6 +34,7 @@ class DOMIndexer {
 
   [[nodiscard]] std::optional<NodeKey> GetNodeKeyById(std::string_view id) const;
   [[nodiscard]] NodeKeySpan GetNodeKeyListByTag(Tag tag) const;
+  [[nodiscard]] NodeKeySpan GetNodeKeyListByName(std::string_view name) const;
   [[nodiscard]] NodeKeySpan GetNodeKeyListByClass(std::string_view class_name) const;
   [[nodiscard]] NodeKeySpan GetNodeKeyListByAttribute(std::string_view attribute_name) const;
 
@@ -41,6 +42,8 @@ class DOMIndexer {
   // TODO(team): consider using std::list instead of std::vector for indexes
   std::unordered_map<std::string_view, NodeKey> id_index_;
   std::unordered_map<Tag, NodeKeyList> tag_index_;
+  // Only the tags FromString does not know; the others are found through tag_index_.
+  std::unordered_map<std::string_view, NodeKeyList> name_index_;
   std::unordered_map<std::string_view, NodeKeyList> class_index_;
 
   // TODO(team): consider indexing by value instead of name

@@ -60,6 +60,10 @@ class TagNode {
     return html_token_.tag;
   }
 
+  [[nodiscard]] std::string_view name() const noexcept {
+    return html_token_.name;
+  }
+
   [[nodiscard]] std::uint32_t class_begin() const noexcept {
     return html_token_.class_begin;
   }

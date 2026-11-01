@@ -38,6 +38,11 @@ class NodeRef {
     return node().tag();
   }
 
+  // The tag name in lower case, "my-card" for a custom element; empty for the root.
+  [[nodiscard]] std::string_view name() const noexcept {
+    return node().name();
+  }
+
   [[nodiscard]] std::string_view id() const noexcept {
     return node().id();
   }

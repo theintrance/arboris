@@ -26,9 +26,9 @@
 namespace arboris {
 namespace {
 
-// Mirrors the delimiters in HtmlTokenParser. HtmlToken carries only the Tag enum, so the
-// raw name is recovered from the token's source span.
-// TODO(team): drop this once tokens carry their own tag name.
+// Tokens carry their lower-cased name. CI also builds this file against the base branch,
+// whose tokens may carry only the Tag, so the raw name is then read from the source span.
+// TODO(team): drop RawTagName once develop's tokens have a name (#69).
 constexpr std::string_view kTagNameDelimiters = " />\t\n\f\r>";
 
 // The open-tag callback hands over the tag's attributes. CI also builds this file against
@@ -76,6 +76,15 @@ std::string_view RawTagName(std::string_view content, const BaseToken& token, st
   }
   span.remove_prefix(begin);
   return span.substr(0, span.find_first_of(kTagNameDelimiters));
+}
+
+template <typename Token>
+std::string_view TagName(std::string_view content, const Token& token, std::size_t prefix_len) {
+  if constexpr (requires { token.name; }) {
+    return token.name;
+  } else {
+    return RawTagName(content, token, prefix_len);
+  }
 }
 
 void AppendJsonString(std::string* out, std::string_view str) {
@@ -151,7 +160,7 @@ std::string Tokenize(std::string_view content) {
   auto string_pool = std::make_shared<StringPool>(content.size());
   HtmlTokenParser parser(content, string_pool);
   parser.set_feed_open_token_callback([&](HtmlToken&& token, auto... rest) {
-    append_token("StartTag", RawTagName(content, token, 1), AttributesOf(rest...), IsSelfClosing(token));
+    append_token("StartTag", TagName(content, token, 1), AttributesOf(rest...), IsSelfClosing(token));
     return true;
   });
   parser.set_feed_text_token_callback([&](HtmlTextToken&& token) {
@@ -159,7 +168,7 @@ std::string Tokenize(std::string_view content) {
     return true;
   });
   parser.set_feed_close_token_callback([&](HtmlCloseToken&& token, const char*) {
-    append_token("EndTag", RawTagName(content, token, 2), std::nullopt);
+    append_token("EndTag", TagName(content, token, 2), std::nullopt);
     return true;
   });
   SetCommentCallback(&parser, [&](auto&& token) {
