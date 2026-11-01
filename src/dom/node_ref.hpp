@@ -60,6 +60,20 @@ class NodeRef {
     return node().sub_tree_size();
   }
 
+  // The element as written, start tag to end tag, cut from the document's UTF-8 copy: no
+  // reassembly, so entities and spacing are the source's. For the root, the whole
+  // document. An element the source never closed ends where whatever closed it begins.
+  [[nodiscard]] std::string_view outer_html() const noexcept {
+    const auto& tag_node = node();
+    return {store_->document().data() + tag_node.source_begin(), tag_node.source_end() - tag_node.source_begin()};
+  }
+
+  // What stands between the start tag and the end tag, likewise.
+  [[nodiscard]] std::string_view inner_html() const noexcept {
+    const auto& tag_node = node();
+    return {store_->document().data() + tag_node.content_begin(), tag_node.content_end() - tag_node.content_begin()};
+  }
+
   [[nodiscard]] std::span<const std::string_view> classes() const noexcept {
     const auto& tag_node = node();
     return {store_->class_arena().data() + tag_node.class_begin(), tag_node.class_count()};

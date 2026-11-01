@@ -72,7 +72,7 @@ TEST_F(DOMBuilderTest, NodesAreKeyedInDfsOrderWithSubtreeSizes) {
   EXPECT_TRUE(Close(Tag::kP));
   EXPECT_TRUE(Close(Tag::kDiv));
   EXPECT_TRUE(builder_.Validate());
-  builder_.Finish(cursor());
+  builder_.Finish(cursor(), 0);
 
   ASSERT_EQ(builder_.GetNodeList().size(), 5U);
   EXPECT_EQ(node(0).tag(), Tag::kDocument);
@@ -156,7 +156,7 @@ TEST_F(DOMBuilderTest, TextIsKeptPerTagAndAsOneSpanPerSubtree) {
   EXPECT_TRUE(Close(Tag::kB));
   Text("World");
   EXPECT_TRUE(Close(Tag::kP));
-  builder_.Finish(cursor());
+  builder_.Finish(cursor(), 0);
 
   EXPECT_EQ(node(1).text_content(), "HellobigWorld");
   EXPECT_EQ(node(2).text_content(), "big");
@@ -199,7 +199,7 @@ TEST_F(DOMBuilderTest, FinishClosesWhatWasLeftOpen) {
   EXPECT_TRUE(Open(Tag::kDiv));
   EXPECT_TRUE(Open(Tag::kSpan));
   Text("x");
-  builder_.Finish(cursor());
+  builder_.Finish(cursor(), 0);
 
   EXPECT_EQ(node(0).sub_tree_size(), 3U);
   EXPECT_EQ(node(1).sub_tree_size(), 2U);

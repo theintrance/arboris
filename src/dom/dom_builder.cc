@@ -32,7 +32,7 @@ bool DOMBuilder::Validate() const {
 }
 
 bool DOMBuilder::FeedOpenToken(HtmlToken token, std::span<const Attribute> attributes, const char* text_begin) {
-  closeElementsEndedBy(token.tag, text_begin);
+  closeElementsEndedBy(token.tag, text_begin, token.begin_pos);
   storeAttributes(&token, attributes);
 
   const Tag tag = token.tag;
@@ -52,7 +52,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken token, std::span<const Attribute> attri
   }
 
   if (closes_at_once) {
-    return closeTopNode(text_begin);
+    return closeTopNode(text_begin, token.end_pos, token.end_pos);
   }
   return true;
 }
@@ -60,7 +60,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken token, std::span<const Attribute> attri
 // Passes only through elements whose end tag may be left out, so an element the author had
 // to close is never closed for them. Starts over from the new top after each close: a <tr>
 // ends the cell, then the row.
-void DOMBuilder::closeElementsEndedBy(Tag start_tag, const char* text_end) {
+void DOMBuilder::closeElementsEndedBy(Tag start_tag, const char* text_end, std::uint32_t source_pos) {
   for (std::size_t depth = node_stack_.size(); depth > 0;) {
     const Tag open_tag = tagAt(depth - 1);
     if (!HasOptionalEndTag(open_tag)) {
@@ -68,7 +68,7 @@ void DOMBuilder::closeElementsEndedBy(Tag start_tag, const char* text_end) {
     }
 
     if (StartTagEnds(open_tag, start_tag)) {
-      closeDownTo(depth - 1, text_end);
+      closeDownTo(depth - 1, text_end, source_pos);
       depth = node_stack_.size();
     } else {
       --depth;
@@ -130,13 +130,14 @@ void DOMBuilder::flushPendingRuns(TagNode* node) {
   node->set_text_runs(begin, static_cast<std::uint32_t>(text_arena_.size()) - begin);
 }
 
-void DOMBuilder::Finish(const char* text_end) {
+void DOMBuilder::Finish(const char* text_end, std::uint32_t source_end) {
   // Parsing can stop early on markup the tokenizer cannot follow, leaving tags open. Their
   // subtree size would stay 0, and a walk that steps by subtree size would never move on.
-  closeDownTo(0, text_end);
+  closeDownTo(0, text_end, source_end);
 
   flushPendingRuns(&root());
   root().set_sub_tree_size(static_cast<std::uint32_t>(dfs_node_list_.size()));
+  root().set_source_end(source_end, source_end);
 }
 
 // An end tag for an element that is not open is dropped, as the HTML tree builder does
@@ -146,8 +147,8 @@ bool DOMBuilder::FeedCloseToken(HtmlCloseToken token, const char* text_end) {
   for (std::size_t depth = node_stack_.size(); depth > 0; --depth) {
     const TagNode& open_node = dfs_node_list_[node_stack_[depth - 1]];
     if (IsEndTagOf(token, open_node)) {
-      closeDownTo(depth - 1, text_end);
-      return true;
+      closeDownTo(depth, text_end, token.begin_pos);
+      return closeTopNode(text_end, token.begin_pos, token.end_pos);
     }
     if (!HasOptionalEndTag(open_node.tag())) {
       const auto below = std::span(node_stack_).first(depth - 1);
@@ -157,13 +158,13 @@ bool DOMBuilder::FeedCloseToken(HtmlCloseToken token, const char* text_end) {
   return true;
 }
 
-void DOMBuilder::closeDownTo(std::size_t depth, const char* text_end) {
+void DOMBuilder::closeDownTo(std::size_t depth, const char* text_end, std::uint32_t source_pos) {
   while (node_stack_.size() > depth) {
-    closeTopNode(text_end);
+    closeTopNode(text_end, source_pos, source_pos);
   }
 }
 
-bool DOMBuilder::closeTopNode(const char* text_end) {
+bool DOMBuilder::closeTopNode(const char* text_end, std::uint32_t content_end, std::uint32_t source_end) {
   ARBORIS_ASSERT(!node_stack_.empty(), "Node stack is empty");
 
   if (node_stack_.empty()) {
@@ -178,6 +179,7 @@ bool DOMBuilder::closeTopNode(const char* text_end) {
 
   const auto* text_begin = top_node.text_content().data();
   top_node.set_text_content({text_begin, static_cast<std::size_t>(text_end - text_begin)});
+  top_node.set_source_end(content_end, source_end);
   flushPendingRuns(&top_node);
 
   // Keys are handed out in DFS order, so everything created since this node opened is

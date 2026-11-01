@@ -48,7 +48,7 @@ DOMManager::DOMManager(std::string_view html_content, std::string_view encoding_
     parse_error_offset_ = html_token_parser.error_pos();
   }
 
-  builder.Finish(string_pool_->GetCursor());
+  builder.Finish(string_pool_->GetCursor(), static_cast<std::uint32_t>(store_.document().size()));
   store_.set_nodes(builder.ReleaseNodeList());
   store_.set_text_arena(builder.ReleaseTextArena());
   store_.set_class_arena(builder.ReleaseClassArena());

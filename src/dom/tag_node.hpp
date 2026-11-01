@@ -97,6 +97,31 @@ class TagNode {
     sub_tree_size_ = size;
   }
 
+  // Byte offsets into the document: the start tag is [source_begin, content_begin), the
+  // contents [content_begin, content_end), and the end tag, when the source has one,
+  // [content_end, source_end). An element closed by something other than its own end
+  // tag ends where that something begins, with no end tag of its own.
+  [[nodiscard]] std::uint32_t source_begin() const noexcept {
+    return html_token_.begin_pos;
+  }
+
+  [[nodiscard]] std::uint32_t content_begin() const noexcept {
+    return html_token_.end_pos;
+  }
+
+  [[nodiscard]] std::uint32_t content_end() const noexcept {
+    return content_end_;
+  }
+
+  [[nodiscard]] std::uint32_t source_end() const noexcept {
+    return source_end_;
+  }
+
+  void set_source_end(std::uint32_t content_end, std::uint32_t source_end) noexcept {
+    content_end_ = content_end;
+    source_end_ = source_end;
+  }
+
   [[nodiscard]] std::uint32_t sub_tree_size() const noexcept {
     return sub_tree_size_;
   }
@@ -108,6 +133,8 @@ class TagNode {
   std::uint32_t sub_tree_size_{0};
   std::uint32_t text_begin_{0};
   std::uint32_t text_count_{0};
+  std::uint32_t content_end_{0};
+  std::uint32_t source_end_{0};
   HtmlToken html_token_;
 };
 
