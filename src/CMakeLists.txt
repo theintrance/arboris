@@ -52,8 +52,10 @@ set(ARBORIS_PRIVATE_HEADERS
   utils/tag_rules.hpp
 )
 
-# Create arboris library
+# Create arboris library. The namespaced name is the one an installed package exports, so a
+# project that add_subdirectory()s or FetchContent()s arboris links the same arboris::arboris.
 add_library(arboris ${ARBORIS_SOURCES} ${ARBORIS_PUBLIC_HEADERS} ${ARBORIS_PRIVATE_HEADERS})
+add_library(arboris::arboris ALIAS arboris)
 
 # The public header is <arboris/arboris.hpp>. The headers it includes refer to each other
 # by their path under src/ ("dom/node_ref.hpp"), and are installed under include/arboris/
@@ -88,6 +90,18 @@ endif()
 
 # Install: the library, the public headers under include/arboris/ in their src/ layout, and
 # a package config so that `find_package(arboris)` gives a project the arboris::arboris target.
+# Off by default when arboris is a subproject, so a parent's `cmake --install` does not get
+# arboris's headers and package config in its prefix.
+if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  set(ARBORIS_INSTALL_DEFAULT ON)
+else()
+  set(ARBORIS_INSTALL_DEFAULT OFF)
+endif()
+option(ARBORIS_INSTALL "Generate install rules for the library" ${ARBORIS_INSTALL_DEFAULT})
+if (NOT ARBORIS_INSTALL)
+  return()
+endif()
+
 install(TARGETS arboris
   EXPORT arborisTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
