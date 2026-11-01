@@ -17,38 +17,43 @@ set(ARBORIS_SOURCES
   utils/tag_rules.cc
 )
 
-# Header files
-set(ARBORIS_HEADERS
-  dom/dom_manager.hpp
-  dom/dom_builder.hpp
-  dom/dom_subtree.hpp
-  dom/dom_query.hpp
-  dom/token_parser.hpp
-  dom/html_token_parser.hpp
-  dom/dom_store.hpp
-  dom/node_ref.hpp
+# Headers that <arboris/arboris.hpp> reaches, directly or through each other. These are
+# what an install ships, so a program built against one compiles against exactly this set.
+set(ARBORIS_PUBLIC_HEADERS
   dom/dom_indexer.hpp
+  dom/dom_manager.hpp
+  dom/dom_query.hpp
+  dom/dom_store.hpp
+  dom/dom_subtree.hpp
   dom/dom_types.hpp
+  dom/node_ref.hpp
   dom/tag_node.hpp
   encoding/encoding.hpp
   selector/selector.hpp
   string/decode.hpp
-  string/named_references.inc
-  string/string.hpp
   utils/assertion.hpp
   utils/html_tokens.hpp
-  utils/name_set.hpp
   utils/query_options.hpp
-  utils/set_utils.hpp
   utils/string_arena.hpp
   utils/string_pool.hpp
   utils/tag.hpp
-  utils/tag_rules.hpp
   utils/tokens.hpp
 )
 
+# The tokenizer and builder: used by the library's own sources only, never installed.
+set(ARBORIS_PRIVATE_HEADERS
+  dom/dom_builder.hpp
+  dom/html_token_parser.hpp
+  dom/token_parser.hpp
+  string/named_references.inc
+  string/string.hpp
+  utils/name_set.hpp
+  utils/set_utils.hpp
+  utils/tag_rules.hpp
+)
+
 # Create arboris library
-add_library(arboris ${ARBORIS_SOURCES} ${ARBORIS_HEADERS})
+add_library(arboris ${ARBORIS_SOURCES} ${ARBORIS_PUBLIC_HEADERS} ${ARBORIS_PRIVATE_HEADERS})
 
 # The public header is <arboris/arboris.hpp>. The headers it includes refer to each other
 # by their path under src/ ("dom/node_ref.hpp"), and are installed under include/arboris/
@@ -81,8 +86,8 @@ if (ARBORIS_ICONV)
   endif()
 endif()
 
-# Install: the library, every header under include/arboris/, and a package config so that
-# `find_package(arboris)` gives a project the arboris::arboris target.
+# Install: the library, the public headers under include/arboris/ in their src/ layout, and
+# a package config so that `find_package(arboris)` gives a project the arboris::arboris target.
 install(TARGETS arboris
   EXPORT arborisTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -92,10 +97,10 @@ install(TARGETS arboris
 install(FILES ${PROJECT_SOURCE_DIR}/include/arboris/arboris.hpp
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/arboris
 )
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/arboris
-  FILES_MATCHING PATTERN "*.hpp" PATTERN "*.inc"
-)
+foreach(header IN LISTS ARBORIS_PUBLIC_HEADERS)
+  get_filename_component(header_dir ${header} DIRECTORY)
+  install(FILES ${header} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/arboris/${header_dir})
+endforeach()
 
 set(ARBORIS_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/arboris)
 install(EXPORT arborisTargets
