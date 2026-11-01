@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "utils/html_tokens.hpp"
+#include "utils/name_set.hpp"
 #include "dom/tag_node.hpp"
 
 namespace arboris {
@@ -103,6 +104,7 @@ class DOMBuilder {
   // is whole and the runs follow in key order.
   std::vector<Attribute> attr_arena_;
   std::vector<std::string_view> class_arena_;
+  NameSet class_names_;
 };
 
 }  // namespace arboris
