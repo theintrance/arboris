@@ -26,8 +26,8 @@ namespace arboris {
 // what makes the move trivial.
 class TagNode {
  public:
-  TagNode(NodeKey key, NodeKey parent_key, HtmlToken&& token)
-      : key_(key), parent_key_(parent_key), html_token_(std::move(token)) {}
+  TagNode(NodeKey key, NodeKey parent_key, HtmlToken token)
+      : key_(key), parent_key_(parent_key), html_token_(token) {}
 
   TagNode(const TagNode&) = delete;
   TagNode& operator=(const TagNode&) = delete;

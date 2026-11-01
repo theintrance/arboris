@@ -54,7 +54,8 @@ class StringPool {
 
   std::size_t capacity_;
   std::size_t size_ = 0;
-  std::unique_ptr<char[]> data_;
+  // Raw bytes, left uninitialised on purpose: every byte is written before it is read.
+  std::unique_ptr<char[]> data_;  // NOLINT(modernize-avoid-c-arrays)
 };
 
 }  // namespace arboris

@@ -32,12 +32,12 @@ class DOMBuilderTest : public ::testing::Test {
     HtmlToken token{{0, 0}, tag, is_void};
     token.is_self_closing = self_closing;
     token.name = name;
-    return builder_.FeedOpenToken(std::move(token), attributes, cursor());
+    return builder_.FeedOpenToken(token, attributes, cursor());
   }
 
   bool Close(Tag tag, std::string_view name = {}) {
     HtmlCloseToken token{{0, 0}, tag, name};
-    return builder_.FeedCloseToken(std::move(token), cursor());
+    return builder_.FeedCloseToken(token, cursor());
   }
 
   // Copies the text to where the cursor stands, as the string pool would.

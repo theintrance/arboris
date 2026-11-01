@@ -33,15 +33,15 @@ DOMManager::DOMManager(std::string_view html_content, std::string_view encoding_
 
   html_token_parser.set_feed_open_token_callback(
       [&builder](HtmlToken&& token, std::span<const Attribute> attributes, const char* text_begin) {
-        return builder.FeedOpenToken(std::move(token), attributes, text_begin);
+        return builder.FeedOpenToken(token, attributes, text_begin);
       });
 
   html_token_parser.set_feed_text_token_callback(
-      [&builder](HtmlTextToken&& token) { return builder.FeedTextToken(std::move(token)); });
+      [&builder](HtmlTextToken&& token) { return builder.FeedTextToken(token); });
 
   html_token_parser.set_feed_close_token_callback(
       [&builder](HtmlCloseToken&& token, const char* text_end) {
-        return builder.FeedCloseToken(std::move(token), text_end);
+        return builder.FeedCloseToken(token, text_end);
       });
 
   if (!html_token_parser.Parse()) {

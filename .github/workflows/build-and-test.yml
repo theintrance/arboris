@@ -70,6 +70,28 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-tidy
+        run: sudo apt-get update && sudo apt-get install -y clang-tidy
+
+      - name: Cache FetchContent downloads
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'tests/CMakeLists.txt') }}
+          restore-keys: deps-${{ runner.os }}-
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: clang-tidy
+        run: ./scripts/run-clang-tidy.sh
+
   lint:
     name: cpplint + ruff
     runs-on: ubuntu-latest

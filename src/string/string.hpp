@@ -7,6 +7,7 @@
 #ifndef SRC_STRING_STRING_HPP_
 #define SRC_STRING_STRING_HPP_
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -54,7 +55,7 @@ class CharSet {
   }
 
  private:
-  std::uint64_t bits_[4] = {};
+  std::array<std::uint64_t, 4> bits_{};
 };
 
 inline constexpr CharSet kHtmlWhitespaceSet{kHtmlWhitespace};
