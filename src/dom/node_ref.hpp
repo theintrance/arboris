@@ -77,6 +77,19 @@ class NodeRef {
     return NodeRef(node().parent_key(), *store_);
   }
 
+  // The first element under this one, if any: the next key, since keys run in DFS order.
+  [[nodiscard]] std::optional<NodeRef> first_child() const noexcept {
+    if (node().sub_tree_size() <= 1) {
+      return std::nullopt;
+    }
+    return NodeRef(key_ + 1, *store_);
+  }
+
+  [[nodiscard]] bool is_first_child() const noexcept {
+    const auto& tag_node = node();
+    return tag_node.parent_key() != key_ && tag_node.parent_key() + 1 == key_;
+  }
+
   // The element after this one under the same parent, if any. The root has no siblings.
   [[nodiscard]] std::optional<NodeRef> next_sibling() const noexcept {
     const auto& tag_node = node();

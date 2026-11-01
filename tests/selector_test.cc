@@ -194,6 +194,26 @@ TEST(NodeRefTest, SiblingsAreWalkedWithoutAllocation) {
   EXPECT_FALSE(b->Get().next_sibling()->next_sibling().has_value());
   EXPECT_FALSE(dom.GetRoot().next_sibling().has_value());
   EXPECT_FALSE(dom.GetRoot().previous_sibling().has_value());
+  EXPECT_EQ(dom.GetRoot().first_child()->tag(), Tag::kUl);
+  EXPECT_FALSE(b->Get().first_child().has_value());
+  EXPECT_TRUE(b->Get().previous_sibling()->is_first_child());
+  EXPECT_FALSE(b->Get().is_first_child());
+  EXPECT_FALSE(dom.GetRoot().is_first_child());
+}
+
+TEST(SelectorTest, SiblingPseudoClassesScaleToLongLists) {
+  std::string html = "<ul>";
+  for (int i = 0; i < 20000; ++i) {
+    html += i == 0 ? "<li class=a>" : "<li>";
+  }
+  html += "</ul>";
+  const DOMManager dom(html);
+  EXPECT_EQ(dom.SelectAll("li:nth-child(odd)").size(), 10000U);
+  EXPECT_EQ(dom.SelectAll("li:nth-last-child(odd)").size(), 10000U);
+  EXPECT_EQ(dom.SelectAll("li:first-child").size(), 1U);
+  EXPECT_EQ(dom.SelectAll("li:only-child").size(), 0U);
+  EXPECT_EQ(dom.SelectAll(".a ~ li").size(), 19999U);
+  EXPECT_EQ(dom.SelectAll(".a + li").size(), 1U);
 }
 
 }  // anonymous namespace

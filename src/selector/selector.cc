@@ -412,14 +412,64 @@ bool MatchesAttribute(const AttributeSelector& selector, const NodeRef& node) {
   return false;
 }
 
-// 1-based place of the node among its element siblings, counted from the front or the back.
-int SiblingIndex(const NodeRef& node, bool from_end) {
+// Calls fn on each element sibling before node, first to last, until fn returns false.
+// Siblings are only cheap to walk forwards, so this is one walk from the parent's first
+// child rather than a previous_sibling() walk from every step.
+template <typename Fn>
+void ForEachPrecedingSibling(const NodeRef& node, Fn&& fn) {
+  for (auto sibling = node.parent().first_child(); sibling && sibling->key() < node.key();
+       sibling = sibling->next_sibling()) {
+    if (!fn(*sibling)) {
+      return;
+    }
+  }
+}
+
+int ChildCount(const NodeRef& parent, MatchState* state) {
+  if (state) {
+    if (const auto found = state->child_counts.find(parent.key()); found != state->child_counts.end()) {
+      return found->second;
+    }
+  }
+  int count = 0;
+  for (auto child = parent.first_child(); child; child = child->next_sibling()) {
+    ++count;
+  }
+  if (state) {
+    state->child_counts.emplace(parent.key(), count);
+  }
+  return count;
+}
+
+struct SiblingPlace {
+  // 1-based, among the element siblings.
+  int index;
+  std::optional<NodeRef> previous;
+};
+
+// Where the node stands among its element siblings. With state, nodes asked for in
+// document order are walked to from the last one under the same parent rather than from
+// the first child again.
+SiblingPlace PlaceAmongSiblings(const NodeRef& node, MatchState* state) {
+  const NodeRef parent = node.parent();
+  std::optional<NodeRef> sibling = parent.first_child();
   int index = 1;
-  for (auto sibling = from_end ? node.next_sibling() : node.previous_sibling(); sibling;
-       sibling = from_end ? sibling->next_sibling() : sibling->previous_sibling()) {
+  if (state) {
+    const auto found = state->sibling_places.find(parent.key());
+    if (found != state->sibling_places.end() && found->second.first.key() <= node.key()) {
+      sibling = found->second.first;
+      index = found->second.second;
+    }
+  }
+  std::optional<NodeRef> previous;
+  for (; sibling && sibling->key() < node.key(); sibling = sibling->next_sibling()) {
+    previous = sibling;
     ++index;
   }
-  return index;
+  if (state) {
+    state->sibling_places.insert_or_assign(parent.key(), std::pair{node, index});
+  }
+  return {index, previous};
 }
 
 bool MatchesNth(int a, int b, int index) {
@@ -429,67 +479,33 @@ bool MatchesNth(int a, int b, int index) {
   return (index - b) % a == 0 && (index - b) / a >= 0;
 }
 
-bool MatchesPseudoClass(const PseudoClass& pseudo, const NodeRef& node) {
+bool MatchesCompound(const CompoundSelector& compound, const NodeRef& node, MatchState* state);
+
+bool MatchesPseudoClass(const PseudoClass& pseudo, const NodeRef& node, MatchState* state) {
   switch (pseudo.kind) {
     case PseudoClass::Kind::kFirstChild:
-      return !node.previous_sibling().has_value();
+      return node.is_first_child();
     case PseudoClass::Kind::kLastChild:
       return !node.next_sibling().has_value();
     case PseudoClass::Kind::kOnlyChild:
-      return !node.previous_sibling().has_value() && !node.next_sibling().has_value();
+      return node.is_first_child() && !node.next_sibling().has_value();
     case PseudoClass::Kind::kNthChild:
-      return MatchesNth(pseudo.a, pseudo.b, SiblingIndex(node, false));
+      return MatchesNth(pseudo.a, pseudo.b, PlaceAmongSiblings(node, state).index);
     case PseudoClass::Kind::kNthLastChild:
-      return MatchesNth(pseudo.a, pseudo.b, SiblingIndex(node, true));
+      return MatchesNth(pseudo.a, pseudo.b,
+                        ChildCount(node.parent(), state) - PlaceAmongSiblings(node, state).index + 1);
     case PseudoClass::Kind::kRoot:
       return IsDocumentElement(node);
     case PseudoClass::Kind::kEmpty:
       return node.sub_tree_size() == 1 && node.text_runs().empty();
     case PseudoClass::Kind::kNot:
-      return std::ranges::none_of(pseudo.argument, [&](const CompoundSelector& c) { return Matches(c, node); });
+      return std::ranges::none_of(pseudo.argument,
+                                  [&](const CompoundSelector& c) { return MatchesCompound(c, node, state); });
   }
   return false;
 }
 
-// Matches compounds[index] and everything to its left against node.
-bool MatchesFrom(const ComplexSelector& complex, std::size_t index, const NodeRef& node) {
-  if (!Matches(complex.compounds[index], node)) {
-    return false;
-  }
-  if (index + 1 == complex.compounds.size()) {
-    return true;
-  }
-
-  switch (complex.combinators[index]) {
-    case Combinator::kChild: {
-      const NodeRef parent = node.parent();
-      return !IsRoot(parent) && MatchesFrom(complex, index + 1, parent);
-    }
-    case Combinator::kDescendant:
-      for (NodeRef ancestor = node.parent(); !IsRoot(ancestor); ancestor = ancestor.parent()) {
-        if (MatchesFrom(complex, index + 1, ancestor)) {
-          return true;
-        }
-      }
-      return false;
-    case Combinator::kNextSibling: {
-      const auto previous = node.previous_sibling();
-      return previous && MatchesFrom(complex, index + 1, *previous);
-    }
-    case Combinator::kSubsequentSibling:
-      for (auto previous = node.previous_sibling(); previous; previous = previous->previous_sibling()) {
-        if (MatchesFrom(complex, index + 1, *previous)) {
-          return true;
-        }
-      }
-      return false;
-  }
-  return false;
-}
-
-}  // anonymous namespace
-
-bool Matches(const CompoundSelector& compound, const NodeRef& node) {
+bool MatchesCompound(const CompoundSelector& compound, const NodeRef& node, MatchState* state) {
   if (IsRoot(node)) {
     return false;
   }
@@ -511,15 +527,62 @@ bool Matches(const CompoundSelector& compound, const NodeRef& node) {
     }
   }
   for (const auto& pseudo : compound.pseudo_classes) {
-    if (!MatchesPseudoClass(pseudo, node)) {
+    if (!MatchesPseudoClass(pseudo, node, state)) {
       return false;
     }
   }
   return true;
 }
 
+// Matches compounds[index] and everything to its left against node.
+bool MatchesFrom(const ComplexSelector& complex, std::size_t index, const NodeRef& node, MatchState* state) {
+  if (!MatchesCompound(complex.compounds[index], node, state)) {
+    return false;
+  }
+  if (index + 1 == complex.compounds.size()) {
+    return true;
+  }
+
+  switch (complex.combinators[index]) {
+    case Combinator::kChild: {
+      const NodeRef parent = node.parent();
+      return !IsRoot(parent) && MatchesFrom(complex, index + 1, parent, state);
+    }
+    case Combinator::kDescendant:
+      for (NodeRef ancestor = node.parent(); !IsRoot(ancestor); ancestor = ancestor.parent()) {
+        if (MatchesFrom(complex, index + 1, ancestor, state)) {
+          return true;
+        }
+      }
+      return false;
+    case Combinator::kNextSibling: {
+      const auto previous = PlaceAmongSiblings(node, state).previous;
+      return previous && MatchesFrom(complex, index + 1, *previous, state);
+    }
+    case Combinator::kSubsequentSibling: {
+      bool found = false;
+      ForEachPrecedingSibling(node, [&](const NodeRef& sibling) {
+        found = MatchesFrom(complex, index + 1, sibling, state);
+        return !found;
+      });
+      return found;
+    }
+  }
+  return false;
+}
+
+}  // anonymous namespace
+
+bool Matches(const CompoundSelector& compound, const NodeRef& node) {
+  return MatchesCompound(compound, node, nullptr);
+}
+
 bool Matches(const ComplexSelector& complex, const NodeRef& node) {
-  return !complex.compounds.empty() && MatchesFrom(complex, 0, node);
+  return ComplexMatcher(complex).Matches(node);
+}
+
+bool ComplexMatcher::Matches(const NodeRef& node) {
+  return !complex_->compounds.empty() && MatchesFrom(*complex_, 0, node, &state_);
 }
 
 std::optional<Selector> Selector::Parse(std::string_view text) {

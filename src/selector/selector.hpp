@@ -11,8 +11,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "dom/dom_types.hpp"
 #include "dom/node_ref.hpp"
 
 namespace arboris {
@@ -82,6 +85,29 @@ class Selector {
   std::vector<ComplexSelector> alternatives_;
 };
 
+// What a ComplexMatcher carries from one node to the next.
+struct MatchState {
+  // Per parent, the last sibling placed and its 1-based index, so siblings asked for in
+  // document order are walked to from there.
+  std::unordered_map<NodeKey, std::pair<NodeRef, int>> sibling_places;
+  // Per parent, how many element children it has, for :nth-last-child.
+  std::unordered_map<NodeKey, int> child_counts;
+};
+
+// Matches one complex selector against any number of nodes of one document. Keep one
+// for the whole query: what the walk over one node found serves the nodes after it.
+class ComplexMatcher {
+ public:
+  explicit ComplexMatcher(const ComplexSelector& complex) noexcept : complex_(&complex) {}
+
+  [[nodiscard]] bool Matches(const NodeRef& node);
+
+ private:
+  const ComplexSelector* complex_;
+  MatchState state_;
+};
+
+// One-off matches, with nothing kept between calls.
 [[nodiscard]] bool Matches(const CompoundSelector& compound, const NodeRef& node);
 [[nodiscard]] bool Matches(const ComplexSelector& complex, const NodeRef& node);
 

@@ -155,8 +155,9 @@ std::vector<NodeKey> DOMQuery::selectKeys(const Selector& selector, bool first_o
     if (complex.compounds.empty()) {
       continue;
     }
+    ComplexMatcher matcher(complex);
     const auto check = [&](NodeKey key) {
-      if (Matches(complex, subtree_.GetNodeByKey(key))) {
+      if (matcher.Matches(subtree_.GetNodeByKey(key))) {
         keys.push_back(key);
         return !first_only;
       }
