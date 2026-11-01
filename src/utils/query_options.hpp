@@ -39,12 +39,13 @@ class TextQueryCondition {
   std::variant<std::string, Predicate> condition_;
 };
 
-// Every condition given has to hold. With none given, every element matches.
+// Every condition given has to hold. With none given, every element matches. Tag and
+// attribute names match ignoring ASCII case, as the parser folds them.
 struct QueryOptions {
   std::optional<Tag> tag;
 
-  // Lower-case. The way to ask for a tag FromString does not know, such as a custom
-  // element or an SVG child.
+  // The way to ask for a tag FromString does not know, such as a custom element or an
+  // SVG child.
   std::optional<std::string> name;
   std::optional<ClassSet> classes;
   std::optional<AttributeMap> attributes;

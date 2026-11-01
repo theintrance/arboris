@@ -30,14 +30,6 @@ constexpr std::string_view kCommentOpen = "<!--";
 constexpr std::string_view kDoctypeOpen = "<!doctype";
 constexpr std::string_view kDoctypeNameDelimiters = " \t\n\f\r>";
 
-bool IsAsciiUpper(char c) {
-  return c >= 'A' && c <= 'Z';
-}
-
-char ToAsciiLower(char c) {
-  return IsAsciiUpper(c) ? static_cast<char>(c - 'A' + 'a') : c;
-}
-
 bool EqualsIgnoringCase(std::string_view lhs, std::string_view rhs) {
   return std::ranges::equal(lhs, rhs, {}, ToAsciiLower, ToAsciiLower);
 }

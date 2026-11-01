@@ -113,6 +113,9 @@ TEST(DOMQueryTest, TagAndAttributeNamesIgnoreCase) {
   EXPECT_EQ(dom.parse_error_offset(), std::nullopt);
   EXPECT_EQ(Ids(dom.FindAll({.tag = Tag::kDiv})), (std::vector<std::string_view>{"a", "c"}));
   EXPECT_EQ(Ids(dom.FindAll({.attributes = AttributeMap{{"href", {"/x"}}}})), std::vector<std::string_view>{"b"});
+  EXPECT_EQ(Ids(dom.FindAll({.attributes = AttributeMap{{"HREF", {"/x"}}}})), std::vector<std::string_view>{"b"});
+  EXPECT_EQ(Ids(dom.FindAll({.attributes = AttributeMap{{"Href", {}}, {"ID", {"b"}}}})),
+            std::vector<std::string_view>{"b"});
 
   const auto link = dom.Find({.tag = Tag::kA});
   ASSERT_TRUE(link.has_value());
@@ -134,6 +137,16 @@ TEST(DOMQueryTest, UnknownTagsKeepTheirName) {
   EXPECT_EQ(Ids(dom.FindAll({.name = "path"})), std::vector<std::string_view>{"b"});
   EXPECT_EQ(Ids(dom.FindAll({.name = "svg"})), std::vector<std::string_view>{"s"});
   EXPECT_TRUE(dom.FindAll({.name = "no-such"}).empty());
+}
+
+TEST(DOMQueryTest, QueryNamesWrittenInCamelCaseStillMatch) {
+  const DOMManager dom("<svg id=s viewBox=\"0 0 1 1\"><foreignObject id=f></foreignObject></svg>");
+  EXPECT_EQ(Ids(dom.FindAll({.name = "foreignObject"})), std::vector<std::string_view>{"f"});
+  EXPECT_EQ(Ids(dom.FindAll({.name = "foreignobject"})), std::vector<std::string_view>{"f"});
+  EXPECT_EQ(Ids(dom.FindAll({.attributes = AttributeMap{{"viewBox", {}}}})), std::vector<std::string_view>{"s"});
+  EXPECT_EQ(Ids(dom.FindAll({.attributes = AttributeMap{{"viewBox", {"0 0 1 1"}}}})),
+            std::vector<std::string_view>{"s"});
+  EXPECT_TRUE(dom.FindAll({.attributes = AttributeMap{{"viewBox", {"0 0 2 2"}}}}).empty());
 }
 
 TEST(DOMQueryTest, UnknownEndTagsMatchByName) {

@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "string/string.hpp"
 #include "utils/html_tokens.hpp"
 #include "utils/set_utils.hpp"
 
@@ -35,6 +36,35 @@ bool MatchesAttributes(const AttributeMap& wanted, std::span<const Attribute> at
     }
   }
   return true;
+}
+
+bool HasAsciiUpper(std::string_view text) {
+  return std::ranges::any_of(text, IsAsciiUpper);
+}
+
+// Names are stored lower-case, so a condition written with capitals is lowered once here
+// rather than compared ignoring case at every node. Nullopt when nothing needs lowering.
+std::optional<QueryOptions> LowerCasedNames(const QueryOptions& options) {
+  const bool name_needs_it = options.name && HasAsciiUpper(*options.name);
+  const bool attributes_need_it = options.attributes && std::ranges::any_of(*options.attributes, [](const auto& entry) {
+    return HasAsciiUpper(entry.first);
+  });
+  if (!name_needs_it && !attributes_need_it) {
+    return std::nullopt;
+  }
+
+  QueryOptions lowered = options;
+  if (name_needs_it) {
+    lowered.name = AsciiLowerCase(*options.name);
+  }
+  if (attributes_need_it) {
+    AttributeMap attributes;
+    for (const auto& [name, values] : *options.attributes) {
+      attributes[AsciiLowerCase(name)].insert(values.begin(), values.end());
+    }
+    lowered.attributes = std::move(attributes);
+  }
+  return lowered;
 }
 
 }  // anonymous namespace
@@ -66,7 +96,9 @@ std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
 }
 
 template <typename Visit>
-void DOMQuery::forEachMatch(const QueryOptions& options, Visit&& visit) const {
+void DOMQuery::forEachMatch(const QueryOptions& given, Visit&& visit) const {
+  const std::optional<QueryOptions> lowered = LowerCasedNames(given);
+  const QueryOptions& options = lowered ? *lowered : given;
   const auto check = [&](NodeKey key) {
     const auto node = subtree_.GetNodeByKey(key);
     return !matchAllConditions(node, options) || visit(node);
