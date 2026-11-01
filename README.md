@@ -178,7 +178,7 @@ CI fails on a pull request that leaves it stale:
 
 ```bash
 uv run --no-project --with pytest pytest tests/html5lib -q --junitxml=html5lib.xml
-uv run --no-project python scripts/html5lib_status.py --junit html5lib.xml --write
+uv run --no-project --with pytest python scripts/html5lib_status.py --junit html5lib.xml --write
 ```
 
 <!-- html5lib:start -->

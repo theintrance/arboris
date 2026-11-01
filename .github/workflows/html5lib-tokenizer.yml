@@ -50,7 +50,7 @@ jobs:
           cmake -S base -B base/build -DCMAKE_BUILD_TYPE=Release \
             -DNO_TESTS=ON
           cmake --build base/build -j"$(nproc)" --target arboris
-          c++ -std=c++20 -O2 -I base/src -o base/tokenizer_dump \
+          c++ -std=c++20 -O2 -I base/src -I base/build/src/include -o base/tokenizer_dump \
             tests/html5lib/tokenizer_dump.cc -Lbase/build/src -larboris
 
       - name: Run pull request
@@ -74,4 +74,4 @@ jobs:
       - name: Check the README status table
         if: always()
         run: |
-          uv run --no-project python scripts/html5lib_status.py --junit head.xml --check
+          uv run --no-project --with pytest python scripts/html5lib_status.py --junit head.xml --check
