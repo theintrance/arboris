@@ -62,8 +62,10 @@ jobs:
         run: |
           cmake -S base -B base/build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON
           cmake --build base/build -j"$(nproc)" --target arboris
+          # A base from before src/arboris/ existed: let "arboris/..." includes reach its headers.
+          mkdir -p base/compat && [ -e base/compat/arboris ] || ln -s ../src base/compat/arboris
           c++ -std=c++20 -O3 -DNDEBUG -DBENCHMARK_STATIC_DEFINE \
-            -I base/src -I base/build/src/include -I . -I build/_deps/googlebenchmark-src/include \
+            -I base/src -I base/compat -I base/build/src/include -I . -I build/_deps/googlebenchmark-src/include \
             -o base/arboris_bench benchmark/bench_main.cc benchmark/arboris_tokenizer.cc \
             base/build/src/libarboris.a build/_deps/googlebenchmark-build/src/libbenchmark.a -lpthread
 

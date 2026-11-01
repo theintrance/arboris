@@ -10,10 +10,10 @@
 #include <string_view>
 #include <vector>
 
-#include "dom/dom_manager.hpp"
-#include "dom/dom_query.hpp"
-#include "selector/selector.hpp"
-#include "utils/tag.hpp"
+#include "arboris/dom/dom_manager.hpp"
+#include "arboris/dom/dom_query.hpp"
+#include "arboris/selector/selector.hpp"
+#include "arboris/utils/tag.hpp"
 
 namespace arboris {
 namespace {

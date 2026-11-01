@@ -10,9 +10,9 @@
 #include <string>
 #include <string_view>
 
-#include "dom/dom_manager.hpp"
-#include "dom/node_ref.hpp"
-#include "utils/tag.hpp"
+#include "arboris/dom/dom_manager.hpp"
+#include "arboris/dom/node_ref.hpp"
+#include "arboris/utils/tag.hpp"
 
 namespace arboris {
 namespace {

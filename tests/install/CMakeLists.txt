@@ -6,4 +6,7 @@ project(arboris_install_check CXX)
 find_package(arboris REQUIRED)
 
 add_executable(install_check main.cc)
+# The project's own src/ comes before the package's -isystem include directory: its
+# utils/tag.hpp must not be mistaken for arboris's.
+target_include_directories(install_check PRIVATE src)
 target_link_libraries(install_check PRIVATE arboris::arboris)
