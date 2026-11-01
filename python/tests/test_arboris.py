@@ -92,6 +92,15 @@ def test_nodes_compare_by_identity_within_a_document(doc):
     assert a != arboris.parse(PAGE).select_one("#p")
 
 
+def test_nodes_compare_unequal_to_other_types(doc):
+    node = doc.select_one("#p")
+    assert node != None  # noqa: E711
+    assert not (node == None)  # noqa: E711
+    assert node != "p"
+    assert node in [None, node]
+    assert node.__eq__(None) is NotImplemented
+
+
 def test_inner_and_outer_html(doc):
     p = doc.select_one("#p")
     assert p.outer_html == "<p id=p data-k=v hidden>t</p>"

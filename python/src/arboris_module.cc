@@ -261,7 +261,11 @@ NB_MODULE(_arboris, m) {
                    "The parent, its parent and so on, up to but not including the document root.")
       .def_prop_ro("next_sibling", [](const Node& n) { return Wrap(n.dom, n.ref.next_sibling()); })
       .def_prop_ro("previous_sibling", [](const Node& n) { return Wrap(n.dom, n.ref.previous_sibling()); })
-      .def("__eq__", [](const Node& a, const Node& b) { return a.dom == b.dom && a.ref.key() == b.ref.key(); })
+      // is_operator: comparing with something that is not a Node gives NotImplemented, so
+      // `node != None` is True instead of a TypeError.
+      .def(
+          "__eq__", [](const Node& a, const Node& b) { return a.dom == b.dom && a.ref.key() == b.ref.key(); },
+          nb::is_operator())
       .def("__hash__", [](const Node& n) { return static_cast<std::size_t>(n.ref.key()); })
       .def("__repr__", &Repr);
   DefineQueries(node, &QueryOf);
