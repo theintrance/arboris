@@ -345,6 +345,13 @@ bool IsRoot(const NodeRef& node) {
   return node.tag() == Tag::kDocument;
 }
 
+// The document element: the first element under the synthetic root. A page can carry
+// markup after </html>, and that is not the root.
+bool IsDocumentElement(const NodeRef& node) {
+  const NodeRef parent = node.parent();
+  return IsRoot(parent) && parent.key() + 1 == node.key();
+}
+
 bool MatchesAttribute(const AttributeSelector& selector, const NodeRef& node) {
   const auto attributes = node.attributes();
   const auto found = std::ranges::find(attributes, selector.name, &Attribute::name);
@@ -435,7 +442,7 @@ bool MatchesPseudoClass(const PseudoClass& pseudo, const NodeRef& node) {
     case PseudoClass::Kind::kNthLastChild:
       return MatchesNth(pseudo.a, pseudo.b, SiblingIndex(node, true));
     case PseudoClass::Kind::kRoot:
-      return IsRoot(node.parent());
+      return IsDocumentElement(node);
     case PseudoClass::Kind::kEmpty:
       return node.sub_tree_size() == 1 && node.text_runs().empty();
     case PseudoClass::Kind::kNot:

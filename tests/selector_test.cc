@@ -57,6 +57,15 @@ TEST(SelectorTest, ParseRejectsWhatItDoesNotRead) {
   EXPECT_TRUE(Selector::Parse("-x").has_value());
 }
 
+TEST(SelectorTest, RootIsTheDocumentElementOnly) {
+  const DOMManager dom("<html><body><p id=p></p></body></html><script id=s></script>");
+  const auto roots = dom.SelectAll(":root");
+  ASSERT_EQ(roots.size(), 1U);
+  EXPECT_EQ(roots[0].Get().tag(), Tag::kHtml);
+  EXPECT_EQ(Ids(dom.SelectAll(":root > body > p")), Expected{"p"});
+  EXPECT_TRUE(dom.SelectAll(":root > script").empty());
+}
+
 TEST(SelectorTest, RepeatedIdsAreAllFound) {
   const DOMManager dom("<div id=x><span id=x></span></div><p id=x></p>");
   EXPECT_EQ(dom.SelectAll("#x").size(), 3U);
