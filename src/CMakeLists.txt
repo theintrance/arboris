@@ -125,8 +125,10 @@ configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/arborisConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/arborisConfig.cmake
   INSTALL_DESTINATION ${ARBORIS_CMAKE_DIR}
 )
+# 0.x: the API may change from one minor version to the next, so find_package(arboris 0.1)
+# must not accept 0.2.
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/arborisConfigVersion.cmake
-  COMPATIBILITY SameMajorVersion
+  COMPATIBILITY SameMinorVersion
 )
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/arborisConfig.cmake
