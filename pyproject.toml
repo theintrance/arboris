@@ -51,6 +51,10 @@ archs = ["x86_64"]
 [tool.cibuildwheel.macos]
 archs = ["arm64", "x86_64"]
 
+# nanobind needs aligned deallocation, which the 10.9 default for x86_64 cp310/cp311 lacks.
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "10.14"
+
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
 
