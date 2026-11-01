@@ -64,8 +64,11 @@ DOMManager::DOMManager(std::string_view html_content, std::string_view encoding_
 }
 
 DOMQuery DOMManager::rootQuery() const {
-  const auto root = GetRoot();
-  return DOMQuery(root, DOMSubtree(store_, root.node()));
+  return Query(GetRoot());
+}
+
+DOMQuery DOMManager::Query(const NodeRef& node) const {
+  return DOMQuery(node, DOMSubtree(store_, GetRoot().node()));
 }
 
 std::optional<DOMQuery> DOMManager::Find(const QueryOptions& options) const {

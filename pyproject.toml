@@ -1,13 +1,75 @@
+# The Python package. The distribution is "pyarboris" (PyPI already has an unrelated
+# "arboris"); the import name is arboris. scikit-build-core drives the CMake build below
+# with ARBORIS_PYTHON=ON and ships only the extension module, not the C++ library.
+[build-system]
+requires = ["scikit-build-core>=0.10", "nanobind>=2.4"]
+build-backend = "scikit_build_core.build"
+
 [project]
-name = "arboris-dev"
+name = "pyarboris"
 version = "0.1.0"
-description = "Add your description here"
+description = "A fast HTML parser with a queryable DOM: CSS selectors, attributes, text, outer/inner HTML."
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.10"
 dependencies = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Text Processing :: Markup :: HTML",
+]
+
+[project.urls]
+Homepage = "https://github.com/theintrance/arboris"
+Issues = "https://github.com/theintrance/arboris/issues"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["python/arboris"]
+install.components = ["python"]
+sdist.exclude = ["benchmark/", "tests/", ".github/", "assets/", "hooks/", "scripts/", "docs/"]
+
+[tool.scikit-build.cmake.define]
+ARBORIS_PYTHON = "ON"
+NO_TESTS = "ON"
+ARBORIS_BENCHMARK = "OFF"
+CMAKE_BUILD_TYPE = "Release"
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_* pp*"
+test-requires = "pytest"
+test-command = "pytest {project}/python/tests -q"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+
+[tool.cibuildwheel.macos]
+archs = ["arm64", "x86_64"]
+
+# nanobind needs aligned deallocation, which the 10.9 default for x86_64 cp310/cp311 lacks.
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "10.14"
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+
+# uv installs the package editable; these make it rebuild when the C++ changes.
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "CMakeLists.txt" },
+    { file = "src/**/*" },
+    { file = "python/**/*" },
+]
 
 [tool.ruff]
 line-length = 100
+extend-exclude = [".claude"]
 target-version = "py310"
 unsafe-fixes = false
 lint.select = ["E","F","W","I","PL"]
@@ -43,6 +105,9 @@ dev = [
 ]
 test = [
     "pytest>=8",
+]
+build = [
+    "cibuildwheel>=2.21",
 ]
 bench = [
     "numpy>=1.25",

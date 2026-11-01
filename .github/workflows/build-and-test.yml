@@ -70,6 +70,28 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  # Builds the extension through scikit-build-core, as `pip install .` does, and runs the
+  # Python tests.
+  python:
+    name: python ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build and install
+        run: uv sync --group test
+
+      - name: Test
+        run: uv run --group test pytest python/tests -q
+
   # Installs the library and builds tests/install against it, as a user's project would.
   install:
     name: install and find_package

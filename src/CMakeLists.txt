@@ -102,7 +102,8 @@ endif()
 # Install: the library, the public headers under include/arboris/ in their src/ layout, and
 # a package config so that `find_package(arboris)` gives a project the arboris::arboris target.
 # Off by default when arboris is a subproject, so a parent's `cmake --install` does not get
-# arboris's headers and package config in its prefix.
+# arboris's headers and package config in its prefix. Everything here is the "cpp" component;
+# the Python wheel installs only its own.
 if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
   set(ARBORIS_INSTALL_DEFAULT ON)
 else()
@@ -118,22 +119,26 @@ install(TARGETS arboris
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  COMPONENT cpp
 )
 install(FILES ${PROJECT_SOURCE_DIR}/include/arboris/arboris.hpp
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/arboris
+  COMPONENT cpp
 )
 foreach(header IN LISTS ARBORIS_PUBLIC_HEADERS)
   get_filename_component(header_dir ${header} DIRECTORY)
-  install(FILES ${header} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/arboris/${header_dir})
+  install(FILES ${header} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/arboris/${header_dir} COMPONENT cpp)
 endforeach()
 install(FILES ${ARBORIS_GENERATED_INCLUDE_DIR}/utils/config.hpp
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/arboris/utils
+  COMPONENT cpp
 )
 
 set(ARBORIS_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/arboris)
 install(EXPORT arborisTargets
   NAMESPACE arboris::
   DESTINATION ${ARBORIS_CMAKE_DIR}
+  COMPONENT cpp
 )
 configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/arborisConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/arborisConfig.cmake
@@ -148,4 +153,5 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/arborisConfig.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/arborisConfigVersion.cmake
   DESTINATION ${ARBORIS_CMAKE_DIR}
+  COMPONENT cpp
 )
