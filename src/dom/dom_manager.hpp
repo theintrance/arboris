@@ -50,6 +50,9 @@ class DOMManager {
     return {store_.nodes().front().key(), store_};
   }
 
+  // The query whose subtree is node, for running Find and Select below any element.
+  [[nodiscard]] DOMQuery Query(const NodeRef& node) const;
+
   [[nodiscard]] std::optional<DOMQuery> Find(const QueryOptions& options) const;
   [[nodiscard]] std::optional<DOMQuery> Find(const std::string& id) const;
   [[nodiscard]] std::vector<DOMQuery> FindAll(const QueryOptions& options) const;
