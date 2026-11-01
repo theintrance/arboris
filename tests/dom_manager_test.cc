@@ -118,7 +118,7 @@ TEST(DOMManagerParseTest, OmittedEndTagsAreImplied) {
   EXPECT_EQ(rows[0].parent().tag(), Tag::kTable);
   EXPECT_EQ(rows[1].parent().tag(), Tag::kTable);
   EXPECT_EQ(ChildTags(rows[0]), (std::vector<Tag>{Tag::kTd, Tag::kTd}));
-  EXPECT_EQ((*std::next(rows[0].children().begin())).text_content(), "b");
+  EXPECT_EQ(std::next(rows[0].children().begin())->text_content(), "b");
 
   const DOMManager page("<html><head><title>t</title><body><p>x</body></html>");
   const auto body = FindAllByTag(page, Tag::kBody);

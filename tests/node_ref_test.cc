@@ -28,6 +28,9 @@ std::vector<std::string_view> Ids(const auto& nodes) {
 
 using Expected = std::vector<std::string_view>;
 
+static_assert(std::forward_iterator<ChildRange::iterator>);
+static_assert(std::forward_iterator<AncestorRange::iterator>);
+
 TEST(NodeRefTest, SiblingsAreWalkedWithoutAllocation) {
   const DOMManager dom("<ul><li id=a><b><i></i></b><b></b></li><li id=b></li><li id=c></li></ul>");
   const auto b = dom.Find(std::string("b"));
@@ -56,6 +59,8 @@ TEST(NodeRefTest, ChildrenAreARangeOverTheSubtree) {
   EXPECT_TRUE(dom.Find(std::string("b"))->Get().children().empty());
   EXPECT_TRUE(dom.Find(std::string("e"))->Get().children().empty());
   EXPECT_EQ(std::ranges::distance(div->Get().children()), 3);
+  EXPECT_EQ(div->Get().children().begin()->id(), "a");
+  EXPECT_EQ(std::next(div->Get().children().begin(), 3), div->Get().children().end());
 }
 
 TEST(NodeRefTest, AncestorsStopBelowTheRoot) {
