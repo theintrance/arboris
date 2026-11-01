@@ -8,6 +8,7 @@
 #define SRC_UTILS_ASSERTION_HPP_
 
 #if defined(DEBUG)
+#include <cstdlib>
 #include <iostream>
 #endif
 
