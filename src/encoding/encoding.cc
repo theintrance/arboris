@@ -205,6 +205,11 @@ std::optional<std::string> PrescanMeta(std::string_view bytes) {
         CharSet{" \t\n\f\r/"}.Contains(head[pos + 5])) {
       if (auto charset = CharsetOfMeta(head, pos + 5)) {
         if (auto name = CanonicalEncoding(*charset)) {
+          // The meta was read as ASCII, so the page is not UTF-16 whatever it claims
+          // (Encoding Standard, "prescan a byte stream").
+          if (*name == kUtf16Le || *name == kUtf16Be) {
+            return std::string(kUtf8);
+          }
           return name;
         }
       }

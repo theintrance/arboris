@@ -45,6 +45,14 @@ TEST(EncodingTest, SniffsBomAndMeta) {
   EXPECT_EQ(SniffEncoding(std::string(1024, ' ') + "<meta charset=euc-kr>"), std::nullopt);
 }
 
+TEST(EncodingTest, MetaCannotClaimUtf16) {
+  EXPECT_EQ(SniffEncoding("<meta charset=utf-16>"), "utf-8");
+  const auto document = DecodeDocument("<meta charset=UTF-16BE><p>hi</p>", {});
+  EXPECT_EQ(document.encoding, "utf-8");
+  EXPECT_EQ(document.utf8, "<meta charset=UTF-16BE><p>hi</p>");
+  EXPECT_EQ(TextOf(DOMManager("<meta charset=utf-16><p>hi</p>"), Tag::kP), "hi");
+}
+
 TEST(EncodingTest, Utf16IsConvertedInHouse) {
   EXPECT_EQ(ToUtf8(std::string_view("<\0p\0>\0", 6), "utf-16le"), "<p>");
   EXPECT_EQ(ToUtf8(std::string_view("\0<\0p\0>", 6), "utf-16be"), "<p>");
