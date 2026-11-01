@@ -124,7 +124,8 @@ class Dumper:
     def close(self) -> None:
         if self._proc.stdin:
             self._proc.stdin.close()
-        self._proc.wait()
+        if (code := self._proc.wait()) != 0:
+            raise RuntimeError(f"tokenizer_dump exited with code {code}")
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

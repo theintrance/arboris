@@ -39,7 +39,7 @@ class StringArena {
   [[nodiscard]] char* Allocate(std::size_t size) {
     if (size > free_) {
       const std::size_t block_size = std::max(size, kBlockSize);
-      blocks_.push_back(std::make_unique<char[]>(block_size));
+      blocks_.push_back(std::make_unique_for_overwrite<char[]>(block_size));  // NOLINT(modernize-avoid-c-arrays)
       cursor_ = blocks_.back().get();
       free_ = block_size;
     }
@@ -64,7 +64,8 @@ class StringArena {
  private:
   static constexpr std::size_t kBlockSize = 4096;
 
-  std::vector<std::unique_ptr<char[]>> blocks_;
+  // Raw bytes, left uninitialised on purpose: every byte is written before it is read.
+  std::vector<std::unique_ptr<char[]>> blocks_;  // NOLINT(modernize-avoid-c-arrays)
   char* cursor_ = nullptr;
   std::size_t free_ = 0;
 };

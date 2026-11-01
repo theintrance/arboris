@@ -32,11 +32,13 @@ class HtmlTokenParser : public TokenParser {
  public:
   // An open tag comes with its attributes. They point into the content, but the array that
   // holds them is reused for the next tag, so a callback that keeps them copies them out.
-  using FeedOpenTokenCallback = std::function<bool(HtmlToken&&, std::span<const Attribute>, const char*)>;
-  using FeedTextTokenCallback = std::function<bool(HtmlTextToken&&)>;
-  using FeedCloseTokenCallback = std::function<bool(HtmlCloseToken&&, const char*)>;
-  using FeedCommentTokenCallback = std::function<bool(HtmlCommentToken&&)>;
-  using FeedDoctypeTokenCallback = std::function<bool(HtmlDoctypeToken&&)>;
+  // Tokens are views and flags, so they are passed by value. A callback may still take
+  // its token as Token&&.
+  using FeedOpenTokenCallback = std::function<bool(HtmlToken, std::span<const Attribute>, const char*)>;
+  using FeedTextTokenCallback = std::function<bool(HtmlTextToken)>;
+  using FeedCloseTokenCallback = std::function<bool(HtmlCloseToken, const char*)>;
+  using FeedCommentTokenCallback = std::function<bool(HtmlCommentToken)>;
+  using FeedDoctypeTokenCallback = std::function<bool(HtmlDoctypeToken)>;
 
   explicit HtmlTokenParser(std::string_view content, std::shared_ptr<StringPool> string_pool)
       : TokenParser(content), string_pool_(std::move(string_pool)) {}

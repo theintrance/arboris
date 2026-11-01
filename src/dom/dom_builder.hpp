@@ -38,9 +38,10 @@ class DOMBuilder {
   // Closes the root, which no end tag ever closes: its own text runs are flushed and its
   // subtree covers every node.
   void Finish(const char* text_end);
-  bool FeedOpenToken(HtmlToken&& token, std::span<const Attribute> attributes, const char* text_begin);
-  bool FeedTextToken(HtmlTextToken&& token);
-  bool FeedCloseToken(HtmlCloseToken&& token, const char* text_end);
+  // Tokens are views and flags, so they are taken by value.
+  bool FeedOpenToken(HtmlToken token, std::span<const Attribute> attributes, const char* text_begin);
+  bool FeedTextToken(HtmlTextToken token);
+  bool FeedCloseToken(HtmlCloseToken token, const char* text_end);
 
   [[nodiscard]] const TagNodeList& GetNodeList() const {
     return dfs_node_list_;

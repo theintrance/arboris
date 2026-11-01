@@ -13,7 +13,6 @@
 #include <ranges>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #include "string/string.hpp"
@@ -98,7 +97,7 @@ std::size_t HtmlTokenParser::parseOpenTag(std::size_t begin, std::vector<Attribu
                   tag, IsVoidTag(tag), self_closing, tag_name};
 
   if (feed_open_token_callback_) {
-    if (!feed_open_token_callback_(std::move(token), *attributes, string_pool_->GetCursor())) {
+    if (!feed_open_token_callback_(token, *attributes, string_pool_->GetCursor())) {
       return std::string::npos;
     }
   }
@@ -138,7 +137,7 @@ std::size_t HtmlTokenParser::feedCloseTag(std::size_t begin, std::size_t name_en
   HtmlCloseToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(current_pos)}, tag, name};
 
   if (feed_close_token_callback_) {
-    if (!feed_close_token_callback_(std::move(token), string_pool_->GetCursor())) {
+    if (!feed_close_token_callback_(token, string_pool_->GetCursor())) {
       return std::string::npos;
     }
   }
@@ -169,7 +168,7 @@ std::size_t HtmlTokenParser::feedText(std::size_t begin, std::size_t end, TextMo
   HtmlTextToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(end)}, pooled_text};
 
   if (feed_text_token_callback_) {
-    if (!feed_text_token_callback_(std::move(token))) {
+    if (!feed_text_token_callback_(token)) {
       return std::string::npos;
     }
   }
@@ -239,7 +238,7 @@ std::size_t HtmlTokenParser::feedComment(std::size_t begin, std::size_t end, std
   HtmlCommentToken token{{static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(end)}, data};
 
   if (feed_comment_token_callback_) {
-    if (!feed_comment_token_callback_(std::move(token))) {
+    if (!feed_comment_token_callback_(token)) {
       return std::string::npos;
     }
   }
@@ -278,7 +277,7 @@ std::size_t HtmlTokenParser::parseDoctype(std::size_t begin) {
   token.force_quirks = !well_formed || close != pos;
 
   if (feed_doctype_token_callback_) {
-    if (!feed_doctype_token_callback_(std::move(token))) {
+    if (!feed_doctype_token_callback_(token)) {
       return std::string::npos;
     }
   }

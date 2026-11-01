@@ -23,7 +23,10 @@ def c_literal(text: str) -> str:
 
 def table(name: str, entries: list[tuple[str, str]]) -> str:
     rows = "\n".join(f'    {{"{ref}", {c_literal(text)}}},' for ref, text in sorted(entries))
-    return f"inline constexpr NamedCharacterReference {name}[] = {{\n{rows}\n}};\n"
+    return (
+        f"inline constexpr std::array<NamedCharacterReference, {len(entries)}> {name}{{{{\n"
+        f"{rows}\n}}}};\n"
+    )
 
 
 def generate(entities: dict[str, dict]) -> str:
