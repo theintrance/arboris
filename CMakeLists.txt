@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(arboris)
+project(arboris VERSION 0.1.0 LANGUAGES CXX)
 
 # Project settings
 set(CMAKE_CXX_STANDARD 20)
@@ -13,15 +13,18 @@ include(CTest)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Download dependencies
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-)
-if (WIN32)
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+if (NOT NO_TESTS)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+  )
+  if (WIN32)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  endif()
+  # googletest is a test dependency, not part of what `cmake --install` ships.
+  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
 endif()
-
-FetchContent_MakeAvailable(googletest)
 
 # html5lib-tests (https://github.com/html5lib/html5lib-tests), used by the tokenizer
 # conformance test and the benchmark. Declared here so both use the same commit.
