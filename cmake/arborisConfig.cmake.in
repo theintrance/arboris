@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+if (@ARBORIS_HAVE_ICONV@)
+  find_dependency(Iconv)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/arborisTargets.cmake")
+check_required_components(arboris)

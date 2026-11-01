@@ -35,9 +35,10 @@ class DOMBuilder {
 
   [[nodiscard]] bool Validate() const;
 
-  // Closes the root, which no end tag ever closes: its own text runs are flushed and its
-  // subtree covers every node.
-  void Finish(const char* text_end);
+  // Closes the root, which no end tag ever closes, and whatever was left open at
+  // source_end, the document's size: their text runs are flushed and the root's subtree
+  // covers every node.
+  void Finish(const char* text_end, std::uint32_t source_end);
   // Tokens are views and flags, so they are taken by value.
   bool FeedOpenToken(HtmlToken token, std::span<const Attribute> attributes, const char* text_begin);
   bool FeedTextToken(HtmlTextToken token);
@@ -79,9 +80,9 @@ class DOMBuilder {
     return dfs_node_list_[node_stack_[depth]].tag();
   }
 
-  bool closeTopNode(const char* text_end);
-  void closeDownTo(std::size_t depth, const char* text_end);
-  void closeElementsEndedBy(Tag start_tag, const char* text_end);
+  bool closeTopNode(const char* text_end, std::uint32_t content_end, std::uint32_t source_end);
+  void closeDownTo(std::size_t depth, const char* text_end, std::uint32_t source_pos);
+  void closeElementsEndedBy(Tag start_tag, const char* text_end, std::uint32_t source_pos);
   void flushPendingRuns(TagNode* node);
   void storeAttributes(HtmlToken* token, std::span<const Attribute> attributes);
   void appendClasses(std::string_view class_list, std::uint32_t run_begin);

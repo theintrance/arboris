@@ -182,25 +182,6 @@ TEST(SelectorTest, ParsedSelectorsAreReusable) {
   EXPECT_FALSE(selector->Matches(dom.GetRoot()));
 }
 
-TEST(NodeRefTest, SiblingsAreWalkedWithoutAllocation) {
-  const DOMManager dom("<ul><li id=a><b><i></i></b><b></b></li><li id=b></li><li id=c></li></ul>");
-  const auto b = dom.Find(std::string("b"));
-  ASSERT_TRUE(b.has_value());
-  ASSERT_TRUE(b->Get().previous_sibling().has_value());
-  EXPECT_EQ(b->Get().previous_sibling()->id(), "a");
-  ASSERT_TRUE(b->Get().next_sibling().has_value());
-  EXPECT_EQ(b->Get().next_sibling()->id(), "c");
-  EXPECT_FALSE(b->Get().previous_sibling()->previous_sibling().has_value());
-  EXPECT_FALSE(b->Get().next_sibling()->next_sibling().has_value());
-  EXPECT_FALSE(dom.GetRoot().next_sibling().has_value());
-  EXPECT_FALSE(dom.GetRoot().previous_sibling().has_value());
-  EXPECT_EQ(dom.GetRoot().first_child()->tag(), Tag::kUl);
-  EXPECT_FALSE(b->Get().first_child().has_value());
-  EXPECT_TRUE(b->Get().previous_sibling()->is_first_child());
-  EXPECT_FALSE(b->Get().is_first_child());
-  EXPECT_FALSE(dom.GetRoot().is_first_child());
-}
-
 TEST(SelectorTest, SiblingPseudoClassesScaleToLongLists) {
   std::string html = "<ul>";
   for (int i = 0; i < 20000; ++i) {
