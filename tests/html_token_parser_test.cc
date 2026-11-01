@@ -11,10 +11,10 @@
 #include <utility>
 #include <vector>
 
-#include "dom/html_token_parser.hpp"
-#include "utils/html_tokens.hpp"
-#include "utils/string_pool.hpp"
-#include "utils/tag.hpp"
+#include "arboris/dom/html_token_parser.hpp"
+#include "arboris/utils/html_tokens.hpp"
+#include "arboris/utils/string_pool.hpp"
+#include "arboris/utils/tag.hpp"
 
 namespace arboris {
 namespace {

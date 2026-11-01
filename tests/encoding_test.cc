@@ -10,9 +10,9 @@
 #include <string>
 #include <string_view>
 
-#include "dom/dom_manager.hpp"
-#include "encoding/encoding.hpp"
-#include "utils/tag.hpp"
+#include "arboris/dom/dom_manager.hpp"
+#include "arboris/encoding/encoding.hpp"
+#include "arboris/utils/tag.hpp"
 
 namespace arboris {
 namespace {

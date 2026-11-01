@@ -11,6 +11,8 @@
 
 #include <arboris/arboris.hpp>
 
+#include "utils/tag.hpp"
+
 // Exercises each public type once, as a user's first program would.
 int main() {
   const auto dom = std::make_unique<arboris::DOMManager>("<ul id=l><li class=a>x<li>y &amp; z</ul>");
@@ -22,6 +24,7 @@ int main() {
     return 1;
   }
 
+  [[maybe_unused]] const app::Tag own_tag{};
   const arboris::NodeRef second = items[1].Get();
   if (second.text_content() != "y & z" || second.outer_html() != "<li>y &amp; z" ||
       second.parent().id() != "l" || !second.previous_sibling() || second.ancestors().empty()) {

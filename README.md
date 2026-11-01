@@ -119,7 +119,7 @@ if (const auto main = dom.Find(std::string("main"))) {    // by id
 Queries hand out `NodeRef`s: 16-byte handles into the `DOMManager`, valid for as long as it
 lives. `DOMManager` is neither copyable nor movable; keep it in place or hold it through
 `std::unique_ptr`. `include/arboris/arboris.hpp` lists the public types; everything under
-`dom/`, `string/`, `utils/` and `encoding/` is implementation detail.
+`arboris/dom/`, `arboris/string/`, `arboris/utils/` and `arboris/encoding/` is implementation detail.
 
 ### Benchmark
 
@@ -228,7 +228,7 @@ uv run --no-project --with pytest python scripts/html5lib_status.py --junit html
 
 * The public C++ API is the comment at the top of
   [`include/arboris/arboris.hpp`](include/arboris/arboris.hpp) and the comments on the types it
-  names; `src/dom/node_ref.hpp` is the one to read for what a node gives you.
+  names; `src/arboris/dom/node_ref.hpp` is the one to read for what a node gives you.
 * In Python, `help(arboris)` and `help(arboris.Node)` carry the same information as docstrings.
 * Design decisions are recorded in the pull requests; the
   [issues](https://github.com/theintrance/arboris/issues) are grouped by milestone.

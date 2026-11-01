@@ -9,7 +9,7 @@
 #include <string>
 #include <string_view>
 
-#include "string/decode.hpp"
+#include "arboris/string/decode.hpp"
 
 namespace arboris {
 namespace {

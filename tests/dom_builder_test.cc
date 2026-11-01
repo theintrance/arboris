@@ -15,10 +15,10 @@
 #include <utility>
 #include <vector>
 
-#include "dom/dom_builder.hpp"
-#include "dom/tag_node.hpp"
-#include "utils/html_tokens.hpp"
-#include "utils/tag.hpp"
+#include "arboris/dom/dom_builder.hpp"
+#include "arboris/dom/tag_node.hpp"
+#include "arboris/utils/html_tokens.hpp"
+#include "arboris/utils/tag.hpp"
 
 namespace arboris {
 namespace {

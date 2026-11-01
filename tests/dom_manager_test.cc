@@ -13,10 +13,10 @@
 #include <string_view>
 #include <vector>
 
-#include "dom/dom_manager.hpp"
-#include "dom/node_ref.hpp"
-#include "utils/query_options.hpp"
-#include "utils/tag.hpp"
+#include "arboris/dom/dom_manager.hpp"
+#include "arboris/dom/node_ref.hpp"
+#include "arboris/utils/query_options.hpp"
+#include "arboris/utils/tag.hpp"
 
 namespace arboris {
 namespace {
