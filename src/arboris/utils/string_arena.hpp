@@ -39,7 +39,9 @@ class StringArena {
   [[nodiscard]] char* Allocate(std::size_t size) {
     if (size > free_) {
       const std::size_t block_size = std::max(size, kBlockSize);
-      blocks_.push_back(std::make_unique_for_overwrite<char[]>(block_size));  // NOLINT(modernize-avoid-c-arrays)
+      // Not make_unique_for_overwrite: libstdc++ 10, which the manylinux wheels build with,
+      // lacks it.
+      blocks_.emplace_back(new char[block_size]);  // NOLINT(modernize-avoid-c-arrays)
       cursor_ = blocks_.back().get();
       free_ = block_size;
     }
