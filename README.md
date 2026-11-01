@@ -14,7 +14,19 @@
 
 ### Overview
 
-* *TODO: Add description*
+`arboris` is an HTML parser written in C++20 with a Python package on top. It reads a page
+once into a compact DOM and answers queries against it:
+
+* **CSS selectors** (Selectors Level 3: combinators, attribute operators, structural
+  pseudo-classes) and condition queries by tag, class, attribute and text
+* **element data** as views into the document, no copies: tag, id, classes, attributes, text with
+  character references decoded, and the element's own HTML as written
+* **navigation** by parent, children, siblings and ancestors
+* **input encodings**: UTF-8 first; UTF-16 by byte order mark, and legacy encodings named by the
+  caller or a `<meta charset>` through iconv when it is available
+
+The tokenizer passes every in-scope case of the html5lib conformance suite (table below) and
+runs at several hundred MiB/s; see [Benchmark](#benchmark).
 
 ### Compatibility
 
@@ -23,15 +35,110 @@
 
 ### Installation
 
-* *TODO: Add installation*
+**Python** (the distribution is `pyarboris`; the import name is `arboris`):
+
+```bash
+pip install pyarboris
+```
+
+Wheels are published for CPython 3.10 to 3.13 on Linux x86_64, macOS (arm64 and x86_64) and
+Windows. Anywhere else `pip` builds from the sdist, which needs CMake and a C++20 compiler.
+
+**C++** (CMake 3.14+, a C++20 compiler):
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON
+cmake --build build
+cmake --install build --prefix /where/you/want/it
+```
+
+Then, in your project:
+
+```cmake
+find_package(arboris REQUIRED)
+target_link_libraries(your_target PRIVATE arboris::arboris)
+```
+
+or pull the sources in with `FetchContent` and link `arboris` the same way. The one header to
+include is `<arboris/arboris.hpp>`. `ARBORIS_ICONV` (default `ON`) links iconv for legacy
+encodings when CMake finds it.
 
 ### Usage
 
-* *TODO: Add usage*
+**Python**
+
+```python
+import arboris
+
+doc = arboris.parse(open("page.html", "rb").read())   # bytes: encoding sniffed; str: UTF-8
+
+for link in doc.select("nav a[href^='/docs/']"):       # CSS selectors, in document order
+    print(link.text, link.attrs["href"])
+
+title = doc.select_one("title")                        # the first match, or None
+cards = doc.find_all(tag="div", classes="card")        # conditions: tag, classes, attrs, text
+first = doc.find(attrs={"data-id": "42"})
+
+node = doc.get_by_id("main")
+node.tag, node.id, node.classes, node.attrs            # "div", "main", [...], {...}
+node.text                                              # text with references decoded
+node.outer_html, node.inner_html                       # the source as written
+node.parent, node.children, node.next_sibling, node.ancestors
+node.select("p")                                       # queries from a node search below it
+
+doc.encoding, doc.parse_error_offset                   # "euc-kr"; None when all was read
+```
+
+A `Node` keeps its document alive, so results can outlive the `Document` they came from. A
+selector that does not parse raises `ValueError`.
+
+**C++**
+
+```cpp
+#include <arboris/arboris.hpp>
+
+arboris::DOMManager dom(html);                          // std::string_view, copied once
+
+for (const arboris::DOMQuery& hit : dom.SelectAll("nav a[href^='/docs/']")) {
+  const arboris::NodeRef link = hit.Get();
+  std::cout << link.text_content() << ' ' << link.attributes()[0].value << '\n';
+}
+
+if (const auto main = dom.Find(std::string("main"))) {    // by id
+  for (const arboris::NodeRef child : main->Get().children()) { /* ... */ }
+  for (const arboris::DOMQuery& p : main->FindAll({.tag = arboris::Tag::kP})) { /* ... */ }
+  main->Get().outer_html();                               // the source as written
+}
+```
+
+Queries hand out `NodeRef`s: 16-byte handles into the `DOMManager`, valid for as long as it
+lives. `DOMManager` is neither copyable nor movable; keep it in place or hold it through
+`std::unique_ptr`. `include/arboris/arboris.hpp` lists the public types; everything under
+`dom/`, `string/`, `utils/` and `encoding/` is implementation detail.
 
 ### Benchmark
 
-* *TODO: Add benchmark*
+Tokenizer throughput on the CI runner (GitHub `ubuntu-latest`, 4 cores, Release build), from the
+`benchmark` workflow that runs on every pull request and compares against `develop`:
+
+| Input | Size | Throughput |
+|---|---:|---:|
+| Wikipedia "United States" | 2.8 MiB | 500 MiB/s |
+| Wikipedia "HTML" | 0.75 MiB | 435 MiB/s |
+| Wikipedia "Web browser" | 0.39 MiB | 440 MiB/s |
+| generated, 1M tokens deeply nested | 24 MiB | 287 MiB/s |
+
+On an Apple M-series laptop the same "United States" page tokenizes at about 670 MiB/s, and
+building the DOM on top of the tokens brings it to about 430 MiB/s.
+
+To run it yourself (downloads the corpus on first configure; `-DARBORIS_BENCH_LEXBOR=ON` adds lexbor
+for comparison):
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON -DARBORIS_BENCHMARK=ON
+cmake --build build --target arboris_bench
+build/benchmark/arboris_bench
+```
 
 ### Testing
 
@@ -114,11 +221,27 @@ uv run --group test python scripts/html5lib_status.py --junit html5lib.xml --wri
 
 ### Documentation
 
-* *TODO: Add documentation*
+* The public C++ API is the comment at the top of
+  [`include/arboris/arboris.hpp`](include/arboris/arboris.hpp) and the comments on the types it
+  names; `src/dom/node_ref.hpp` is the one to read for what a node gives you.
+* In Python, `help(arboris)` and `help(arboris.Node)` carry the same information as docstrings.
+* Design decisions are recorded in the pull requests; the
+  [issues](https://github.com/theintrance/arboris/issues) are grouped by milestone.
 
 ### Contributing
 
-* *TODO: Add contributing*
+Pull requests go to `develop`. Set up once:
+
+```bash
+uv sync --group test              # Python environment, builds the extension
+git config core.hooksPath hooks   # cpplint, clang-tidy and ruff before every commit
+cmake -S . -B build               # the hook's clang-tidy reads build/compile_commands.json
+```
+
+CI builds and tests on Linux and macOS, under ASan and UBSan, runs clang-tidy, cpplint and
+ruff, checks that an installed copy can be found with `find_package`, runs the Python tests,
+and compares html5lib conformance and tokenizer throughput against `develop`. Keep one topic
+per commit; the pull request description carries the reasoning.
 
 ### License
 
