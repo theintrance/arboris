@@ -273,7 +273,7 @@ std::optional<std::string> IconvToUtf8(std::string_view bytes, std::string_view 
   }
 
   const iconv_t converter = iconv_open("UTF-8", from.c_str());
-  if (converter == reinterpret_cast<iconv_t>(-1)) {
+  if (converter == reinterpret_cast<iconv_t>(-1)) {  // NOLINT(performance-no-int-to-ptr): iconv's own failure value
     return std::nullopt;
   }
 

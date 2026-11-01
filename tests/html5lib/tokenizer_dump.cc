@@ -26,67 +26,6 @@
 namespace arboris {
 namespace {
 
-// Tokens carry their lower-cased name. CI also builds this file against the base branch,
-// whose tokens may carry only the Tag, so the raw name is then read from the source span.
-// TODO(team): drop RawTagName once develop's tokens have a name (#69).
-constexpr std::string_view kTagNameDelimiters = " />\t\n\f\r>";
-
-// The open-tag callback hands over the tag's attributes. CI also builds this file against
-// the base branch, whose callback may not pass them yet, so either shape is taken.
-// TODO(team): drop the second overload once develop's callback passes attributes.
-std::span<const Attribute> AttributesOf(std::span<const Attribute> attributes, const char*) {
-  return attributes;
-}
-
-std::span<const Attribute> AttributesOf(const char*) {
-  return {};
-}
-
-// Likewise for the self-closing flag and the comment and DOCTYPE callbacks.
-// TODO(team): use them directly once develop has them.
-template <typename Token>
-bool IsSelfClosing(const Token& token) {
-  if constexpr (requires { token.is_self_closing; }) {
-    return token.is_self_closing;
-  } else {
-    return false;
-  }
-}
-
-template <typename Parser, typename Callback>
-void SetCommentCallback(Parser* parser, Callback&& callback) {
-  if constexpr (requires { parser->set_feed_comment_token_callback(callback); }) {
-    parser->set_feed_comment_token_callback(std::forward<Callback>(callback));
-  }
-}
-
-template <typename Parser, typename Callback>
-void SetDoctypeCallback(Parser* parser, Callback&& callback) {
-  if constexpr (requires { parser->set_feed_doctype_token_callback(callback); }) {
-    parser->set_feed_doctype_token_callback(std::forward<Callback>(callback));
-  }
-}
-
-std::string_view RawTagName(std::string_view content, const BaseToken& token, std::size_t prefix_len) {
-  std::string_view span = content.substr(token.begin_pos, token.end_pos - token.begin_pos);
-  span.remove_prefix(prefix_len);
-  std::size_t begin = span.find_first_not_of(" \t\n\r\f");
-  if (begin == std::string_view::npos) {
-    return {};
-  }
-  span.remove_prefix(begin);
-  return span.substr(0, span.find_first_of(kTagNameDelimiters));
-}
-
-template <typename Token>
-std::string_view TagName(std::string_view content, const Token& token, std::size_t prefix_len) {
-  if constexpr (requires { token.name; }) {
-    return token.name;
-  } else {
-    return RawTagName(content, token, prefix_len);
-  }
-}
-
 void AppendJsonString(std::string* out, std::string_view str) {
   out->push_back('"');
   for (char c : str) {
@@ -159,8 +98,8 @@ std::string Tokenize(std::string_view content) {
 
   auto string_pool = std::make_shared<StringPool>(content.size());
   HtmlTokenParser parser(content, string_pool);
-  parser.set_feed_open_token_callback([&](HtmlToken&& token, auto... rest) {
-    append_token("StartTag", TagName(content, token, 1), AttributesOf(rest...), IsSelfClosing(token));
+  parser.set_feed_open_token_callback([&](HtmlToken&& token, std::span<const Attribute> attributes, const char*) {
+    append_token("StartTag", token.name, attributes, token.is_self_closing);
     return true;
   });
   parser.set_feed_text_token_callback([&](HtmlTextToken&& token) {
@@ -168,14 +107,14 @@ std::string Tokenize(std::string_view content) {
     return true;
   });
   parser.set_feed_close_token_callback([&](HtmlCloseToken&& token, const char*) {
-    append_token("EndTag", TagName(content, token, 2), std::nullopt);
+    append_token("EndTag", token.name, std::nullopt);
     return true;
   });
-  SetCommentCallback(&parser, [&](auto&& token) {
+  parser.set_feed_comment_token_callback([&](HtmlCommentToken&& token) {
     append_token("Comment", token.data, std::nullopt);
     return true;
   });
-  SetDoctypeCallback(&parser, [&](auto&& token) {
+  parser.set_feed_doctype_token_callback([&](HtmlDoctypeToken&& token) {
     begin_token("DOCTYPE");
     tokens.push_back(',');
     AppendJsonStringOrNull(&tokens, token.name.empty() ? std::nullopt : std::make_optional(token.name));

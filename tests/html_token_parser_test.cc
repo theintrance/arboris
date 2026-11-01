@@ -100,12 +100,7 @@ TEST_F(HtmlTagProviderTest, ParseTextOnly) {
 
   SetupTokenCollectors(parser, tokens);
 
-  // TODO(Team): Discuss with team about returning false for text-only content
-  // Text-only content always causes Parse() to return false
-  // because FindNextChar returns npos when '<' is not found
-  EXPECT_FALSE(parser.Parse());
-
-  // Even though parsing fails, text token should still be created
+  EXPECT_TRUE(parser.Parse());
   EXPECT_TRUE(tokens.open_tokens.empty());
   EXPECT_EQ(tokens.text_tokens.size(), 1);
   EXPECT_TRUE(tokens.close_tokens.empty());
@@ -311,11 +306,9 @@ TEST_F(HtmlTagProviderTest, ParseMalformedTagUnclosedTag) {
 
   SetupTokenCollectors(parser, tokens);
 
-  // Unclosed tag with trailing text always causes Parse() to return false
-  // because FindNextChar returns npos when no more '<' is found after the text
-  EXPECT_FALSE(parser.Parse());
-
-  // Even though parsing fails, tokens should still be created
+  // The tokenizer reads to the end; whether the element was closed is the builder's
+  // business.
+  EXPECT_TRUE(parser.Parse());
   EXPECT_EQ(tokens.open_tokens.size(), 1);   // <div> tag parsed
   EXPECT_EQ(tokens.text_tokens.size(), 1);   // "content" text parsed
   EXPECT_TRUE(tokens.close_tokens.empty());  // no closing tag

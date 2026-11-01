@@ -34,9 +34,9 @@ constexpr std::size_t kLongestName = 32;
 constexpr std::size_t kLongestLegacyName = 6;
 
 // The references pages use most, settled before the table is searched.
-constexpr NamedCharacterReference kCommonReferences[] = {
+constexpr std::array<NamedCharacterReference, 5> kCommonReferences{{
     {"amp;", "&"}, {"lt;", "<"}, {"gt;", ">"}, {"quot;", "\""}, {"nbsp;", "\xc2\xa0"},
-};
+}};
 
 constexpr CharSet kTextSpecials{"\r&"};
 constexpr CharSet kRawTextSpecials{"\r"};

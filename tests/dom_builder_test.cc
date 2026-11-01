@@ -5,593 +5,208 @@
  */
 
 #include <gtest/gtest.h>
-#include <memory>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <span>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
-#include <string>
 
 #include "dom/dom_builder.hpp"
-#include "dom/node.hpp"
+#include "dom/tag_node.hpp"
 #include "utils/html_tokens.hpp"
 #include "utils/tag.hpp"
 
 namespace arboris {
+namespace {
 
+// Feeds the builder tokens by hand, as the tokenizer would, with text positions taken
+// from one buffer so the text spans it hands back can be checked.
 class DOMBuilderTest : public ::testing::Test {
  protected:
-  DOMBuilder builder_;
-  std::vector<std::shared_ptr<Node>> created_nodes_;
-
-  void SetUp() override {
-    created_nodes_.clear();
-    builder_.SetNodeCreationCallback(
-        [this](std::shared_ptr<Node> node) {
-          created_nodes_.push_back(node);
-        });
+  bool Open(Tag tag, std::string_view name = {}, bool is_void = false, bool self_closing = false,
+            std::span<const Attribute> attributes = {}) {
+    HtmlToken token{{0, 0}, tag, is_void};
+    token.is_self_closing = self_closing;
+    token.name = name;
+    return builder_.FeedOpenToken(token, attributes, cursor());
   }
+
+  bool Close(Tag tag, std::string_view name = {}) {
+    HtmlCloseToken token{{0, 0}, tag, name};
+    return builder_.FeedCloseToken(token, cursor());
+  }
+
+  // Copies the text to where the cursor stands, as the string pool would.
+  void Text(std::string_view text) {
+    const auto begin = static_cast<std::uint32_t>(used_);
+    std::ranges::copy(text, pool_.data() + used_);
+    used_ += text.size();
+    builder_.FeedTextToken(HtmlTextToken{{begin, begin + static_cast<std::uint32_t>(text.size())},
+                                         std::string_view(pool_.data() + begin, text.size())});
+  }
+
+  [[nodiscard]] const char* cursor() const {
+    return pool_.data() + used_;
+  }
+
+  [[nodiscard]] const TagNode& node(NodeKey key) const {
+    return builder_.GetNodeList()[key];
+  }
+
+  DOMBuilder builder_;
+  std::string pool_ = std::string(1024, '\0');
+  std::size_t used_ = 0;
 };
 
-// Test: Single element creation
-// HTML Structure: <div></div>
-TEST_F(DOMBuilderTest, SingleElement) {
-  HtmlToken open_token;
-  open_token.tag = Tag::kDiv;
-  open_token.is_void_tag = false;
-
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(open_token)));
-  EXPECT_EQ(created_nodes_.size(), 1);
-  EXPECT_EQ(created_nodes_[0]->id(), 0);
-  EXPECT_EQ(created_nodes_[0]->html_token().tag, Tag::kDiv);
-  EXPECT_EQ(created_nodes_[0]->in(), 1);
-
-  HtmlCloseToken close_token;
-  close_token.tag = Tag::kDiv;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(close_token)));
-  EXPECT_EQ(created_nodes_[0]->out(), 2);
+TEST_F(DOMBuilderTest, NodesAreKeyedInDfsOrderWithSubtreeSizes) {
+  EXPECT_TRUE(Open(Tag::kDiv));
+  EXPECT_TRUE(Open(Tag::kP));
+  EXPECT_TRUE(Open(Tag::kSpan));
+  EXPECT_TRUE(Close(Tag::kSpan));
+  EXPECT_TRUE(Open(Tag::kA));
+  EXPECT_TRUE(Close(Tag::kA));
+  EXPECT_TRUE(Close(Tag::kP));
+  EXPECT_TRUE(Close(Tag::kDiv));
   EXPECT_TRUE(builder_.Validate());
+  builder_.Finish(cursor());
+
+  ASSERT_EQ(builder_.GetNodeList().size(), 5U);
+  EXPECT_EQ(node(0).tag(), Tag::kDocument);
+  EXPECT_EQ(node(0).parent_key(), 0U);
+  EXPECT_EQ(node(0).sub_tree_size(), 5U);
+  EXPECT_EQ(node(1).tag(), Tag::kDiv);
+  EXPECT_EQ(node(1).parent_key(), 0U);
+  EXPECT_EQ(node(1).sub_tree_size(), 4U);
+  EXPECT_EQ(node(2).tag(), Tag::kP);
+  EXPECT_EQ(node(2).parent_key(), 1U);
+  EXPECT_EQ(node(2).sub_tree_size(), 3U);
+  EXPECT_EQ(node(3).tag(), Tag::kSpan);
+  EXPECT_EQ(node(3).parent_key(), 2U);
+  EXPECT_EQ(node(3).sub_tree_size(), 1U);
+  EXPECT_EQ(node(4).tag(), Tag::kA);
+  EXPECT_EQ(node(4).parent_key(), 2U);
 }
 
-// Test: Nested elements
-// HTML Structure:
-//   <div>
-//     <p>
-//       <span></span>
-//     </p>
-//   </div>
-TEST_F(DOMBuilderTest, NestedElements) {
-  // <div>
-  HtmlToken div_open;
-  div_open.tag = Tag::kDiv;
-  div_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(div_open)));
-
-  // <p>
-  HtmlToken p_open;
-  p_open.tag = Tag::kP;
-  p_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(p_open)));
-
-  // <span>
-  HtmlToken span_open;
-  span_open.tag = Tag::kSpan;
-  span_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(span_open)));
-
-  // </span>
-  HtmlCloseToken span_close;
-  span_close.tag = Tag::kSpan;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(span_close)));
-
-  // </p>
-  HtmlCloseToken p_close;
-  p_close.tag = Tag::kP;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(p_close)));
-
-  // </div>
-  HtmlCloseToken div_close;
-  div_close.tag = Tag::kDiv;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(div_close)));
-
-  // Verify 3 nodes were created
-  EXPECT_EQ(created_nodes_.size(), 3);
-  EXPECT_EQ(created_nodes_[0]->html_token().tag, Tag::kDiv);
-  EXPECT_EQ(created_nodes_[1]->html_token().tag, Tag::kP);
-  EXPECT_EQ(created_nodes_[2]->html_token().tag, Tag::kSpan);
-
-  // Verify node IDs
-  EXPECT_EQ(created_nodes_[0]->id(), 0);
-  EXPECT_EQ(created_nodes_[1]->id(), 1);
-  EXPECT_EQ(created_nodes_[2]->id(), 2);
-
-  // Verify Euler tour timers
-  EXPECT_EQ(created_nodes_[0]->in(), 1);
-  EXPECT_EQ(created_nodes_[1]->in(), 2);
-  EXPECT_EQ(created_nodes_[2]->in(), 3);
-  EXPECT_EQ(created_nodes_[2]->out(), 4);
-  EXPECT_EQ(created_nodes_[1]->out(), 5);
-  EXPECT_EQ(created_nodes_[0]->out(), 6);
-
+TEST_F(DOMBuilderTest, VoidTagsAndForeignSelfClosingTagsCloseAtOnce) {
+  EXPECT_TRUE(Open(Tag::kDiv));
+  EXPECT_TRUE(Open(Tag::kBr, {}, true));
+  EXPECT_TRUE(Open(Tag::kDiv, {}, false, true));  // <div/> is just <div> in HTML
+  EXPECT_TRUE(Open(Tag::kSvg));
+  EXPECT_TRUE(Open(Tag::kUnknown, "path", false, true));
+  EXPECT_TRUE(Open(Tag::kUnknown, "rect"));
+  EXPECT_TRUE(Close(Tag::kUnknown, "rect"));
+  EXPECT_TRUE(Close(Tag::kSvg));
+  EXPECT_FALSE(builder_.Validate());  // the inner <div> is still open
+  EXPECT_TRUE(Close(Tag::kDiv));
+  EXPECT_TRUE(Close(Tag::kDiv));
   EXPECT_TRUE(builder_.Validate());
+
+  EXPECT_EQ(node(2).tag(), Tag::kBr);
+  EXPECT_EQ(node(2).sub_tree_size(), 1U);
+  EXPECT_EQ(node(3).parent_key(), 1U);
+  EXPECT_EQ(node(4).tag(), Tag::kSvg);
+  EXPECT_EQ(node(4).parent_key(), 3U);
+  EXPECT_EQ(node(5).name(), "path");
+  EXPECT_EQ(node(5).sub_tree_size(), 1U);
+  EXPECT_EQ(node(6).name(), "rect");
+  EXPECT_EQ(node(6).parent_key(), 4U);
 }
 
-// Test: Void tags (self-closing)
-// HTML Structure:
-//   <div>
-//     <br>
-//     <img>
-//   </div>
-TEST_F(DOMBuilderTest, VoidTag) {
-  // <div>
-  HtmlToken div_open;
-  div_open.tag = Tag::kDiv;
-  div_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(div_open)));
-
-  // <br> (void tag)
-  HtmlToken br_token;
-  br_token.tag = Tag::kBr;
-  br_token.is_void_tag = true;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(br_token)));
-
-  // <img> (void tag)
-  HtmlToken img_token;
-  img_token.tag = Tag::kImg;
-  img_token.is_void_tag = true;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(img_token)));
-
-  // </div>
-  HtmlCloseToken div_close;
-  div_close.tag = Tag::kDiv;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(div_close)));
-
-  // Verify 3 nodes were created
-  EXPECT_EQ(created_nodes_.size(), 3);
-  EXPECT_EQ(created_nodes_[0]->html_token().tag, Tag::kDiv);
-  EXPECT_EQ(created_nodes_[1]->html_token().tag, Tag::kBr);
-  EXPECT_EQ(created_nodes_[2]->html_token().tag, Tag::kImg);
-
-  // Void tags should be automatically closed
-  EXPECT_EQ(created_nodes_[1]->in(), 2);
-  EXPECT_EQ(created_nodes_[1]->out(), 3);
-  EXPECT_EQ(created_nodes_[2]->in(), 4);
-  EXPECT_EQ(created_nodes_[2]->out(), 5);
-
+TEST_F(DOMBuilderTest, StartTagsCloseElementsWithOptionalEndTags) {
+  EXPECT_TRUE(Open(Tag::kUl));
+  EXPECT_TRUE(Open(Tag::kLi));
+  EXPECT_TRUE(Open(Tag::kLi));
+  EXPECT_TRUE(Open(Tag::kP));
+  EXPECT_TRUE(Open(Tag::kDiv));  // <div> ends an open <p>
+  EXPECT_TRUE(Close(Tag::kDiv));
+  EXPECT_TRUE(Close(Tag::kUl));  // closes the second <li> too
   EXPECT_TRUE(builder_.Validate());
+
+  EXPECT_EQ(node(2).tag(), Tag::kLi);
+  EXPECT_EQ(node(2).sub_tree_size(), 1U);
+  EXPECT_EQ(node(3).tag(), Tag::kLi);
+  EXPECT_EQ(node(3).parent_key(), 1U);
+  EXPECT_EQ(node(4).tag(), Tag::kP);
+  EXPECT_EQ(node(4).sub_tree_size(), 1U);
+  EXPECT_EQ(node(5).tag(), Tag::kDiv);
+  EXPECT_EQ(node(5).parent_key(), 3U);
 }
 
-// Test: Text content
-// HTML Structure: <p>Hello, World!</p>
-TEST_F(DOMBuilderTest, TextContent) {
-  // <p>
-  HtmlToken p_open;
-  p_open.tag = Tag::kP;
-  p_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(p_open)));
-
-  // Text: "Hello, World!"
-  HtmlTextToken text_token;
-  text_token.text_content = "Hello, World!";
-  EXPECT_TRUE(builder_.FeedTextToken(std::move(text_token)));
-
-  // </p>
-  HtmlCloseToken p_close;
-  p_close.tag = Tag::kP;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(p_close)));
-
-  EXPECT_EQ(created_nodes_.size(), 1);
-  EXPECT_EQ(created_nodes_[0]->text_content(), "Hello, World!");
-  EXPECT_TRUE(builder_.Validate());
+TEST_F(DOMBuilderTest, StrayEndTagsAreDroppedAndMisnestedOnesFail) {
+  EXPECT_TRUE(Open(Tag::kDiv));
+  EXPECT_TRUE(Close(Tag::kSpan));  // nothing to close: dropped
+  EXPECT_TRUE(Open(Tag::kBr, {}, true));
+  EXPECT_TRUE(Close(Tag::kBr));  // </br> after a void tag: dropped
+  EXPECT_TRUE(Open(Tag::kUnknown, "x-a"));
+  EXPECT_TRUE(Close(Tag::kUnknown, "x-b"));  // another unknown tag: dropped
+  EXPECT_TRUE(Close(Tag::kUnknown, "x-a"));
+  EXPECT_TRUE(Open(Tag::kSpan));
+  EXPECT_FALSE(Close(Tag::kDiv));  // would close the <span> the author left open
 }
 
-// Test: Complex HTML structure
-// HTML Structure:
-//   <html>
-//     <body>
-//       <div>
-//         <h1>Title</h1>
-//         <p>Content</p>
-//       </div>
-//     </body>
-//   </html>
-TEST_F(DOMBuilderTest, ComplexStructure) {
-  // <html>
-  HtmlToken html_open;
-  html_open.tag = Tag::kHtml;
-  html_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(html_open)));
+TEST_F(DOMBuilderTest, TextIsKeptPerTagAndAsOneSpanPerSubtree) {
+  EXPECT_TRUE(Open(Tag::kP));
+  Text("Hello");
+  EXPECT_TRUE(Open(Tag::kB));
+  Text("big");
+  EXPECT_TRUE(Close(Tag::kB));
+  Text("World");
+  EXPECT_TRUE(Close(Tag::kP));
+  builder_.Finish(cursor());
 
-  // <body>
-  HtmlToken body_open;
-  body_open.tag = Tag::kBody;
-  body_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(body_open)));
+  EXPECT_EQ(node(1).text_content(), "HellobigWorld");
+  EXPECT_EQ(node(2).text_content(), "big");
 
-  // <div>
-  HtmlToken div_open;
-  div_open.tag = Tag::kDiv;
-  div_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(div_open)));
-
-  // <h1>
-  HtmlToken h1_open;
-  h1_open.tag = Tag::kH1;
-  h1_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(h1_open)));
-
-  // Text: "Title"
-  HtmlTextToken title_text;
-  title_text.text_content = "Title";
-  EXPECT_TRUE(builder_.FeedTextToken(std::move(title_text)));
-
-  // </h1>
-  HtmlCloseToken h1_close;
-  h1_close.tag = Tag::kH1;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(h1_close)));
-
-  // <p>
-  HtmlToken p_open;
-  p_open.tag = Tag::kP;
-  p_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(p_open)));
-
-  // Text: "Content"
-  HtmlTextToken content_text;
-  content_text.text_content = "Content";
-  EXPECT_TRUE(builder_.FeedTextToken(std::move(content_text)));
-
-  // </p>
-  HtmlCloseToken p_close;
-  p_close.tag = Tag::kP;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(p_close)));
-
-  // </div>
-  HtmlCloseToken div_close;
-  div_close.tag = Tag::kDiv;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(div_close)));
-
-  // </body>
-  HtmlCloseToken body_close;
-  body_close.tag = Tag::kBody;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(body_close)));
-
-  // </html>
-  HtmlCloseToken html_close;
-  html_close.tag = Tag::kHtml;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(html_close)));
-
-  // Verify 5 nodes were created (html, body, div, h1, p)
-  EXPECT_EQ(created_nodes_.size(), 5);
-  EXPECT_EQ(created_nodes_[0]->html_token().tag, Tag::kHtml);
-  EXPECT_EQ(created_nodes_[1]->html_token().tag, Tag::kBody);
-  EXPECT_EQ(created_nodes_[2]->html_token().tag, Tag::kDiv);
-  EXPECT_EQ(created_nodes_[3]->html_token().tag, Tag::kH1);
-  EXPECT_EQ(created_nodes_[4]->html_token().tag, Tag::kP);
-
-  EXPECT_EQ(created_nodes_[3]->text_content(), "Title");
-  EXPECT_EQ(created_nodes_[4]->text_content(), "Content");
-
-  EXPECT_TRUE(builder_.Validate());
+  const auto runs = builder_.ReleaseTextArena();
+  ASSERT_EQ(runs.size(), 3U);
+  EXPECT_EQ(node(2).text_count(), 1U);
+  EXPECT_EQ(runs[node(2).text_begin()].text, "big");
+  EXPECT_EQ(node(1).text_count(), 2U);
+  EXPECT_EQ(runs[node(1).text_begin()].text, "Hello");
+  EXPECT_EQ(runs[node(1).text_begin() + 1].text, "World");
+  EXPECT_LT(runs[node(1).text_begin()].begin_pos, runs[node(1).text_begin() + 1].begin_pos);
 }
 
-// Test: Mismatched closing tag
-// HTML Structure (invalid):
-//   <div>
-//     <p>
-//   </div>  <!-- Error: closing div before p -->
-TEST_F(DOMBuilderTest, MismatchedClosingTag) {
-  // <div>
-  HtmlToken div_open;
-  div_open.tag = Tag::kDiv;
-  div_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(div_open)));
+TEST_F(DOMBuilderTest, AttributesIdAndClassesAreStoredPerNode) {
+  const std::vector<Attribute> attributes{{"id", "main"}, {"class", " a  b a "}, {"href", "/x"}};
+  EXPECT_TRUE(Open(Tag::kA, {}, false, false, attributes));
+  EXPECT_TRUE(Close(Tag::kA));
+  EXPECT_TRUE(Open(Tag::kA, {}, false, false, std::span(attributes).first(1)));
+  EXPECT_TRUE(Close(Tag::kA));
 
-  // <p>
-  HtmlToken p_open;
-  p_open.tag = Tag::kP;
-  p_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(p_open)));
+  EXPECT_EQ(node(1).id(), "main");
+  EXPECT_EQ(node(1).attr_count(), 3U);
+  EXPECT_EQ(node(1).class_count(), 2U);
+  EXPECT_EQ(node(2).attr_begin(), 3U);
+  EXPECT_EQ(node(2).attr_count(), 1U);
+  EXPECT_EQ(node(2).class_count(), 0U);
 
-  // </div> (wrong order - p is still open)
-  HtmlCloseToken div_close;
-  div_close.tag = Tag::kDiv;
-  EXPECT_FALSE(builder_.FeedCloseToken(std::move(div_close)));
-
-  // Stack should still not be empty
-  EXPECT_FALSE(builder_.Validate());
+  const auto classes = builder_.ReleaseClassArena();
+  ASSERT_EQ(classes.size(), 2U);
+  EXPECT_EQ(classes[node(1).class_begin()], "a");
+  EXPECT_EQ(classes[node(1).class_begin() + 1], "b");
+  const auto stored = builder_.ReleaseAttrArena();
+  ASSERT_EQ(stored.size(), 4U);
+  EXPECT_EQ(stored[2].name, "href");
+  EXPECT_EQ(stored[3].name, "id");
 }
 
-// Test: Text token without open tag
-// HTML Structure (invalid): "Some text" (no parent tag)
-TEST_F(DOMBuilderTest, TextTokenWithoutOpenTag) {
-  // Try to add text token without any open tag
-  HtmlTextToken text_token;
-  text_token.text_content = "Some text";
-  EXPECT_FALSE(builder_.FeedTextToken(std::move(text_token)));
-  EXPECT_TRUE(builder_.Validate());
+TEST_F(DOMBuilderTest, FinishClosesWhatWasLeftOpen) {
+  EXPECT_TRUE(Open(Tag::kDiv));
+  EXPECT_TRUE(Open(Tag::kSpan));
+  Text("x");
+  builder_.Finish(cursor());
+
+  EXPECT_EQ(node(0).sub_tree_size(), 3U);
+  EXPECT_EQ(node(1).sub_tree_size(), 2U);
+  EXPECT_EQ(node(2).sub_tree_size(), 1U);
+  EXPECT_EQ(node(2).text_content(), "x");
+  EXPECT_EQ(node(1).text_content(), "x");
 }
 
-// Test: Incomplete DOM structure
-// HTML Structure (incomplete):
-//   <div>
-//     <p>
-//   <!-- Missing closing tags -->
-TEST_F(DOMBuilderTest, IncompleteDOM) {
-  // <div>
-  HtmlToken div_open;
-  div_open.tag = Tag::kDiv;
-  div_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(div_open)));
-
-  // <p>
-  HtmlToken p_open;
-  p_open.tag = Tag::kP;
-  p_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(p_open)));
-
-  // Don't close div and p
-  EXPECT_FALSE(builder_.Validate());
-}
-
-// Test: Callback verification with multiple nodes
-// HTML Structure:
-//   <div>
-//     <p>
-//       <span>
-//   <!-- Intentionally left open for callback verification -->
-TEST_F(DOMBuilderTest, CallbackVerification) {
-  std::vector<std::uint32_t> node_ids;
-  std::vector<Tag> node_tags;
-
-  builder_.SetNodeCreationCallback(
-      [&node_ids, &node_tags](std::shared_ptr<Node> node) {
-        node_ids.push_back(node->id());
-        node_tags.push_back(node->html_token().tag);
-      });
-
-  // <div>
-  HtmlToken div_open;
-  div_open.tag = Tag::kDiv;
-  div_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(div_open)));
-
-  // <p>
-  HtmlToken p_open;
-  p_open.tag = Tag::kP;
-  p_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(p_open)));
-
-  // <span>
-  HtmlToken span_open;
-  span_open.tag = Tag::kSpan;
-  span_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(span_open)));
-
-  EXPECT_EQ(node_ids.size(), 3);
-  EXPECT_EQ(node_ids[0], 0);
-  EXPECT_EQ(node_ids[1], 1);
-  EXPECT_EQ(node_ids[2], 2);
-
-  EXPECT_EQ(node_tags[0], Tag::kDiv);
-  EXPECT_EQ(node_tags[1], Tag::kP);
-  EXPECT_EQ(node_tags[2], Tag::kSpan);
-}
-
-// Test: Euler tour ordering with sibling elements
-// HTML Structure:
-//   <div>
-//     <p></p>
-//     <span></span>
-//   </div>
-TEST_F(DOMBuilderTest, EulerTourOrdering) {
-  // <div>
-  HtmlToken div_open;
-  div_open.tag = Tag::kDiv;
-  div_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(div_open)));
-
-  // <p>
-  HtmlToken p_open;
-  p_open.tag = Tag::kP;
-  p_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(p_open)));
-
-  // </p>
-  HtmlCloseToken p_close;
-  p_close.tag = Tag::kP;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(p_close)));
-
-  // <span>
-  HtmlToken span_open;
-  span_open.tag = Tag::kSpan;
-  span_open.is_void_tag = false;
-  EXPECT_TRUE(builder_.FeedOpenToken(std::move(span_open)));
-
-  // </span>
-  HtmlCloseToken span_close;
-  span_close.tag = Tag::kSpan;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(span_close)));
-
-  // </div>
-  HtmlCloseToken div_close;
-  div_close.tag = Tag::kDiv;
-  EXPECT_TRUE(builder_.FeedCloseToken(std::move(div_close)));
-
-  EXPECT_EQ(created_nodes_.size(), 3);
-
-  // Verify Euler tour timings
-  // div: in=1, out=6
-  EXPECT_EQ(created_nodes_[0]->in(), 1);
-  EXPECT_EQ(created_nodes_[0]->out(), 6);
-
-  // p: in=2, out=3
-  EXPECT_EQ(created_nodes_[1]->in(), 2);
-  EXPECT_EQ(created_nodes_[1]->out(), 3);
-
-  // span: in=4, out=5
-  EXPECT_EQ(created_nodes_[2]->in(), 4);
-  EXPECT_EQ(created_nodes_[2]->out(), 5);
-
-  EXPECT_TRUE(builder_.Validate());
-}
-
-// Test: Memory cleanup verification
-// HTML Structure:
-//   <div>
-//     <p>
-//       <span></span>
-//     </p>
-//     <ul>
-//       <li></li>
-//       <li></li>
-//     </ul>
-//   </div>
-// Verify that all nodes are properly deallocated when references are released
-TEST_F(DOMBuilderTest, MemoryCleanup) {
-  std::vector<std::weak_ptr<Node>> weak_nodes;
-
-  // Create a new scope to ensure builder and nodes go out of scope
-  {
-    DOMBuilder scoped_builder;
-    std::vector<std::shared_ptr<Node>> scoped_nodes;
-
-    scoped_builder.SetNodeCreationCallback(
-        [&scoped_nodes, &weak_nodes](std::shared_ptr<Node> node) {
-          scoped_nodes.push_back(node);
-          weak_nodes.push_back(node);  // Store weak_ptr for later verification
-        });
-
-    // <div>
-    HtmlToken div_open;
-    div_open.tag = Tag::kDiv;
-    div_open.is_void_tag = false;
-    EXPECT_TRUE(scoped_builder.FeedOpenToken(std::move(div_open)));
-
-    // <p>
-    HtmlToken p_open;
-    p_open.tag = Tag::kP;
-    p_open.is_void_tag = false;
-    EXPECT_TRUE(scoped_builder.FeedOpenToken(std::move(p_open)));
-
-    // <span>
-    HtmlToken span_open;
-    span_open.tag = Tag::kSpan;
-    span_open.is_void_tag = false;
-    EXPECT_TRUE(scoped_builder.FeedOpenToken(std::move(span_open)));
-
-    // </span>
-    HtmlCloseToken span_close;
-    span_close.tag = Tag::kSpan;
-    EXPECT_TRUE(scoped_builder.FeedCloseToken(std::move(span_close)));
-
-    // </p>
-    HtmlCloseToken p_close;
-    p_close.tag = Tag::kP;
-    EXPECT_TRUE(scoped_builder.FeedCloseToken(std::move(p_close)));
-
-    // <ul>
-    HtmlToken ul_open;
-    ul_open.tag = Tag::kUl;
-    ul_open.is_void_tag = false;
-    EXPECT_TRUE(scoped_builder.FeedOpenToken(std::move(ul_open)));
-
-    // <li>
-    HtmlToken li1_open;
-    li1_open.tag = Tag::kLi;
-    li1_open.is_void_tag = false;
-    EXPECT_TRUE(scoped_builder.FeedOpenToken(std::move(li1_open)));
-
-    // </li>
-    HtmlCloseToken li1_close;
-    li1_close.tag = Tag::kLi;
-    EXPECT_TRUE(scoped_builder.FeedCloseToken(std::move(li1_close)));
-
-    // <li>
-    HtmlToken li2_open;
-    li2_open.tag = Tag::kLi;
-    li2_open.is_void_tag = false;
-    EXPECT_TRUE(scoped_builder.FeedOpenToken(std::move(li2_open)));
-
-    // </li>
-    HtmlCloseToken li2_close;
-    li2_close.tag = Tag::kLi;
-    EXPECT_TRUE(scoped_builder.FeedCloseToken(std::move(li2_close)));
-
-    // </ul>
-    HtmlCloseToken ul_close;
-    ul_close.tag = Tag::kUl;
-    EXPECT_TRUE(scoped_builder.FeedCloseToken(std::move(ul_close)));
-
-    // </div>
-    HtmlCloseToken div_close;
-    div_close.tag = Tag::kDiv;
-    EXPECT_TRUE(scoped_builder.FeedCloseToken(std::move(div_close)));
-
-    EXPECT_TRUE(scoped_builder.Validate());
-
-    // Verify 6 nodes were created (div, p, span, ul, li, li)
-    EXPECT_EQ(scoped_nodes.size(), 6);
-    EXPECT_EQ(weak_nodes.size(), 6);
-
-    // All weak_ptrs should still be valid since nodes are still in scope
-    for (const auto& weak_node : weak_nodes) {
-      EXPECT_FALSE(weak_node.expired());
-    }
-  }
-  // End of scope - scoped_builder and scoped_nodes are destroyed
-
-  // After scope ends, all nodes should be deallocated
-  // All weak_ptrs should be expired now
-  for (const auto& weak_node : weak_nodes) {
-    EXPECT_TRUE(weak_node.expired())
-        << "Node was not properly deallocated - memory leak detected!";
-  }
-}
-
-// Test: Memory cleanup with partial structure
-// HTML Structure (intentionally incomplete):
-//   <div>
-//     <p>
-//   <!-- No closing tags - tests cleanup of incomplete DOM -->
-TEST_F(DOMBuilderTest, MemoryCleanupIncompleteDOM) {
-  std::vector<std::weak_ptr<Node>> weak_nodes;
-
-  {
-    DOMBuilder scoped_builder;
-    std::vector<std::shared_ptr<Node>> scoped_nodes;
-
-    scoped_builder.SetNodeCreationCallback(
-        [&scoped_nodes, &weak_nodes](std::shared_ptr<Node> node) {
-          scoped_nodes.push_back(node);
-          weak_nodes.push_back(node);
-        });
-
-    // <div>
-    HtmlToken div_open;
-    div_open.tag = Tag::kDiv;
-    div_open.is_void_tag = false;
-    EXPECT_TRUE(scoped_builder.FeedOpenToken(std::move(div_open)));
-
-    // <p>
-    HtmlToken p_open;
-    p_open.tag = Tag::kP;
-    p_open.is_void_tag = false;
-    EXPECT_TRUE(scoped_builder.FeedOpenToken(std::move(p_open)));
-
-    // Intentionally don't close tags
-    EXPECT_FALSE(scoped_builder.Validate());
-    EXPECT_EQ(scoped_nodes.size(), 2);
-
-    // Weak pointers should still be valid
-    for (const auto& weak_node : weak_nodes) {
-      EXPECT_FALSE(weak_node.expired());
-    }
-  }
-
-  // Even with incomplete DOM, all nodes should be deallocated
-  for (const auto& weak_node : weak_nodes) {
-    EXPECT_TRUE(weak_node.expired())
-        << "Node from incomplete DOM was not deallocated - memory leak!";
-  }
-}
-
+}  // anonymous namespace
 }  // namespace arboris

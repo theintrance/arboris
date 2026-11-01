@@ -134,7 +134,7 @@ enum class Tag : std::uint8_t {
 };
 
 struct TagSet {
-  std::uint64_t bits[static_cast<std::uint8_t>(Tag::kWbr) / 64 + 1] = {0};
+  std::array<std::uint64_t, static_cast<std::uint8_t>(Tag::kWbr) / 64 + 1> bits{};
 };
 
 Tag FromString(std::string_view tag_name);
@@ -142,14 +142,14 @@ Tag FromString(std::string_view tag_name);
 constexpr TagSet CreateTagSet(std::initializer_list<Tag> tags) {
   TagSet tag_set{};
   for (const auto tag : tags) {
-    std::uint8_t tag_index = static_cast<std::uint8_t>(tag);
+    const auto tag_index = static_cast<std::uint8_t>(tag);
     tag_set.bits[tag_index >> 6] |= (1ULL << (tag_index & 63));
   }
   return tag_set;
 }
 
 constexpr bool ContainsTag(TagSet tag_set, Tag tag) {
-  std::size_t tag_index = static_cast<std::size_t>(tag);
+  const auto tag_index = static_cast<std::size_t>(tag);
   return (tag_set.bits[tag_index >> 6] & (1ULL << (tag_index & 63))) != 0;
 }
 

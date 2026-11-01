@@ -74,7 +74,7 @@ class NodeRef {
   }
 
   [[nodiscard]] NodeRef parent() const noexcept {
-    return NodeRef(node().parent_key(), *store_);
+    return {node().parent_key(), *store_};
   }
 
   // The first element under this one, if any: the next key, since keys run in DFS order.

@@ -31,7 +31,7 @@ bool DOMBuilder::Validate() const {
   return node_stack_.empty();
 }
 
-bool DOMBuilder::FeedOpenToken(HtmlToken&& token, std::span<const Attribute> attributes, const char* text_begin) {
+bool DOMBuilder::FeedOpenToken(HtmlToken token, std::span<const Attribute> attributes, const char* text_begin) {
   closeElementsEndedBy(token.tag, text_begin);
   storeAttributes(&token, attributes);
 
@@ -42,7 +42,7 @@ bool DOMBuilder::FeedOpenToken(HtmlToken&& token, std::span<const Attribute> att
   const NodeKey parent_key = openNode().key();
   const NodeKey key = next_node_key_++;
 
-  auto& node = dfs_node_list_.emplace_back(key, parent_key, std::move(token));
+  auto& node = dfs_node_list_.emplace_back(key, parent_key, token);
   node.set_text_content({text_begin, 0});  // NOLINT(bugprone-string-constructor)
 
   node_stack_.push_back(key);
@@ -111,7 +111,7 @@ void DOMBuilder::appendClasses(std::string_view class_list, std::uint32_t run_be
   }
 }
 
-bool DOMBuilder::FeedTextToken(HtmlTextToken&& token) {
+bool DOMBuilder::FeedTextToken(HtmlTextToken token) {
   pending_runs_.push_back(TextRun{token.text_content, token.begin_pos});
   return true;
 }
@@ -142,7 +142,7 @@ void DOMBuilder::Finish(const char* text_end) {
 // An end tag for an element that is not open is dropped, as the HTML tree builder does
 // (`<p><div></div></p>`, `<br></br>`). One that would close an element the author left
 // open (`<div><span></div>`) fails the parse.
-bool DOMBuilder::FeedCloseToken(HtmlCloseToken&& token, const char* text_end) {
+bool DOMBuilder::FeedCloseToken(HtmlCloseToken token, const char* text_end) {
   for (std::size_t depth = node_stack_.size(); depth > 0; --depth) {
     const TagNode& open_node = dfs_node_list_[node_stack_[depth - 1]];
     if (IsEndTagOf(token, open_node)) {

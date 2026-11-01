@@ -45,7 +45,7 @@ class DOMSubtree {
 
   [[nodiscard]] NodeRef GetNodeByKey(NodeKey node_key) const {
     ARBORIS_ASSERT(isInSubtree(node_key), "Node key must be in subtree.");
-    return NodeRef(node_key, *store_);
+    return {node_key, *store_};
   }
 
   [[nodiscard]] const DOMStore& store() const noexcept {
@@ -64,8 +64,8 @@ class DOMSubtree {
   [[nodiscard]] NodeKeySpan sliceDescendants(NodeKeySpan keys) const noexcept {
     const auto descendants_begin = root_key_ + 1;
     const auto descendants_end = root_key_ + sub_tree_size_;
-    const auto first = std::lower_bound(keys.begin(), keys.end(), descendants_begin);
-    const auto last = std::lower_bound(first, keys.end(), descendants_end);
+    const auto first = std::ranges::lower_bound(keys, descendants_begin);
+    const auto last = std::ranges::lower_bound(first, keys.end(), descendants_end);
     return {first, static_cast<std::size_t>(last - first)};
   }
 
