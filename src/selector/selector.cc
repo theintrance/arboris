@@ -415,16 +415,10 @@ int ChildCount(const NodeRef& parent, MatchState* state) {
   return count;
 }
 
-struct SiblingPlace {
-  // 1-based, among the element siblings.
-  int index;
-  std::optional<NodeRef> previous;
-};
-
-// Where the node stands among its element siblings. With state, nodes asked for in
-// document order are walked to from the last one under the same parent rather than from
+// 1-based place of the node among its element siblings. With state, nodes asked for in
+// document order are counted on from the last one under the same parent rather than from
 // the first child again.
-SiblingPlace PlaceAmongSiblings(const NodeRef& node, MatchState* state) {
+int SiblingIndex(const NodeRef& node, MatchState* state) {
   const NodeRef parent = node.parent();
   std::optional<NodeRef> sibling = parent.first_child();
   int index = 1;
@@ -435,15 +429,13 @@ SiblingPlace PlaceAmongSiblings(const NodeRef& node, MatchState* state) {
       index = found->second.second;
     }
   }
-  std::optional<NodeRef> previous;
   for (; sibling && sibling->key() < node.key(); sibling = sibling->next_sibling()) {
-    previous = sibling;
     ++index;
   }
   if (state) {
     state->sibling_places.insert_or_assign(parent.key(), std::pair{node, index});
   }
-  return {index, previous};
+  return index;
 }
 
 bool MatchesNth(int a, int b, int index) {
@@ -464,10 +456,9 @@ bool MatchesPseudoClass(const PseudoClass& pseudo, const NodeRef& node, MatchSta
     case PseudoClass::Kind::kOnlyChild:
       return node.is_first_child() && !node.next_sibling().has_value();
     case PseudoClass::Kind::kNthChild:
-      return MatchesNth(pseudo.a, pseudo.b, PlaceAmongSiblings(node, state).index);
+      return MatchesNth(pseudo.a, pseudo.b, SiblingIndex(node, state));
     case PseudoClass::Kind::kNthLastChild:
-      return MatchesNth(pseudo.a, pseudo.b,
-                        ChildCount(node.parent(), state) - PlaceAmongSiblings(node, state).index + 1);
+      return MatchesNth(pseudo.a, pseudo.b, ChildCount(node.parent(), state) - SiblingIndex(node, state) + 1);
     case PseudoClass::Kind::kRoot:
       return IsDocumentElement(node);
     case PseudoClass::Kind::kEmpty:
@@ -562,7 +553,7 @@ bool MatchesFromHere(const ComplexSelector& complex, std::size_t index, const No
       }
       return false;
     case Combinator::kNextSibling: {
-      const auto previous = PlaceAmongSiblings(node, state).previous;
+      const auto previous = node.previous_sibling();
       return previous && MatchesFrom(complex, index + 1, *previous, state);
     }
     case Combinator::kSubsequentSibling:

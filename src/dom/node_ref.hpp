@@ -104,21 +104,19 @@ class NodeRef {
     return NodeRef(next, *store_);
   }
 
-  // The element before this one under the same parent, if any: the parent's children are
-  // walked from the first, since a node does not know how far back the one before it starts.
+  // The element before this one under the same parent, if any. In DFS order the key just
+  // before this one is that sibling or its last descendant, so it is reached by climbing
+  // from there until the parent is shared: O(depth), not O(siblings).
   [[nodiscard]] std::optional<NodeRef> previous_sibling() const noexcept {
-    const auto& tag_node = node();
-    if (tag_node.parent_key() == key_) {
+    const NodeKey parent_key = node().parent_key();
+    if (parent_key == key_ || parent_key + 1 == key_) {
       return std::nullopt;
     }
-    for (NodeKey child = tag_node.parent_key() + 1; child < key_;) {
-      const NodeKey next = child + std::max(1U, store_->nodes()[child].sub_tree_size());
-      if (next == key_) {
-        return NodeRef(child, *store_);
-      }
-      child = next;
+    NodeKey candidate = key_ - 1;
+    while (store_->nodes()[candidate].parent_key() != parent_key) {
+      candidate = store_->nodes()[candidate].parent_key();
     }
-    return std::nullopt;
+    return NodeRef(candidate, *store_);
   }
 
   // Children are found by walking keys, not by keeping a list: the first child is the next

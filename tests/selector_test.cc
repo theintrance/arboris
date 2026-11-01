@@ -183,7 +183,7 @@ TEST(SelectorTest, ParsedSelectorsAreReusable) {
 }
 
 TEST(NodeRefTest, SiblingsAreWalkedWithoutAllocation) {
-  const DOMManager dom("<ul><li id=a><b></b></li><li id=b></li><li id=c></li></ul>");
+  const DOMManager dom("<ul><li id=a><b><i></i></b><b></b></li><li id=b></li><li id=c></li></ul>");
   const auto b = dom.Find(std::string("b"));
   ASSERT_TRUE(b.has_value());
   ASSERT_TRUE(b->Get().previous_sibling().has_value());
@@ -215,6 +215,17 @@ TEST(SelectorTest, SiblingPseudoClassesScaleToLongLists) {
   EXPECT_EQ(dom.SelectAll(".a ~ li").size(), 19999U);
   EXPECT_EQ(dom.SelectAll(".a + li").size(), 1U);
   EXPECT_EQ(dom.SelectAll(".b ~ li").size(), 0U);
+  EXPECT_EQ(dom.SelectAll("li + li + li + li").size(), 19997U);
+}
+
+TEST(SelectorTest, NthChildAfterNextSiblingCombinator) {
+  const DOMManager dom("<ul><li id=a><li id=b><li id=c><li id=d></ul>");
+  EXPECT_EQ(Ids(dom.SelectAll("li + li:nth-child(2)")), Expected{"b"});
+  EXPECT_EQ(Ids(dom.SelectAll("li + li:nth-child(odd)")), Expected{"c"});
+  EXPECT_EQ(Ids(dom.SelectAll("li + li:nth-last-child(1)")), Expected{"d"});
+  EXPECT_EQ(Ids(dom.SelectAll("li + li:not(:nth-child(1))")), (Expected{"b", "c", "d"}));
+  EXPECT_EQ(Ids(dom.SelectAll("li:nth-child(2) + li")), Expected{"c"});
+  EXPECT_EQ(Ids(dom.SelectAll("li:nth-child(1) + li:nth-child(2) + li:nth-child(3)")), Expected{"c"});
 }
 
 TEST(SelectorTest, DescendantCombinatorsDoNotBacktrackExponentially) {

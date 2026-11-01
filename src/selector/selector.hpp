@@ -87,8 +87,8 @@ class Selector {
 
 // What a ComplexMatcher carries from one node to the next.
 struct MatchState {
-  // Per parent, the last sibling placed and its 1-based index, so siblings asked for in
-  // document order are walked to from there.
+  // Per parent, the last sibling counted and its 1-based index, so siblings asked for in
+  // document order are counted on from there.
   std::unordered_map<NodeKey, std::pair<NodeRef, int>> sibling_places;
   // Per parent, how many element children it has, for :nth-last-child.
   std::unordered_map<NodeKey, int> child_counts;
