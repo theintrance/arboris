@@ -7,12 +7,12 @@
 #ifndef SRC_UTILS_ASSERTION_HPP_
 #define SRC_UTILS_ASSERTION_HPP_
 
-#if defined(DEBUG)
+#if defined(ARBORIS_DEBUG)
 #include <cstdlib>
 #include <iostream>
 #endif
 
-#if defined(DEBUG)
+#if defined(ARBORIS_DEBUG)
 #define ARBORIS_ASSERT(cond, msg)                            \
   do {                                                       \
     if (!(cond)) {                                           \
