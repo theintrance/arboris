@@ -7,7 +7,6 @@
 #include "dom/html_token_parser.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <cstdint>
 #include <optional>
@@ -301,10 +300,11 @@ std::optional<std::string_view> HtmlTokenParser::readDoctypeId(std::size_t* begi
     return std::nullopt;
   }
 
-  const std::array<char, 2> delimiters{content_[*begin], '>'};
+  static constexpr CharSet kDoubleQuotedIdEnd{"\">"};
+  static constexpr CharSet kSingleQuotedIdEnd{"'>"};
+  const CharSet& delimiters = content_[*begin] == '"' ? kDoubleQuotedIdEnd : kSingleQuotedIdEnd;
   const std::size_t id_begin = *begin + 1;
-  const std::size_t id_end =
-      std::min(FindNextAnyChar(content_, id_begin, {delimiters.data(), delimiters.size()}), content_.length());
+  const std::size_t id_end = std::min(FindNextOf(content_, id_begin, delimiters), content_.length());
 
   if (id_end == content_.length() || content_[id_end] == '>') {
     *well_formed = false;
