@@ -21,6 +21,23 @@ std::string AsciiLowerCase(std::string_view text) {
   return out;
 }
 
+bool EqualsIgnoringCase(std::string_view lhs, std::string_view rhs) {
+  return std::ranges::equal(lhs, rhs, {}, ToAsciiLower, ToAsciiLower);
+}
+
+bool StartsWithIgnoringCase(std::string_view text, std::string_view prefix) {
+  return text.size() >= prefix.size() && EqualsIgnoringCase(text.substr(0, prefix.size()), prefix);
+}
+
+std::size_t FindIgnoringCase(std::string_view haystack, std::string_view needle, std::size_t from) {
+  for (std::size_t pos = from; pos + needle.size() <= haystack.size(); ++pos) {
+    if (EqualsIgnoringCase(haystack.substr(pos, needle.size()), needle)) {
+      return pos;
+    }
+  }
+  return std::string_view::npos;
+}
+
 std::size_t FindNextOf(std::string_view content, std::size_t begin, const CharSet& set) {
   for (std::size_t i = begin; i < content.length(); ++i) {
     if (set.Contains(content[i])) {

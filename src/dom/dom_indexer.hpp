@@ -7,7 +7,6 @@
 #ifndef SRC_DOM_DOM_INDEXER_HPP_
 #define SRC_DOM_DOM_INDEXER_HPP_
 
-#include <optional>
 #include <string_view>
 #include <unordered_map>
 
@@ -32,7 +31,7 @@ class DOMIndexer {
 
   void AddNode(const NodeRef& node);
 
-  [[nodiscard]] std::optional<NodeKey> GetNodeKeyById(std::string_view id) const;
+  [[nodiscard]] NodeKeySpan GetNodeKeyListById(std::string_view id) const;
   [[nodiscard]] NodeKeySpan GetNodeKeyListByTag(Tag tag) const;
   [[nodiscard]] NodeKeySpan GetNodeKeyListByName(std::string_view name) const;
   [[nodiscard]] NodeKeySpan GetNodeKeyListByClass(std::string_view class_name) const;
@@ -40,7 +39,8 @@ class DOMIndexer {
 
  private:
   // TODO(team): consider using std::list instead of std::vector for indexes
-  std::unordered_map<std::string_view, NodeKey> id_index_;
+  // Every node with the id, not only the first: querySelectorAll("#x") returns them all.
+  std::unordered_map<std::string_view, NodeKeyList> id_index_;
   std::unordered_map<Tag, NodeKeyList> tag_index_;
   // Only the tags FromString does not know; the others are found through tag_index_.
   std::unordered_map<std::string_view, NodeKeyList> name_index_;

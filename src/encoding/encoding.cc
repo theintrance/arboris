@@ -95,15 +95,6 @@ constexpr std::array kIconvNames = std::to_array<Label>({
     {"macintosh", "MACINTOSH"},
 });
 
-std::size_t FindIgnoringCase(std::string_view haystack, std::string_view needle, std::size_t from) {
-  for (std::size_t pos = from; pos + needle.size() <= haystack.size(); ++pos) {
-    if (std::ranges::equal(haystack.substr(pos, needle.size()), needle, {}, ToAsciiLower, ToAsciiLower)) {
-      return pos;
-    }
-  }
-  return std::string_view::npos;
-}
-
 std::string_view Trim(std::string_view text) {
   const std::size_t begin = SkipHtmlWhitespace(text, 0);
   std::size_t end = text.size();
