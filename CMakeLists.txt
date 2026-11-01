@@ -46,9 +46,7 @@ if (ARBORIS_BENCHMARK)
   add_subdirectory(benchmark)
 endif()
 
-# The Python extension links the static library into a shared module.
 option(ARBORIS_PYTHON "Build the Python extension module (python/)" OFF)
 if (ARBORIS_PYTHON)
-  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   add_subdirectory(python)
 endif()
