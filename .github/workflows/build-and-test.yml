@@ -70,6 +70,25 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  # Installs the library and builds tests/install against it, as a user's project would.
+  install:
+    name: install and find_package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and install
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON
+          cmake --build build --parallel --target arboris
+          cmake --install build --prefix "$PWD/prefix"
+
+      - name: Build a project against the install
+        run: |
+          cmake -S tests/install -B install-build -DCMAKE_PREFIX_PATH="$PWD/prefix"
+          cmake --build install-build
+          ./install-build/install_check
+
   clang-tidy:
     name: clang-tidy
     runs-on: ubuntu-latest
