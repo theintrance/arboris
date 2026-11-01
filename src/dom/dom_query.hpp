@@ -52,15 +52,21 @@ class DOMQuery {
   [[nodiscard]] std::vector<DOMQuery> SelectAll(std::string_view selector) const;
 
  private:
+  // Calls visit on each descendant among the candidates (every descendant when nullopt)
+  // that matches, in document order, until visit returns false.
+  template <typename Matches, typename Visit>
+  void forEachMatch(std::optional<NodeKeySpan> candidates, Matches&& matches, Visit&& visit) const;
+
+  template <typename Visit>
+  void forEachQueryMatch(const QueryOptions& options, Visit&& visit) const;
+
   [[nodiscard]] std::vector<NodeKey> selectKeys(const Selector& selector, bool first_only) const;
+
+  // The shortest index list among the conditions that have one, or nullopt when none has
+  // an index and every descendant is a candidate. An empty list settles the query.
+  [[nodiscard]] std::optional<NodeKeySpan> indexedCandidates(const QueryOptions& options) const;
   [[nodiscard]] std::optional<NodeKeySpan> indexedCandidates(const CompoundSelector& compound) const;
 
-  // Calls visit on each descendant that matches, in document order, until visit returns
-  // false.
-  template <typename Visit>
-  void forEachMatch(const QueryOptions& options, Visit&& visit) const;
-
-  [[nodiscard]] std::optional<NodeKeySpan> indexedCandidates(const QueryOptions& options) const;
   [[nodiscard]] bool matchAllConditions(const NodeRef& node, const QueryOptions& options) const;
 
   NodeRef subtree_root_;
