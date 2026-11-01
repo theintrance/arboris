@@ -21,18 +21,12 @@ namespace arboris {
 
 namespace {
 
-constexpr CharSet kSpace{" \t\n\f\r"};
-
 bool IsNameStart(char c) {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || static_cast<unsigned char>(c) >= 0x80;
 }
 
 bool IsNameChar(char c) {
   return IsNameStart(c) || (c >= '0' && c <= '9') || c == '-';
-}
-
-bool EqualsIgnoringCase(std::string_view lhs, std::string_view rhs) {
-  return std::ranges::equal(lhs, rhs, {}, ToAsciiLower, ToAsciiLower);
 }
 
 // Reads the selector text left to right. Every read* returns false on text it does not
@@ -72,7 +66,7 @@ class Parser {
   }
 
   void skipSpace() {
-    pos_ = SkipAll(text_, pos_, kSpace);
+    pos_ = SkipHtmlWhitespace(text_, pos_);
   }
 
   std::optional<std::string> readIdent() {
@@ -282,7 +276,7 @@ class Parser {
       return false;
     }
     std::string spec = AsciiLowerCase(text_.substr(pos_, end - pos_));
-    std::erase_if(spec, [](char c) { return kSpace.Contains(c); });
+    std::erase_if(spec, [](char c) { return kHtmlWhitespaceSet.Contains(c); });
     pos_ = end;
 
     if (spec == "odd") {
@@ -372,15 +366,15 @@ bool MatchesAttribute(const AttributeSelector& selector, const NodeRef& node) {
     case AttributeSelector::Match::kEquals:
       return equals(value, wanted);
     case AttributeSelector::Match::kIncludes: {
-      if (wanted.empty() || FindNextOf(wanted, 0, kSpace) != std::string_view::npos) {
+      if (wanted.empty() || FindNextOf(wanted, 0, kHtmlWhitespaceSet) != std::string_view::npos) {
         return false;
       }
-      for (std::size_t pos = SkipAll(value, 0, kSpace); pos < value.size();) {
-        const std::size_t end = std::min(FindNextOf(value, pos, kSpace), value.size());
+      for (std::size_t pos = SkipHtmlWhitespace(value, 0); pos < value.size();) {
+        const std::size_t end = std::min(FindNextOf(value, pos, kHtmlWhitespaceSet), value.size());
         if (equals(value.substr(pos, end - pos), wanted)) {
           return true;
         }
-        pos = SkipAll(value, end, kSpace);
+        pos = SkipHtmlWhitespace(value, end);
       }
       return false;
     }
@@ -396,15 +390,8 @@ bool MatchesAttribute(const AttributeSelector& selector, const NodeRef& node) {
       if (wanted.empty() || value.size() < wanted.size()) {
         return false;
       }
-      if (!selector.ignore_case) {
-        return value.find(wanted) != std::string_view::npos;
-      }
-      for (std::size_t pos = 0; pos + wanted.size() <= value.size(); ++pos) {
-        if (EqualsIgnoringCase(value.substr(pos, wanted.size()), wanted)) {
-          return true;
-        }
-      }
-      return false;
+      return (selector.ignore_case ? FindIgnoringCase(value, wanted, 0) : value.find(wanted)) !=
+             std::string_view::npos;
     }
     case AttributeSelector::Match::kExists:
       return true;

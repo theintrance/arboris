@@ -29,6 +29,13 @@ constexpr char ToAsciiLower(char c) {
 
 std::string AsciiLowerCase(std::string_view text);
 
+bool EqualsIgnoringCase(std::string_view lhs, std::string_view rhs);
+bool StartsWithIgnoringCase(std::string_view text, std::string_view prefix);
+
+// Position of the first needle in haystack at or after from, compared ignoring ASCII case,
+// or npos.
+std::size_t FindIgnoringCase(std::string_view haystack, std::string_view needle, std::size_t from);
+
 // A set of byte values, one bit each, so a scan tests a byte against the whole set at once.
 class CharSet {
  public:
