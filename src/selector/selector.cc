@@ -153,7 +153,11 @@ class Parser {
     if (take('*')) {
       any = true;
     } else if (IsNameStart(peek()) || peek() == '-') {
-      out->tag = AsciiLowerCase(*readIdent());
+      auto tag = readIdent();
+      if (!tag) {
+        return false;
+      }
+      out->tag = AsciiLowerCase(*tag);
       any = true;
     }
 
@@ -508,7 +512,7 @@ bool Matches(const CompoundSelector& compound, const NodeRef& node) {
 }
 
 bool Matches(const ComplexSelector& complex, const NodeRef& node) {
-  return MatchesFrom(complex, 0, node);
+  return !complex.compounds.empty() && MatchesFrom(complex, 0, node);
 }
 
 std::optional<Selector> Selector::Parse(std::string_view text) {

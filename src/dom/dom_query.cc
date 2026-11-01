@@ -152,6 +152,9 @@ std::vector<DOMQuery> DOMQuery::SelectAll(std::string_view selector) const {
 std::vector<NodeKey> DOMQuery::selectKeys(const Selector& selector, bool first_only) const {
   std::vector<NodeKey> keys;
   for (const auto& complex : selector.alternatives()) {
+    if (complex.compounds.empty()) {
+      continue;
+    }
     const auto check = [&](NodeKey key) {
       if (Matches(complex, subtree_.GetNodeByKey(key))) {
         keys.push_back(key);

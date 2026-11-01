@@ -50,6 +50,16 @@ TEST(SelectorTest, ParseRejectsWhatItDoesNotRead) {
   EXPECT_FALSE(Selector::Parse("p:nth-child(x)").has_value());
   EXPECT_FALSE(Selector::Parse("div,").has_value());
   EXPECT_FALSE(Selector::Parse(".").has_value());
+  EXPECT_FALSE(Selector::Parse("-1").has_value());
+  EXPECT_FALSE(Selector::Parse("--x").has_value());
+  EXPECT_FALSE(Selector::Parse("div -").has_value());
+  EXPECT_FALSE(Selector::Parse("a, -").has_value());
+  EXPECT_TRUE(Selector::Parse("-x").has_value());
+}
+
+TEST(SelectorTest, AnEmptyComplexSelectorMatchesNothing) {
+  const DOMManager dom(Page());
+  EXPECT_FALSE(Matches(ComplexSelector{}, dom.SelectAll("p")[0].Get()));
 }
 
 TEST(SelectorTest, SimpleSelectors) {
