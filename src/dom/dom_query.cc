@@ -11,6 +11,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -67,11 +68,28 @@ std::optional<QueryOptions> LowerCasedNames(const QueryOptions& options) {
   return lowered;
 }
 
+// Keeps the shortest of the index lists offered to it.
+class ShortestSpan {
+ public:
+  void Consider(NodeKeySpan keys) {
+    if (!shortest_ || keys.size() < shortest_->size()) {
+      shortest_ = keys;
+    }
+  }
+
+  [[nodiscard]] std::optional<NodeKeySpan> get() const noexcept {
+    return shortest_;
+  }
+
+ private:
+  std::optional<NodeKeySpan> shortest_;
+};
+
 }  // anonymous namespace
 
 std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
   std::optional<DOMQuery> found;
-  forEachMatch(options, [&](const NodeRef& node) {
+  forEachQueryMatch(options, [&](const NodeRef& node) {
     found.emplace(node, subtree_);
     return false;
   });
@@ -79,32 +97,30 @@ std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
 }
 
 std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
-  auto node_key = subtree_.GetNodeById(id);
-  if (!node_key) {
+  const auto keys = subtree_.GetNodesById(id);
+  if (keys.empty()) {
     return std::nullopt;
   }
-  return DOMQuery(subtree_.GetNodeByKey(*node_key), subtree_);
+  return DOMQuery(subtree_.GetNodeByKey(keys.front()), subtree_);
 }
 
 std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
   std::vector<DOMQuery> found;
-  forEachMatch(options, [&](const NodeRef& node) {
+  forEachQueryMatch(options, [&](const NodeRef& node) {
     found.emplace_back(node, subtree_);
     return true;
   });
   return found;
 }
 
-template <typename Visit>
-void DOMQuery::forEachMatch(const QueryOptions& given, Visit&& visit) const {
-  const std::optional<QueryOptions> lowered = LowerCasedNames(given);
-  const QueryOptions& options = lowered ? *lowered : given;
+template <typename Matches, typename Visit>
+void DOMQuery::forEachMatch(std::optional<NodeKeySpan> candidates, Matches&& matches, Visit&& visit) const {
   const auto check = [&](NodeKey key) {
     const auto node = subtree_.GetNodeByKey(key);
-    return !matchAllConditions(node, options) || visit(node);
+    return !matches(node) || visit(node);
   };
 
-  if (const auto candidates = indexedCandidates(options)) {
+  if (candidates) {
     for (const NodeKey key : *candidates) {
       if (!check(key)) {
         return;
@@ -119,33 +135,105 @@ void DOMQuery::forEachMatch(const QueryOptions& given, Visit&& visit) const {
   }
 }
 
-// The shortest index list among the conditions that have one, or nullopt when no condition
-// has an index and every descendant is a candidate. An empty list settles the query.
-std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const QueryOptions& options) const {
-  std::optional<NodeKeySpan> shortest;
-  const auto consider = [&shortest](NodeKeySpan keys) {
-    if (!shortest || keys.size() < shortest->size()) {
-      shortest = keys;
-    }
-  };
+template <typename Visit>
+void DOMQuery::forEachQueryMatch(const QueryOptions& given, Visit&& visit) const {
+  const std::optional<QueryOptions> lowered = LowerCasedNames(given);
+  const QueryOptions& options = lowered ? *lowered : given;
+  forEachMatch(
+      indexedCandidates(options), [&](const NodeRef& node) { return matchAllConditions(node, options); },
+      std::forward<Visit>(visit));
+}
 
+std::optional<DOMQuery> DOMQuery::Select(const Selector& selector) const {
+  const auto keys = selectKeys(selector, true);
+  if (keys.empty()) {
+    return std::nullopt;
+  }
+  return DOMQuery(subtree_.GetNodeByKey(keys.front()), subtree_);
+}
+
+std::optional<DOMQuery> DOMQuery::Select(std::string_view selector) const {
+  const auto parsed = Selector::Parse(selector);
+  return parsed ? Select(*parsed) : std::nullopt;
+}
+
+std::vector<DOMQuery> DOMQuery::SelectAll(const Selector& selector) const {
+  std::vector<DOMQuery> found;
+  for (const NodeKey key : selectKeys(selector, false)) {
+    found.emplace_back(subtree_.GetNodeByKey(key), subtree_);
+  }
+  return found;
+}
+
+std::vector<DOMQuery> DOMQuery::SelectAll(std::string_view selector) const {
+  const auto parsed = Selector::Parse(selector);
+  return parsed ? SelectAll(*parsed) : std::vector<DOMQuery>{};
+}
+
+// Each alternative is tried from the index its subject compound allows. One alternative
+// already yields document order; several are merged into it. Only the subject needs to be
+// a descendant: the elements the combinators lead to may sit above the subtree, as they do
+// for querySelectorAll.
+std::vector<NodeKey> DOMQuery::selectKeys(const Selector& selector, bool first_only) const {
+  std::vector<NodeKey> keys;
+  for (const auto& complex : selector.alternatives()) {
+    if (complex.compounds.empty()) {
+      continue;
+    }
+    ComplexMatcher matcher(complex);
+    forEachMatch(
+        indexedCandidates(complex.compounds.front()),
+        [&](const NodeRef& node) { return matcher.Matches(node); },
+        [&](const NodeRef& node) {
+          keys.push_back(node.key());
+          return !first_only;
+        });
+  }
+
+  if (selector.alternatives().size() > 1) {
+    std::ranges::sort(keys);
+    const auto [first, last] = std::ranges::unique(keys);
+    keys.erase(first, last);
+  }
+  return keys;
+}
+
+std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const QueryOptions& options) const {
+  ShortestSpan shortest;
   if (options.tag) {
-    consider(subtree_.GetNodesByTag(*options.tag));
+    shortest.Consider(subtree_.GetNodesByTag(*options.tag));
   }
   if (options.name) {
-    consider(subtree_.GetNodesByName(*options.name));
+    shortest.Consider(subtree_.GetNodesByName(*options.name));
   }
   if (options.classes) {
     for (const auto& class_name : *options.classes) {
-      consider(subtree_.GetNodesByClass(class_name));
+      shortest.Consider(subtree_.GetNodesByClass(class_name));
     }
   }
   if (options.attributes) {
     for (const auto& [attribute_name, _] : *options.attributes) {
-      consider(subtree_.GetNodesByAttribute(attribute_name));
+      shortest.Consider(subtree_.GetNodesByAttribute(attribute_name));
     }
   }
-  return shortest;
+  return shortest.get();
+}
+
+std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const CompoundSelector& compound) const {
+  ShortestSpan shortest;
+  if (compound.id) {
+    shortest.Consider(subtree_.GetNodesById(*compound.id));
+  }
+  if (compound.tag) {
+    shortest.Consider(subtree_.GetNodesByName(*compound.tag));
+  }
+  for (const auto& class_name : compound.classes) {
+    shortest.Consider(subtree_.GetNodesByClass(class_name));
+  }
+  for (const auto& attribute : compound.attributes) {
+    shortest.Consider(subtree_.GetNodesByAttribute(attribute.name));
+  }
+  return shortest.get();
 }
 
 bool DOMQuery::matchAllConditions(const NodeRef& node, const QueryOptions& options) const {

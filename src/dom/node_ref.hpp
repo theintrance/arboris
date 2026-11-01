@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -74,6 +75,48 @@ class NodeRef {
 
   [[nodiscard]] NodeRef parent() const noexcept {
     return NodeRef(node().parent_key(), *store_);
+  }
+
+  // The first element under this one, if any: the next key, since keys run in DFS order.
+  [[nodiscard]] std::optional<NodeRef> first_child() const noexcept {
+    if (node().sub_tree_size() <= 1) {
+      return std::nullopt;
+    }
+    return NodeRef(key_ + 1, *store_);
+  }
+
+  [[nodiscard]] bool is_first_child() const noexcept {
+    const auto& tag_node = node();
+    return tag_node.parent_key() != key_ && tag_node.parent_key() + 1 == key_;
+  }
+
+  // The element after this one under the same parent, if any. The root has no siblings.
+  [[nodiscard]] std::optional<NodeRef> next_sibling() const noexcept {
+    const auto& tag_node = node();
+    if (tag_node.parent_key() == key_) {
+      return std::nullopt;
+    }
+    const auto& parent_node = store_->nodes()[tag_node.parent_key()];
+    const NodeKey next = key_ + std::max(1U, tag_node.sub_tree_size());
+    if (next >= parent_node.key() + parent_node.sub_tree_size()) {
+      return std::nullopt;
+    }
+    return NodeRef(next, *store_);
+  }
+
+  // The element before this one under the same parent, if any. In DFS order the key just
+  // before this one is that sibling or its last descendant, so it is reached by climbing
+  // from there until the parent is shared: O(depth), not O(siblings).
+  [[nodiscard]] std::optional<NodeRef> previous_sibling() const noexcept {
+    const NodeKey parent_key = node().parent_key();
+    if (parent_key == key_ || parent_key + 1 == key_) {
+      return std::nullopt;
+    }
+    NodeKey candidate = key_ - 1;
+    while (store_->nodes()[candidate].parent_key() != parent_key) {
+      candidate = store_->nodes()[candidate].parent_key();
+    }
+    return NodeRef(candidate, *store_);
   }
 
   // Children are found by walking keys, not by keeping a list: the first child is the next

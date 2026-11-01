@@ -10,6 +10,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -77,6 +78,22 @@ std::optional<DOMQuery> DOMManager::Find(const std::string& id) const {
 
 std::vector<DOMQuery> DOMManager::FindAll(const QueryOptions& options) const {
   return rootQuery().FindAll(options);
+}
+
+std::optional<DOMQuery> DOMManager::Select(const Selector& selector) const {
+  return rootQuery().Select(selector);
+}
+
+std::optional<DOMQuery> DOMManager::Select(std::string_view selector) const {
+  return rootQuery().Select(selector);
+}
+
+std::vector<DOMQuery> DOMManager::SelectAll(const Selector& selector) const {
+  return rootQuery().SelectAll(selector);
+}
+
+std::vector<DOMQuery> DOMManager::SelectAll(std::string_view selector) const {
+  return rootQuery().SelectAll(selector);
 }
 
 }  // namespace arboris

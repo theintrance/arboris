@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <optional>
 #include <ranges>
 #include <string_view>
 
@@ -34,7 +33,7 @@ class DOMSubtree {
       sub_tree_size_(subtree_root.sub_tree_size()),
       store_(&store) {}
 
-  [[nodiscard]] std::optional<NodeKey> GetNodeById(std::string_view id) const;
+  [[nodiscard]] NodeKeySpan GetNodesById(std::string_view id) const;
   [[nodiscard]] NodeKeySpan GetNodesByTag(Tag tag) const;
   [[nodiscard]] NodeKeySpan GetNodesByName(std::string_view name) const;
   [[nodiscard]] NodeKeySpan GetNodesByClass(std::string_view class_name) const;

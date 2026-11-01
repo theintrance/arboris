@@ -6,7 +6,6 @@
 
 #include "dom/dom_subtree.hpp"
 
-#include <optional>
 #include <string_view>
 
 #include "utils/assertion.hpp"
@@ -22,12 +21,8 @@ DOMSubtree::DOMSubtree(const DOMSubtree& parent, const TagNode& subtree_root)
                  "Subtree root must be a child of the parent.");
 }
 
-std::optional<NodeKey> DOMSubtree::GetNodeById(std::string_view id) const {
-  auto node_key = store_->indexer().GetNodeKeyById(id);
-  if (!node_key || !isDescendant(*node_key)) {
-    return std::nullopt;
-  }
-  return node_key.value();
+NodeKeySpan DOMSubtree::GetNodesById(std::string_view id) const {
+  return sliceDescendants(store_->indexer().GetNodeKeyListById(id));
 }
 
 NodeKeySpan DOMSubtree::GetNodesByTag(Tag tag) const {

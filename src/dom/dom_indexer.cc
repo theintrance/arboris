@@ -6,7 +6,6 @@
 
 #include "dom/dom_indexer.hpp"
 
-#include <optional>
 #include <string_view>
 #include <unordered_map>
 
@@ -41,15 +40,13 @@ void DOMIndexer::AddNode(const NodeRef& node) {
     attr_index_[attribute.name].emplace_back(key);
   }
 
-  // The first id wins, as querySelector does with a repeated id.
   if (!node.id().empty()) {
-    id_index_.try_emplace(node.id(), key);
+    id_index_[node.id()].emplace_back(key);
   }
 }
 
-std::optional<NodeKey> DOMIndexer::GetNodeKeyById(std::string_view id) const {
-  auto it = id_index_.find(id);
-  return it != id_index_.end() ? std::make_optional(it->second) : std::nullopt;
+NodeKeySpan DOMIndexer::GetNodeKeyListById(std::string_view id) const {
+  return Lookup(id_index_, id);
 }
 
 NodeKeySpan DOMIndexer::GetNodeKeyListByTag(Tag tag) const {

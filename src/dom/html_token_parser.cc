@@ -30,14 +30,6 @@ constexpr std::string_view kCommentOpen = "<!--";
 constexpr std::string_view kDoctypeOpen = "<!doctype";
 constexpr CharSet kDoctypeNameDelimiters{" \t\n\f\r>"};
 
-bool EqualsIgnoringCase(std::string_view lhs, std::string_view rhs) {
-  return std::ranges::equal(lhs, rhs, {}, ToAsciiLower, ToAsciiLower);
-}
-
-bool StartsWithIgnoringCase(std::string_view text, std::string_view prefix) {
-  return text.size() >= prefix.size() && EqualsIgnoringCase(text.substr(0, prefix.size()), prefix);
-}
-
 }  // anonymous namespace
 
 bool HtmlTokenParser::Parse() {
