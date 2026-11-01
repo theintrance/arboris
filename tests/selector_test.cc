@@ -57,6 +57,17 @@ TEST(SelectorTest, ParseRejectsWhatItDoesNotRead) {
   EXPECT_TRUE(Selector::Parse("-x").has_value());
 }
 
+TEST(SelectorTest, RepeatedIdsAreAllFound) {
+  const DOMManager dom("<div id=x><span id=x></span></div><p id=x></p>");
+  EXPECT_EQ(dom.SelectAll("#x").size(), 3U);
+  EXPECT_EQ(dom.SelectAll("[id=x]").size(), 3U);
+  EXPECT_EQ(Ids(dom.SelectAll("p#x")), Expected{"x"});
+  EXPECT_EQ(dom.SelectAll("p#x")[0].Get().tag(), Tag::kP);
+  EXPECT_EQ(dom.SelectAll("div > #x")[0].Get().tag(), Tag::kSpan);
+  EXPECT_EQ(dom.SelectAll("div")[0].SelectAll("#x")[0].Get().tag(), Tag::kSpan);
+  EXPECT_EQ(dom.Find(std::string("x"))->Get().tag(), Tag::kDiv);
+}
+
 TEST(SelectorTest, AnEmptyComplexSelectorMatchesNothing) {
   const DOMManager dom(Page());
   EXPECT_FALSE(Matches(ComplexSelector{}, dom.SelectAll("p")[0].Get()));

@@ -65,9 +65,6 @@ class DOMQuery {
 
   NodeRef subtree_root_;
   DOMSubtree subtree_;
-
-  // Where an id lookup's single key lives while it is handed out as a span.
-  mutable NodeKey id_hit_ = 0;
 };
 
 }  // namespace arboris

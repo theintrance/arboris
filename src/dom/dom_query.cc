@@ -80,11 +80,11 @@ std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
 }
 
 std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
-  auto node_key = subtree_.GetNodeById(id);
-  if (!node_key) {
+  const auto keys = subtree_.GetNodesById(id);
+  if (keys.empty()) {
     return std::nullopt;
   }
-  return DOMQuery(subtree_.GetNodeByKey(*node_key), subtree_);
+  return DOMQuery(subtree_.GetNodeByKey(keys.front()), subtree_);
 }
 
 std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
@@ -193,9 +193,7 @@ std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const CompoundSelector& c
   };
 
   if (compound.id) {
-    const auto key = subtree_.GetNodeById(*compound.id);
-    id_hit_ = key.value_or(0);
-    consider(key ? NodeKeySpan{&id_hit_, 1} : NodeKeySpan{});
+    consider(subtree_.GetNodesById(*compound.id));
   }
   if (compound.tag) {
     consider(subtree_.GetNodesByName(*compound.tag));
