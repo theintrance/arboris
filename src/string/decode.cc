@@ -205,11 +205,6 @@ std::size_t DecodedSizeBound(std::size_t source_size) {
   return source_size * kReferenceGrowthNumerator / kReferenceGrowthDenominator + 1;
 }
 
-bool NeedsDecoding(std::string_view in, TextMode mode) {
-  return in.find('\r') != std::string_view::npos ||
-         (mode != TextMode::kRawText && in.find('&') != std::string_view::npos);
-}
-
 std::size_t DecodeInto(std::string_view in, TextMode mode, char* out) {
   const CharSet& specials = mode == TextMode::kRawText ? kRawTextSpecials : kTextSpecials;
   Writer writer(out);

@@ -41,9 +41,6 @@ class StringPool {
   }
 
   [[nodiscard]] std::string_view AppendDecoded(std::string_view str, TextMode mode) {
-    if (!NeedsDecoding(str, mode)) {
-      return Append(str);
-    }
     ARBORIS_ASSERT(size_ + DecodedSizeBound(str.size()) <= capacity_, "The string pool is full.");
     return take(DecodeInto(str, mode, data_.get() + size_));
   }

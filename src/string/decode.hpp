@@ -27,12 +27,9 @@ enum class TextMode {
 // Decoded bytes per source byte, at most. A buffer reserved at this ratio never grows.
 std::size_t DecodedSizeBound(std::size_t source_size);
 
-// True when decoding would give back something other than the input itself.
-bool NeedsDecoding(std::string_view in, TextMode mode);
-
 // Writes in to out with "\r\n" and "\r" turned into "\n" and, by mode, character
 // references decoded. out has room for DecodedSizeBound(in.size()) bytes; the length
-// written is returned.
+// written is returned. One pass: text with nothing to decode is found so and copied.
 std::size_t DecodeInto(std::string_view in, TextMode mode, char* out);
 
 void AppendDecoded(std::string_view in, TextMode mode, std::string* out);

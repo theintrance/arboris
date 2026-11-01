@@ -57,11 +57,10 @@ TEST(DecodeTest, NewlinesAreNormalised) {
   EXPECT_EQ(Decoded("\r"), "\n");
 }
 
-TEST(DecodeTest, NeedsDecodingOnlyWhenSomethingChanges) {
-  EXPECT_FALSE(NeedsDecoding("plain text", TextMode::kText));
-  EXPECT_TRUE(NeedsDecoding("a &amp; b", TextMode::kText));
-  EXPECT_TRUE(NeedsDecoding("a\r\nb", TextMode::kRawText));
-  EXPECT_FALSE(NeedsDecoding("a &amp; b", TextMode::kRawText));
+TEST(DecodeTest, PlainTextComesBackAsIs) {
+  EXPECT_EQ(Decoded("plain text"), "plain text");
+  EXPECT_EQ(Decoded(""), "");
+  EXPECT_EQ(Decoded("a &amp; b", TextMode::kRawText), "a &amp; b");
 }
 
 TEST(DecodeTest, SizeBoundCoversTheWidestReference) {
