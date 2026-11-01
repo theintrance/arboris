@@ -23,8 +23,9 @@ add_gtest(node_ref_test node_ref_test.cc)
 add_gtest(serialization_test serialization_test.cc)
 
 # html5lib-tests tokenizer conformance (https://github.com/html5lib/html5lib-tests)
-# Runs tests/html5lib via pytest (`uv` group "test"). Scope: every well-formed Data-state
-# tokenizer case. Broken HTML is out of scope; see tests/html5lib/conftest.py.
+# Runs tests/html5lib via pytest; `uv run --no-project` so that it never builds the Python
+# package. Scope: every well-formed Data-state tokenizer case. Broken HTML is out of scope;
+# see tests/html5lib/conftest.py.
 option(ARBORIS_HTML5LIB_TESTS "Download html5lib-tests and register the tokenizer conformance test" OFF)
 
 if (ARBORIS_HTML5LIB_TESTS)
@@ -36,7 +37,7 @@ if (ARBORIS_HTML5LIB_TESTS)
   target_include_directories(html5lib_tokenizer_dump PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
   add_test(NAME html5lib_tokenizer
-    COMMAND ${UV_EXECUTABLE} run --group test pytest ${CMAKE_CURRENT_SOURCE_DIR}/html5lib -q
+    COMMAND ${UV_EXECUTABLE} run --no-project --with pytest pytest ${CMAKE_CURRENT_SOURCE_DIR}/html5lib -q
             --dump $<TARGET_FILE:html5lib_tokenizer_dump>
             --tests-dir ${html5lib_tests_SOURCE_DIR}/tokenizer
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

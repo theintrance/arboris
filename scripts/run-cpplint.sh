@@ -11,4 +11,4 @@ ROOT=$(git rev-parse --show-toplevel)
 
 cd "$ROOT"
 
-uv run cpplint --quiet --recursive --config=CPPLINT.cfg .
+uv run --no-project --with cpplint==2.0.2 cpplint --quiet --recursive --config=CPPLINT.cfg .

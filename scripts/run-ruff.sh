@@ -11,4 +11,4 @@ ROOT=$(git rev-parse --show-toplevel)
 
 cd "$ROOT"
 
-uv run ruff check "$ROOT"
+uv run --no-project --with ruff==0.12.11 ruff check "$ROOT"

@@ -89,7 +89,7 @@ jobs:
               echo "Time change per benchmark; negative is faster. Only arboris is timed."
               echo
               echo '```'
-              uv run --group bench python build/_deps/googlebenchmark-src/tools/compare.py \
+              uv run --no-project --with numpy --with scipy python build/_deps/googlebenchmark-src/tools/compare.py \
                 --no-color -a benchmarks base.json head.json
               echo '```'
             else
@@ -150,7 +150,7 @@ jobs:
             echo "Time change per benchmark; negative means arboris is faster than lexbor."
             echo
             echo '```'
-            uv run --group bench python build/_deps/googlebenchmark-src/tools/compare.py \
+            uv run --no-project --with numpy --with scipy python build/_deps/googlebenchmark-src/tools/compare.py \
               --no-color -a filters libraries.json lexbor arboris
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"

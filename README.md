@@ -159,9 +159,9 @@ a CTest entry:
 ```bash
 cmake -S . -B build -DARBORIS_HTML5LIB_TESTS=ON
 cmake --build build
-uv run --group test pytest tests/html5lib                    # cases in scope
-uv run --group test pytest tests/html5lib --include-broken   # everything, including out of scope
-uv run --group test pytest tests/html5lib -k "test1.test:9]" # a single case
+uv run --no-project --with pytest pytest tests/html5lib                    # cases in scope
+uv run --no-project --with pytest pytest tests/html5lib --include-broken   # everything, including out of scope
+uv run --no-project --with pytest pytest tests/html5lib -k "test1.test:9]" # a single case
 ```
 
 Every well-formed case that runs in the Data state is in scope. Cases html5lib-tests marks with
@@ -177,8 +177,8 @@ tokens in `tests/html5lib/categories.py`. Regenerate the table below after chang
 CI fails on a pull request that leaves it stale:
 
 ```bash
-uv run --group test pytest tests/html5lib -q --junitxml=html5lib.xml
-uv run --group test python scripts/html5lib_status.py --junit html5lib.xml --write
+uv run --no-project --with pytest pytest tests/html5lib -q --junitxml=html5lib.xml
+uv run --no-project python scripts/html5lib_status.py --junit html5lib.xml --write
 ```
 
 <!-- html5lib:start -->
