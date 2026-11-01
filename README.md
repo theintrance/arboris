@@ -1,7 +1,7 @@
 <p align="center">
-    <img src="assets/arboris.png" width="400"/>
+    <img src="https://raw.githubusercontent.com/theintrance/arboris/main/assets/arboris.png" width="400"/>
     <br>
-    <img src='assets/description.svg'>
+    <img src='https://raw.githubusercontent.com/theintrance/arboris/main/assets/description.svg'>
 </p>
 
 ---
@@ -227,7 +227,7 @@ uv run --no-project --with pytest python scripts/html5lib_status.py --junit html
 ### Documentation
 
 * The public C++ API is the comment at the top of
-  [`include/arboris/arboris.hpp`](include/arboris/arboris.hpp) and the comments on the types it
+  [`include/arboris/arboris.hpp`](https://github.com/theintrance/arboris/blob/main/include/arboris/arboris.hpp) and the comments on the types it
   names; `src/arboris/dom/node_ref.hpp` is the one to read for what a node gives you.
 * In Python, `help(arboris)` and `help(arboris.Node)` carry the same information as docstrings.
 * Design decisions are recorded in the pull requests; the
@@ -250,4 +250,4 @@ per commit; the pull request description carries the reasoning.
 
 ### License
 
-* `arboris` is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+* `arboris` is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/theintrance/arboris/blob/main/LICENSE) file for details.
