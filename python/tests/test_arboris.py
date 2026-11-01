@@ -1,3 +1,6 @@
+import re
+from types import MappingProxyType
+
 import pytest
 
 import arboris
@@ -35,6 +38,11 @@ def test_parse_rejects_other_types():
         arboris.parse(3)
 
 
+def test_parse_rejects_a_str_that_has_no_utf8():
+    with pytest.raises(UnicodeEncodeError):
+        arboris.parse("<p>\ud800</p>")
+
+
 def test_select_returns_document_order(doc):
     items = doc.select("ul > li")
     assert [li.text for li in items] == ["x", "y & z"]
@@ -60,6 +68,51 @@ def test_find_conditions(doc):
     assert [n.tag for n in doc.find_all(text=lambda t: "&" in t)] == ["html", "body", "ul", "li"]
     assert doc.get_by_id("p").attrs == {"id": "p", "data-k": "v", "hidden": ""}
     assert doc.get_by_id("missing") is None
+
+
+def test_find_splits_a_classes_str_like_a_class_attribute(doc):
+    assert doc.find(classes="a b").text == "x"
+    assert doc.find(classes="b\ta").text == "x"
+    assert doc.find(classes=" a  ").text == "x"
+    assert doc.find(classes="a c") is None
+
+
+def test_find_takes_any_mapping_as_attrs(doc):
+    assert doc.find(attrs=MappingProxyType({"data-k": "v"})).id == "p"
+
+
+def test_find_judges_a_text_predicate_by_its_truth(doc):
+    assert doc.find(text=lambda t: re.search("&", t)).tag == "html"
+    assert doc.find_all(text=lambda t: None) == []
+    assert [n.tag for n in doc.find_all(text=len)] == ["html", "body", "ul", "li", "li", "p"]
+
+
+def test_find_raises_the_predicate_error(doc):
+    with pytest.raises(ZeroDivisionError):
+        doc.find(text=lambda t: 1 // 0)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"classes": b"a"},
+        {"classes": 3},
+        {"classes": ["a", 3]},
+        {"attrs": [("data-k", "v")]},
+        {"attrs": {"hidden": True}},
+        {"attrs": {3: "v"}},
+        {"text": 3},
+        {"tag": 3},
+    ],
+)
+def test_find_rejects_arguments_of_the_wrong_type(doc, kwargs):
+    with pytest.raises(TypeError):
+        doc.find(**kwargs)
+
+
+def test_find_rejects_a_str_that_has_no_utf8(doc):
+    with pytest.raises(UnicodeEncodeError):
+        doc.find(classes="\ud800")
 
 
 def test_queries_from_a_node_search_its_descendants(doc):

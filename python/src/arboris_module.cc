@@ -15,6 +15,7 @@
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -86,7 +87,37 @@ arboris::Selector ParseSelector(std::string_view text) {
   return std::move(*selector);
 }
 
-// Builds the C++ query from the keyword arguments of find()/find_all().
+// The UTF-8 of a str. A str with no UTF-8 form, one holding a lone surrogate, raises
+// UnicodeEncodeError as str.encode() would.
+std::string_view Utf8(nb::handle text) {
+  Py_ssize_t size = 0;
+  const char* data = PyUnicode_AsUTF8AndSize(text.ptr(), &size);
+  if (data == nullptr) {
+    throw nb::python_error();
+  }
+  return {data, static_cast<std::size_t>(size)};
+}
+
+std::string_view Utf8(nb::handle text, const char* type_error) {
+  if (!nb::isinstance<nb::str>(text)) {
+    throw nb::type_error(type_error);
+  }
+  return Utf8(text);
+}
+
+// classes="a b" asks for both names, as class="a b" in HTML sets both.
+void InsertClasses(arboris::ClassSet& set, std::string_view value) {
+  constexpr std::string_view kAsciiWhitespace = "\t\n\f\r ";
+  for (std::size_t pos = value.find_first_not_of(kAsciiWhitespace); pos != std::string_view::npos;
+       pos = value.find_first_not_of(kAsciiWhitespace, pos)) {
+    const std::size_t end = std::min(value.find_first_of(kAsciiWhitespace, pos), value.size());
+    set.emplace(value.substr(pos, end - pos));
+    pos = end;
+  }
+}
+
+// Builds the C++ query from the keyword arguments of find()/find_all(). An argument of the
+// wrong type is a TypeError, as for any Python function.
 arboris::QueryOptions Options(const std::optional<std::string>& tag, nb::object classes, nb::object attrs,
                               nb::object text) {
   arboris::QueryOptions options;
@@ -94,32 +125,50 @@ arboris::QueryOptions Options(const std::optional<std::string>& tag, nb::object 
     options.name = *tag;
   }
   if (!classes.is_none()) {
+    constexpr const char* kClassesError = "classes must be a str or an iterable of str";
     arboris::ClassSet set;
     if (nb::isinstance<nb::str>(classes)) {
-      set.insert(nb::cast<std::string>(classes));
+      InsertClasses(set, Utf8(classes));
+    } else if (nb::isinstance<nb::bytes>(classes)) {
+      throw nb::type_error(kClassesError);
     } else {
       for (nb::handle item : classes) {
-        set.insert(nb::cast<std::string>(item));
+        set.emplace(Utf8(item, kClassesError));
       }
     }
     options.classes = std::move(set);
   }
   if (!attrs.is_none()) {
+    constexpr const char* kAttrsError = "attrs must be a mapping of str to str or None";
+    nb::dict dict;
+    if (PyDict_Update(dict.ptr(), attrs.ptr()) < 0) {
+      PyErr_Clear();
+      throw nb::type_error(kAttrsError);
+    }
     arboris::AttributeMap map;
-    for (const auto& [key, value] : nb::cast<nb::dict>(attrs)) {
-      auto& values = map[nb::cast<std::string>(key)];
+    for (const auto& [key, value] : dict) {
+      auto& values = map[std::string(Utf8(key, kAttrsError))];
       if (!value.is_none()) {
-        values.insert(nb::cast<std::string>(value));
+        values.emplace(Utf8(value, kAttrsError));
       }
     }
     options.attributes = std::move(map);
   }
   if (!text.is_none()) {
     if (nb::isinstance<nb::str>(text)) {
-      options.text.emplace(nb::cast<std::string>(text));
-    } else {
+      options.text.emplace(Utf8(text));
+    } else if (PyCallable_Check(text.ptr()) != 0) {
+      // The result counts by its truth, as `if` takes it: a re.Match or None is fine.
       nb::object predicate = nb::borrow(text);
-      options.text.emplace([predicate](std::string_view value) { return nb::cast<bool>(predicate(value)); });
+      options.text.emplace([predicate](std::string_view value) {
+        const int truth = PyObject_IsTrue(predicate(value).ptr());
+        if (truth < 0) {
+          throw nb::python_error();
+        }
+        return truth != 0;
+      });
+    } else {
+      throw nb::type_error("text must be a str or a callable");
     }
   }
   return options;
@@ -211,8 +260,7 @@ Document Parse(nb::object data, const std::optional<std::string>& encoding) {
   }
   if (nb::isinstance<nb::str>(data)) {
     // A str is already text, so the bytes are UTF-8 whatever a <meta> in it says.
-    const auto text = nb::cast<std::string_view>(data);
-    return {std::make_shared<DOMManager>(text, "utf-8")};
+    return {std::make_shared<DOMManager>(Utf8(data), "utf-8")};
   }
   throw nb::type_error("parse() takes str or bytes");
 }
