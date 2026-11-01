@@ -326,7 +326,9 @@ NB_MODULE(_arboris, m) {
       .def_prop_ro("encoding", [](const Document& d) { return d.dom->encoding(); },
                    "The encoding the bytes were read as, by its Encoding Standard name.")
       .def_prop_ro("unsupported_encoding", [](const Document& d) { return d.dom->unsupported_encoding(); },
-                   "The encoding the input named when it could not be converted, else None.")
+                   "The encoding the input named when it could not be converted, else None. When set, "
+                   "the bytes were kept as they were, so reading text, html or attrs may raise "
+                   "UnicodeDecodeError.")
       .def_prop_ro("parse_error_offset", [](const Document& d) { return d.dom->parse_error_offset(); },
                    "The byte offset where parsing stopped, or None if the whole input was read.")
       .def("__repr__", [](const Document& d) {

@@ -89,6 +89,11 @@ node.select("p")                                       # queries from a node sea
 doc.encoding, doc.parse_error_offset                   # "euc-kr"; None when all was read
 ```
 
+Legacy encodings (EUC-KR, Shift_JIS, ...) are converted through iconv where the build has it.
+The Windows wheels do not, so there only UTF-8 and UTF-16 are decoded: a page in another
+encoding is kept as its original bytes, `doc.unsupported_encoding` names it, and reading
+`text`, `html` or `attrs` from it may raise `UnicodeDecodeError`.
+
 A `Node` keeps its document alive, so results can outlive the `Document` they came from. A
 selector that does not parse raises `ValueError`.
 
