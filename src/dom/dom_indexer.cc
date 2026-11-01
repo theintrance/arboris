@@ -29,6 +29,9 @@ void DOMIndexer::AddNode(const NodeRef& node) {
   const NodeKey key = node.key();
 
   tag_index_[node.tag()].emplace_back(key);
+  if (node.tag() == Tag::kUnknown) {
+    name_index_[node.name()].emplace_back(key);
+  }
 
   for (const auto& class_name : node.classes()) {
     class_index_[class_name].emplace_back(key);
@@ -52,6 +55,11 @@ std::optional<NodeKey> DOMIndexer::GetNodeKeyById(std::string_view id) const {
 NodeKeySpan DOMIndexer::GetNodeKeyListByTag(Tag tag) const {
   auto it = tag_index_.find(tag);
   return it != tag_index_.end() ? NodeKeySpan{it->second} : NodeKeySpan{};
+}
+
+NodeKeySpan DOMIndexer::GetNodeKeyListByName(std::string_view name) const {
+  const Tag tag = FromString(name);
+  return tag != Tag::kUnknown ? GetNodeKeyListByTag(tag) : Lookup(name_index_, name);
 }
 
 NodeKeySpan DOMIndexer::GetNodeKeyListByClass(std::string_view class_name) const {

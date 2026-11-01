@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <optional>
+#include <ranges>
 #include <string_view>
 
 #include "dom/dom_store.hpp"
@@ -35,8 +36,13 @@ class DOMSubtree {
 
   [[nodiscard]] std::optional<NodeKey> GetNodeById(std::string_view id) const;
   [[nodiscard]] NodeKeySpan GetNodesByTag(Tag tag) const;
+  [[nodiscard]] NodeKeySpan GetNodesByName(std::string_view name) const;
   [[nodiscard]] NodeKeySpan GetNodesByClass(std::string_view class_name) const;
   [[nodiscard]] NodeKeySpan GetNodesByAttribute(std::string_view attribute_name) const;
+
+  [[nodiscard]] auto Descendants() const noexcept {
+    return std::views::iota(root_key_ + 1, root_key_ + sub_tree_size_);
+  }
 
   [[nodiscard]] NodeRef GetNodeByKey(NodeKey node_key) const {
     ARBORIS_ASSERT(isInSubtree(node_key), "Node key must be in subtree.");

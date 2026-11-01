@@ -9,6 +9,7 @@
 
 #include <cctype>
 #include <cstddef>
+#include <string>
 #include <string_view>
 
 namespace arboris {
@@ -16,6 +17,17 @@ namespace arboris {
 // What HTML counts as whitespace inside a tag and between class names: tab, line feed, form
 // feed, carriage return and space. Unlike std::isspace, no vertical tab.
 inline constexpr std::string_view kHtmlWhitespace = " \t\n\f\r";
+
+// ASCII only, which is how HTML folds the case of tag and attribute names.
+constexpr bool IsAsciiUpper(char c) {
+  return c >= 'A' && c <= 'Z';
+}
+
+constexpr char ToAsciiLower(char c) {
+  return IsAsciiUpper(c) ? static_cast<char>(c - 'A' + 'a') : c;
+}
+
+std::string AsciiLowerCase(std::string_view text);
 
 /**
  * @brief Skip whitespace characters in a string_view starting from a given position

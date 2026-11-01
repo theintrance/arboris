@@ -20,6 +20,12 @@ inline bool IsValidPosition(std::string_view content, std::size_t pos) {
 
 }  // anonymous namespace
 
+std::string AsciiLowerCase(std::string_view text) {
+  std::string out(text);
+  std::ranges::transform(out, out.begin(), ToAsciiLower);
+  return out;
+}
+
 std::size_t SkipWhitespace(std::string_view content, std::size_t begin) {
   while (IsValidPosition(content, begin) && std::isspace(content[begin])) {
     ++begin;

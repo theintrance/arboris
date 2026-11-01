@@ -53,6 +53,10 @@ struct HtmlToken : public BaseHtmlToken {
   // Ends in "/>". Only an element inside <svg> or <math> closes on it; HTML ignores it.
   bool is_self_closing = false;
 
+  // Lower-case. Points into the document buffer, or into the parser's name arena when the
+  // source spelt it with capitals. Tag names and attribute names are both folded this way.
+  std::string_view name;
+
   // Into the document buffer.
   std::string_view id;
 
@@ -70,13 +74,13 @@ struct HtmlTextToken : public BaseHtmlToken {
 
 struct HtmlCloseToken : public BaseHtmlToken {
   Tag tag = Tag::kUnknown;
+  std::string_view name;
 };
 
 struct HtmlCommentToken : public BaseHtmlToken {
   std::string_view data;
 };
 
-// The name is as written, not lower-cased.
 struct HtmlDoctypeToken : public BaseHtmlToken {
   std::string_view name;
   std::optional<std::string_view> public_id;

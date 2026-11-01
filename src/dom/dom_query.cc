@@ -8,12 +8,13 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <limits>
 #include <optional>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "string/string.hpp"
 #include "utils/html_tokens.hpp"
 #include "utils/set_utils.hpp"
 
@@ -37,16 +38,44 @@ bool MatchesAttributes(const AttributeMap& wanted, std::span<const Attribute> at
   return true;
 }
 
+bool HasAsciiUpper(std::string_view text) {
+  return std::ranges::any_of(text, IsAsciiUpper);
+}
+
+// Names are stored lower-case, so a condition written with capitals is lowered once here
+// rather than compared ignoring case at every node. Nullopt when nothing needs lowering.
+std::optional<QueryOptions> LowerCasedNames(const QueryOptions& options) {
+  const bool name_needs_it = options.name && HasAsciiUpper(*options.name);
+  const bool attributes_need_it = options.attributes && std::ranges::any_of(*options.attributes, [](const auto& entry) {
+    return HasAsciiUpper(entry.first);
+  });
+  if (!name_needs_it && !attributes_need_it) {
+    return std::nullopt;
+  }
+
+  QueryOptions lowered = options;
+  if (name_needs_it) {
+    lowered.name = AsciiLowerCase(*options.name);
+  }
+  if (attributes_need_it) {
+    AttributeMap attributes;
+    for (const auto& [name, values] : *options.attributes) {
+      attributes[AsciiLowerCase(name)].insert(values.begin(), values.end());
+    }
+    lowered.attributes = std::move(attributes);
+  }
+  return lowered;
+}
+
 }  // anonymous namespace
 
 std::optional<DOMQuery> DOMQuery::Find(const QueryOptions& options) const {
-  for (const auto& candidate_key : searchCandidatesFromSubtree(options)) {
-    const auto candidate = subtree_.GetNodeByKey(candidate_key);
-    if (matchAllConditions(candidate, options)) {
-      return DOMQuery(candidate, subtree_);
-    }
-  }
-  return std::nullopt;
+  std::optional<DOMQuery> found;
+  forEachMatch(options, [&](const NodeRef& node) {
+    found.emplace(node, subtree_);
+    return false;
+  });
+  return found;
 }
 
 std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
@@ -58,62 +87,83 @@ std::optional<DOMQuery> DOMQuery::Find(const std::string& id) const {
 }
 
 std::vector<DOMQuery> DOMQuery::FindAll(const QueryOptions& options) const {
-  std::vector<DOMQuery> ret;
-
-  for (const auto& candidate_key : searchCandidatesFromSubtree(options)) {
-    const auto candidate = subtree_.GetNodeByKey(candidate_key);
-    if (matchAllConditions(candidate, options)) {
-      ret.push_back(DOMQuery(candidate, subtree_));
-    }
-  }
-  return ret;
+  std::vector<DOMQuery> found;
+  forEachMatch(options, [&](const NodeRef& node) {
+    found.emplace_back(node, subtree_);
+    return true;
+  });
+  return found;
 }
 
-// The cheapest index wins: every candidate is checked against all conditions anyway, so
-// the shortest list is the one worth walking.
-NodeKeySpan DOMQuery::searchCandidatesFromSubtree(const QueryOptions& options) const {
-  std::size_t min_size = std::numeric_limits<std::size_t>::max();
-  NodeKeySpan min_candidates;
+template <typename Visit>
+void DOMQuery::forEachMatch(const QueryOptions& given, Visit&& visit) const {
+  const std::optional<QueryOptions> lowered = LowerCasedNames(given);
+  const QueryOptions& options = lowered ? *lowered : given;
+  const auto check = [&](NodeKey key) {
+    const auto node = subtree_.GetNodeByKey(key);
+    return !matchAllConditions(node, options) || visit(node);
+  };
 
-  const auto consider = [&min_size, &min_candidates](NodeKeySpan keys) {
-    if (!keys.empty() && keys.size() < min_size) {
-      min_size = keys.size();
-      min_candidates = keys;
+  if (const auto candidates = indexedCandidates(options)) {
+    for (const NodeKey key : *candidates) {
+      if (!check(key)) {
+        return;
+      }
+    }
+  } else {
+    for (const NodeKey key : subtree_.Descendants()) {
+      if (!check(key)) {
+        return;
+      }
+    }
+  }
+}
+
+// The shortest index list among the conditions that have one, or nullopt when no condition
+// has an index and every descendant is a candidate. An empty list settles the query.
+std::optional<NodeKeySpan> DOMQuery::indexedCandidates(const QueryOptions& options) const {
+  std::optional<NodeKeySpan> shortest;
+  const auto consider = [&shortest](NodeKeySpan keys) {
+    if (!shortest || keys.size() < shortest->size()) {
+      shortest = keys;
     }
   };
 
-  if (options.tag.has_value()) {
-    consider(subtree_.GetNodesByTag(options.tag.value()));
+  if (options.tag) {
+    consider(subtree_.GetNodesByTag(*options.tag));
   }
-
-  if (options.classes.has_value()) {
+  if (options.name) {
+    consider(subtree_.GetNodesByName(*options.name));
+  }
+  if (options.classes) {
     for (const auto& class_name : *options.classes) {
       consider(subtree_.GetNodesByClass(class_name));
     }
   }
-
-  if (options.attributes.has_value()) {
-    for (const auto& [attribute_name, _] : options.attributes.value()) {
+  if (options.attributes) {
+    for (const auto& [attribute_name, _] : *options.attributes) {
       consider(subtree_.GetNodesByAttribute(attribute_name));
     }
   }
-
-  return min_candidates;
+  return shortest;
 }
 
 bool DOMQuery::matchAllConditions(const NodeRef& node, const QueryOptions& options) const {
-  if (options.tag && node.tag() != options.tag.value()) {
+  if (options.tag && node.tag() != *options.tag) {
     return false;
   }
-
-  if (options.classes && !IsSubset(options.classes.value(), node.classes())) {
+  if (options.name && node.name() != *options.name) {
     return false;
   }
-
-  if (options.attributes && !MatchesAttributes(options.attributes.value(), node.attributes())) {
+  if (options.classes && !IsSubset(*options.classes, node.classes())) {
     return false;
   }
-  // TODO(team): Implement text condition matching
+  if (options.attributes && !MatchesAttributes(*options.attributes, node.attributes())) {
+    return false;
+  }
+  if (options.text && !options.text->Matches(node.text_content())) {
+    return false;
+  }
   return true;
 }
 
