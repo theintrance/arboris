@@ -81,13 +81,15 @@ jobs:
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON
           cmake --build build --parallel --target arboris
-          cmake --install build --prefix "$PWD/prefix"
+          cmake --install build --prefix "$PWD/build/prefix"
 
+      # Both under build/, which .gitignore and CPPLINT.cfg already leave out: a copy of
+      # the headers anywhere else fails cpplint's header-guard check when run locally.
       - name: Build a project against the install
         run: |
-          cmake -S tests/install -B install-build -DCMAKE_PREFIX_PATH="$PWD/prefix"
-          cmake --build install-build
-          ./install-build/install_check
+          cmake -S tests/install -B build/install-check -DCMAKE_PREFIX_PATH="$PWD/build/prefix"
+          cmake --build build/install-check
+          ./build/install-check/install_check
 
   clang-tidy:
     name: clang-tidy
