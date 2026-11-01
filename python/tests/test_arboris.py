@@ -24,6 +24,8 @@ def test_parse_reads_str_as_utf8(doc):
 
 def test_parse_decodes_bytes_by_meta():
     page = arboris.parse(b"<meta charset=euc-kr><p>\xc7\xd1\xb1\xdb</p>")
+    if page.unsupported_encoding == "euc-kr":
+        pytest.skip("built without iconv, so only UTF-8 and UTF-16 are decoded")
     assert page.encoding == "euc-kr"
     assert page.select_one("p").text == "한글"
 
